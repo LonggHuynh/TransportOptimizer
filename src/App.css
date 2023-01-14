@@ -6,18 +6,29 @@
     height: 100%;
 }
 
-.container {
-    display: flex;    
-}
+.container {}
 
 
 
 
 .console {
-    position: relative;
+    width: 20%;
+    position: fixed;
     top: 100px;
     left: 20px;
     padding: 16px;
     background-color: white;
     z-index: 1;
+}
+
+
+
+.result {
+
+    width: 20%;
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background-color: white;
+    padding: 16px;
 }
