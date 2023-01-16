@@ -11,10 +11,10 @@ const modifiedTSP = (dist, places, requirements) => {
 
     let n = dist.length
 
-    let dp = [...Array(1 << n)].map(() => Array(n).fill(Infinity))
+    let minimumTime = [...Array(1 << n)].map(() => Array(n).fill(Infinity))
     let prevVisit = [...Array(1 << n)].map(() => Array(n).fill(0))
 
-    dp[1][0] = 0;
+    minimumTime[1][0] = 0;
     for (let mask = 0; mask < (1 << n); mask++) {
 
         for (let last = 0; last < n; last++) {
@@ -30,8 +30,8 @@ const modifiedTSP = (dist, places, requirements) => {
                 if (((mask >> next) & 1) === 1) continue;
                 let newMask = mask | (1 << next);
 
-                if (dp[newMask][next] > dp[mask][last] + dist[last][next]) {
-                    dp[newMask][next] = dp[mask][last] + dist[last][next]
+                if (minimumTime[newMask][next] > minimumTime[mask][last] + dist[last][next]) {
+                    minimumTime[newMask][next] = minimumTime[mask][last] + dist[last][next]
                     prevVisit[newMask][next] = last
                 }
             }
@@ -49,7 +49,7 @@ const modifiedTSP = (dist, places, requirements) => {
         cur = prev
     }
 
-    return { bestRoutes: bestRoutes.reverse(), totalTime: dp[(1 << n) - 1][n - 1] }
+    return { bestRoutes: bestRoutes.reverse(), totalTime: minimumTime[(1 << n) - 1][n - 1] }
 
 }
 

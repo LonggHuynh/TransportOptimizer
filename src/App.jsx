@@ -186,7 +186,7 @@ function App() {
             </div>
             <div className='inputLine'>
               <Autocomplete className='input'>
-                <input type='text' placeholder='Places I want to visit' ref={intermediateRef} />
+                <input type='text' placeholder='Place I also want to visit' ref={intermediateRef} />
               </Autocomplete>
               <button type='button' onClick={handleAdd} className='addButton'><AddIcon /></button>
             </div>
@@ -225,7 +225,7 @@ function App() {
                       }
                     </select>
 
-                    <button onClick={handleAddRequirement}><AddIcon /></button>
+                    <button onClick={handleAddRequirement} className='addButton'><AddIcon /></button>
 
                   </div>
 

@@ -34,7 +34,7 @@
 
 .console form .inputLine input {
     height: 40px;
-    padding: 4px;
+    padding: 0px 4px;
     font-size: medium;
     border-bottom: 1px solid gray;
     width: 100%;
@@ -158,4 +158,9 @@
     display: flex;
     width: 100%;
     gap: 10px;
+}
+
+.route-details{
+    display: flex;
+    gap: 28px;
 }
