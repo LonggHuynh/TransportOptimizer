@@ -17,5 +17,5 @@ $ npm ci
 
 ### Run
 ```bash
-$ npm run start
+$ npm start
 ```
