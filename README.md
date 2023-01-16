@@ -1,7 +1,7 @@
 ## Description
 
-The app helps you plan the most efficient route for visiting all the desired destinations, 
-with the additional feature of specifying the partial order of the visited places.
+The app helps users plan the most efficient order for visiting all desired destinations using the modified [TSP](https://developers.google.com/maps/documentation/javascript/get-api-key) algorithm. Optional constraints, such as a location must be visited before another location can be added, can also be included. The shortest path between pairs is computed using the Google Maps API.
+
 ## Installation
 
 ```bash
