@@ -76,7 +76,8 @@
 .requirements {
     background-color: white;
     padding: 28px 32px;
-    padding-top: 60px;
+    padding-top: 70px;
+    padding-bottom: 50px;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -90,7 +91,7 @@
 .requirements .closeIcon {
     position: absolute;
     top: 20px;
-    right: 20px;
+    right: 15px;
     cursor: pointer;
 }
 
@@ -110,6 +111,11 @@
 
 .requirements select:focus {
     outline: none;
+}
+
+.title{
+    font-size: xx-large;
+    font-weight: 700;
 }
 
 
@@ -144,6 +150,7 @@
 
 .result h1 {
     font-size: large;
+    font-weight: 600;
 }
 
 

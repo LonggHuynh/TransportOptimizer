@@ -1,6 +1,6 @@
 
 import './App.css'
-
+import computeRoute from './utils/modifiedTSP'
 import {
   useJsApiLoader,
   GoogleMap,
@@ -8,7 +8,7 @@ import {
   Autocomplete,
   DirectionsRenderer,
 } from '@react-google-maps/api'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import RouteDetails from './components/RouteDetails'
 import PlaceTag from './components/PlaceTag'
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -32,19 +32,11 @@ function App() {
   })
 
 
-
-
-
-
-
   const [directionsResponse, setDirectionsResponse] = useState(null)
   const [intermediateList, setIntermediateList] = useState([])
 
-
-
   const [estimatedTime, setEstimatedTime] = useState(0)
   const [routes, setRoutes] = useState([])
-
 
   const [fromReq, setFromReq] = useState(0)
   const [toReq, setToReq] = useState(0)
@@ -63,6 +55,12 @@ function App() {
 
 
 
+  useEffect(() => {
+
+    setDirectionsResponse(null)
+    setEstimatedTime(0)
+    setRoutes([])
+  }, [intermediateList, requirements])
 
   if (!isLoaded) {
     return <></>
@@ -75,6 +73,12 @@ function App() {
     }
     intermediateRef.current.value = ''
 
+  }
+
+
+  const removeFromIntermediate = (item) => {
+    setRequirements([])
+    setIntermediateList(prev => prev.filter(otherItem => otherItem !== item))
   }
 
 
@@ -91,17 +95,18 @@ function App() {
 
 
   const handleLocate = async (address) => {
-
     // eslint-disable-next-line no-undef
     const geoCoder = new google.maps.Geocoder()
 
     geoCoder.geocode({ address }, (results, status) => {
       if (status === 'OK') {
         setCenter(results[0].geometry.location)
+        // eslint-disable-next-line no-undef
       } else {
         console.error(`Error: ${status}`)
       }
     })
+
   }
 
   async function displayRoute(from, to) {
@@ -130,8 +135,8 @@ function App() {
       travelMode: 'TRANSIT'
     }, (response, status) => {
       if (status === 'OK') {
-        const adjMatrix = response.rows.map(row => row.elements.map(elem => elem.duration?.value || 0))
-        const { bestRoutes, totalTime } = computeRoute(adjMatrix, places)
+        const adjMatrix = response.rows.map(row => row.elements.map(elem => elem.duration?.value || Infinity))
+        const { bestRoutes, totalTime } = computeRoute(adjMatrix, places, requirements)
         setRoutes(bestRoutes)
         setEstimatedTime(totalTime)
       } else {
@@ -139,68 +144,8 @@ function App() {
       }
     })
 
-
-
   }
 
-
-
-  //TSP algorithm 
-  const computeRoute = (dist, places) => {
-
-
-
-    const reqMap = new Map()
-    requirements.forEach(pair => {
-      const [from, to] = pair
-      if (!reqMap.get(from)) reqMap.set(from, new Set())
-      reqMap.get(from).add(to)
-    })
-
-    let n = dist.length
-
-    let dp = [...Array(1 << n)].map(() => Array(n).fill(Infinity))
-    let prevVisit = [...Array(1 << n)].map(() => Array(n).fill(0))
-
-    dp[1][0] = 0;
-    for (let mask = 0; mask < (1 << n); mask++) {
-
-      for (let last = 0; last < n; last++) {
-        if (((mask >> last) & 1) === 0) continue;
-
-        out: for (let next = 0; next < n; next++) {
-
-          for (let visited = 0; visited < n; visited++)
-            if (((mask >> visited) & 1) === 1 && reqMap.get(next) && reqMap.get(next).has(visited))
-              continue out;
-
-          if (next === last) continue
-          if (((mask >> next) & 1) === 1) continue;
-          let newMask = mask | (1 << next);
-
-          if (dp[newMask][next] > dp[mask][last] + dist[last][next]) {
-            dp[newMask][next] = dp[mask][last] + dist[last][next]
-            prevVisit[newMask][next] = last
-          }
-        }
-      }
-    }
-    let cur = n - 1
-    let curMask = (1 << n) - 1
-
-
-    let bestRoutes = []
-    while (cur !== 0) {
-      let prev = prevVisit[curMask][cur]
-      curMask = curMask ^ (1 << cur)
-      bestRoutes.push([places[prev], places[cur]])
-      cur = prev
-    }
-
-    return { bestRoutes: bestRoutes.reverse(), totalTime: dp[(1 << n) - 1][n - 1] }
-
-
-  }
 
   return (
     <>
@@ -214,8 +159,8 @@ function App() {
             mapTypeControl: true,
             fullscreenControl: true,
           }}
-          >
-          <Marker position={center} />
+        >
+          {<Marker position={center} />}
           {directionsResponse && (<DirectionsRenderer directions={directionsResponse} />)}
         </GoogleMap>
       </div>
@@ -223,9 +168,8 @@ function App() {
         <div className='console'  >
 
 
-          <form onSubmit={handleCompute}>
-
-
+          <form onSubmit={handleCompute} onKeyDown={(e) => { if (e.keyCode === 13) e.preventDefault() }} >
+            <h1 className='title'>Path Planner</h1>
             <div className='inputLine'>
               <Autocomplete className='input'>
                 <input type='text' required placeholder='Origin' ref={originRef} />
@@ -242,7 +186,7 @@ function App() {
             </div>
             <div className='inputLine'>
               <Autocomplete className='input'>
-                <input type='text' placeholder='Intermediate' ref={intermediateRef} />
+                <input type='text' placeholder='Places I want to visit' ref={intermediateRef} />
               </Autocomplete>
               <button type='button' onClick={handleAdd} className='addButton'><AddIcon /></button>
             </div>
@@ -251,7 +195,7 @@ function App() {
 
 
             <div className='tags'>
-              {intermediateList.map((item, ind) => <PlaceTag name={item} key={ind} removeItem={() => setIntermediateList(prev => prev.filter(otherItem => otherItem !== item))} />)}
+              {intermediateList.map((item, ind) => <PlaceTag name={item} key={ind} removeItem={() => removeFromIntermediate(item)} locatePlace={() => handleLocate(item)} />)}
             </div>
             <button className='viewRequirementsButton' type='button' onClick={() => setShowReq(prev => !prev)}> Set requirements </button>
 
@@ -290,7 +234,7 @@ function App() {
                   </div>
                 </> :
                 <div>
-                  Have at least 2 intermediate locations to set requirements.
+                  Please have at least 2 intermediate locations to set requirements.
                 </div>}
             </div>
           }
@@ -299,11 +243,14 @@ function App() {
         </div>
 
         <div className='result'>
-          <h1>Estimated time: {Math.round(estimatedTime / 6) / 10} minutes </h1>
-
-
+          <h1>Estimated time: {estimatedTime === Infinity ? 0 : (Math.round(estimatedTime / 60))} minutes </h1>
           {
-            routes.map((route, ind) => <RouteDetails route={route} key={ind} displayRoute={displayRoute} />)
+            estimatedTime === Infinity ?
+              <>
+                <p>No route available</p>
+              </>
+              :
+              routes.map((route, ind) => <RouteDetails route={route} key={ind} displayRoute={displayRoute} />)
           }
 
         </div>

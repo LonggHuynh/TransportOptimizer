@@ -1,8 +1,13 @@
 .route-details {
     display: flex;
+    align-items: center;
 }
 
 
 .route-details button{
     margin-left: auto;
+    background-color: black;
+    color: white;
+    padding: 7px 10px;
+    border-radius: 0.4rem;
 }
