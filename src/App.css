@@ -6,29 +6,149 @@
     height: 100%;
 }
 
-.container {}
-
-
-
 
 .console {
-    width: 20%;
+    display: flex;
     position: fixed;
     top: 100px;
     left: 20px;
     padding: 16px;
-    background-color: white;
+    gap: 20px;
     z-index: 1;
+    align-items: flex-start;
+}
+
+.console form {
+    background-color: white;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+    gap: 20px;
+
+    box-shadow: var(--light-shadow);
+    border-radius: 0.4rem;
+
+}
+
+
+.console form .inputLine input {
+    height: 40px;
+    padding: 4px;
+    font-size: medium;
+    border-bottom: 1px solid gray;
+    width: 100%;
+
+
+}
+
+.console form .inputLine .input {
+    flex: 1;
+
+
+}
+
+.console form input:focus {
+    outline: none;
+}
+
+
+
+.viewRequirementsButton {
+
+    font-size: 400;
+    padding: 15px;
+    border-radius: 0.4rem;
+    border: 1px solid black;
+    margin-top: 20px;
+}
+
+.calculateRouteButton {
+    background-color: black;
+    color: white;
+    font-size: 400;
+    padding: 15px;
+    border-radius: 0.4rem;
+    margin-top: 20px;
+    box-shadow: var(--light-shadow);
+}
+
+.requirements {
+    background-color: white;
+    padding: 28px 32px;
+    padding-top: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: relative;
+    border-radius: 0.4rem;
+
+
+
+}
+
+.requirements .closeIcon {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+}
+
+
+.requirements .settingLine {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.requirements select {
+    width: 300px;
+    padding: 8px;
+    background-color: white;
+    border-bottom: 1px solid;
+}
+
+.requirements select:focus {
+    outline: none;
 }
 
 
 
 .result {
-
-    width: 20%;
     position: fixed;
     top: 100px;
     right: 20px;
     background-color: white;
-    padding: 16px;
+    width: 400px;
+
+    padding: 28px 32px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+
+    box-shadow: var(--light-shadow);
+    border-radius: 0.4rem;
+
+
+}
+
+.addButton{
+    background-color: black;
+    color: white;
+    display: flex;
+    align-items: center;
+}
+
+
+.result h1 {
+    font-size: large;
+}
+
+
+.inputLine {
+    display: flex;
+    width: 100%;
+    gap: 10px;
 }

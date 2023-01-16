@@ -11,13 +11,17 @@ import {
 import { useRef, useState } from 'react'
 import RouteDetails from './components/RouteDetails'
 import PlaceTag from './components/PlaceTag'
-
-
-const center = { lat: 48.8584, lng: 2.2945 }
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import RequirementTag from './components/RequirementTag'
+import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 const libraries = ['places'];
 
 
+
 function App() {
+  const [center, setCenter] = useState({ lat: 48.8584, lng: 2.2945 })
+
 
 
 
@@ -29,9 +33,12 @@ function App() {
 
 
 
-  const [map, setMap] = useState(/** @type google.maps.Map */(null))
+
+
+
+
   const [directionsResponse, setDirectionsResponse] = useState(null)
-  const [betweenList, setBetweenList] = useState([])
+  const [intermediateList, setIntermediateList] = useState([])
 
 
 
@@ -39,10 +46,20 @@ function App() {
   const [routes, setRoutes] = useState([])
 
 
+  const [fromReq, setFromReq] = useState(0)
+  const [toReq, setToReq] = useState(0)
+
+  const [showReq, setShowReq] = useState(false)
+
+
+
+
+
+  const [requirements, setRequirements] = useState([])
 
   const originRef = useRef()
   const destinationRef = useRef()
-  const betweenRef = useRef()
+  const intermediateRef = useRef()
 
 
 
@@ -51,16 +68,41 @@ function App() {
     return <></>
   }
 
-  console.log(betweenList)
   const handleAdd = () => {
-    const newLocation = betweenRef.current.value.trim()
-    if (newLocation !== '' && !betweenList.includes(newLocation)) {
-      setBetweenList(prev => (newLocation !== '' && !betweenList.includes(newLocation)) ? [...prev, newLocation] : prev)
+    const newLocation = intermediateRef.current.value.trim()
+    if (newLocation !== '' && !intermediateList.includes(newLocation)) {
+      setIntermediateList(prev => (newLocation !== '' && !intermediateList.includes(newLocation)) ? [...prev, newLocation] : prev)
     }
-    betweenRef.current.value = ''
+    intermediateRef.current.value = ''
 
   }
 
+
+  const handleAddRequirement = () => {
+    if (fromReq === toReq) return
+    setRequirements(prev => {
+
+      if (prev.find(item => item[0] === fromReq + 1 && item[1] === toReq + 1))
+        return prev
+      return [...prev, [fromReq + 1, toReq + 1]]
+
+    })
+  }
+
+
+  const handleLocate = async (address) => {
+
+    // eslint-disable-next-line no-undef
+    const geoCoder = new google.maps.Geocoder()
+
+    geoCoder.geocode({ address }, (results, status) => {
+      if (status === 'OK') {
+        setCenter(results[0].geometry.location)
+      } else {
+        console.error(`Error: ${status}`)
+      }
+    })
+  }
 
   async function displayRoute(from, to) {
 
@@ -78,21 +120,26 @@ function App() {
 
   const handleCompute = (e) => {
     e.preventDefault()
+
+    const places = [originRef.current.value, ...intermediateList, destinationRef.current.value]
     // eslint-disable-next-line no-undef
     let directionsService = new google.maps.DistanceMatrixService()
     directionsService.getDistanceMatrix({
-      destinations: [originRef.current.value, ...betweenList, destinationRef.current.value],
-      origins: [originRef.current.value, ...betweenList, destinationRef.current.value],
+      destinations: places,
+      origins: [originRef.current.value, ...intermediateList, destinationRef.current.value],
       travelMode: 'TRANSIT'
     }, (response, status) => {
       if (status === 'OK') {
-        console.log(response)
         const adjMatrix = response.rows.map(row => row.elements.map(elem => elem.duration?.value || 0))
-        computeRoute(adjMatrix, response.destinationAddresses)
+        const { bestRoutes, totalTime } = computeRoute(adjMatrix, places)
+        setRoutes(bestRoutes)
+        setEstimatedTime(totalTime)
       } else {
         alert('Api errors')
       }
     })
+
+
 
   }
 
@@ -100,6 +147,16 @@ function App() {
 
   //TSP algorithm 
   const computeRoute = (dist, places) => {
+
+
+
+    const reqMap = new Map()
+    requirements.forEach(pair => {
+      const [from, to] = pair
+      if (!reqMap.get(from)) reqMap.set(from, new Set())
+      reqMap.get(from).add(to)
+    })
+
     let n = dist.length
 
     let dp = [...Array(1 << n)].map(() => Array(n).fill(Infinity))
@@ -111,7 +168,12 @@ function App() {
       for (let last = 0; last < n; last++) {
         if (((mask >> last) & 1) === 0) continue;
 
-        for (let next = 0; next < n; next++) {
+        out: for (let next = 0; next < n; next++) {
+
+          for (let visited = 0; visited < n; visited++)
+            if (((mask >> visited) & 1) === 1 && reqMap.get(next) && reqMap.get(next).has(visited))
+              continue out;
+
           if (next === last) continue
           if (((mask >> next) & 1) === 1) continue;
           let newMask = mask | (1 << next);
@@ -127,21 +189,18 @@ function App() {
     let curMask = (1 << n) - 1
 
 
-    let routes = []
+    let bestRoutes = []
     while (cur !== 0) {
       let prev = prevVisit[curMask][cur]
       curMask = curMask ^ (1 << cur)
-      routes.push([places[prev], places[cur]])
+      bestRoutes.push([places[prev], places[cur]])
       cur = prev
     }
 
-    setRoutes(routes.reverse())
-    setEstimatedTime(dp[(1 << n) - 1][n - 1])
+    return { bestRoutes: bestRoutes.reverse(), totalTime: dp[(1 << n) - 1][n - 1] }
+
 
   }
-
-
-
 
   return (
     <>
@@ -155,44 +214,92 @@ function App() {
             mapTypeControl: true,
             fullscreenControl: true,
           }}
-          onLoad={map => setMap(map)}>
+          >
           <Marker position={center} />
           {directionsResponse && (<DirectionsRenderer directions={directionsResponse} />)}
         </GoogleMap>
       </div>
       <div className='container'>
         <div className='console'  >
+
+
           <form onSubmit={handleCompute}>
-            <div >
-              <Autocomplete>
-                <input type='text' required placeholder='Origin' ref={originRef} onInput={e => console.log(e.target.value)} />
+
+
+            <div className='inputLine'>
+              <Autocomplete className='input'>
+                <input type='text' required placeholder='Origin' ref={originRef} />
               </Autocomplete>
+              <button type='button' onClick={() => handleLocate(originRef.current.value)}><LocationOnIcon /></button>
+
             </div>
-            <div>
-              <Autocomplete>
+            <div className='inputLine'>
+              <Autocomplete className='input'>
                 <input type='text' required placeholder='Destination' ref={destinationRef} />
               </Autocomplete>
+              <button type='button' onClick={() => handleLocate(destinationRef.current.value)}><LocationOnIcon /></button>
+
             </div>
-            <div>
-              <Autocomplete>
-                <input type='text' placeholder='Between' ref={betweenRef} />
+            <div className='inputLine'>
+              <Autocomplete className='input'>
+                <input type='text' placeholder='Intermediate' ref={intermediateRef} />
               </Autocomplete>
-              <button type='button' onClick={handleAdd}>Add</button>
+              <button type='button' onClick={handleAdd} className='addButton'><AddIcon /></button>
             </div>
 
-            <button type='submit'> Calculate Route </button>
+
+
+
             <div className='tags'>
-              {betweenList.map((item, ind) => <PlaceTag name={item} key={ind} removeItem={() => setBetweenList(prev => prev.filter(otherItem => otherItem !== item))} />)}
-
+              {intermediateList.map((item, ind) => <PlaceTag name={item} key={ind} removeItem={() => setIntermediateList(prev => prev.filter(otherItem => otherItem !== item))} />)}
             </div>
+            <button className='viewRequirementsButton' type='button' onClick={() => setShowReq(prev => !prev)}> Set requirements </button>
+
+            <button className='calculateRouteButton' type='submit'> Calculate Route </button>
+
+
+
           </form>
+
+
+          {
+            showReq &&
+            <div className='requirements'>
+              <div className='closeIcon' onClick={() => setShowReq(false)}> <CloseIcon /></div>
+              {intermediateList.length > 1 ?
+                <>
+                  <div className='settingLine'>
+                    <select onChange={e => setFromReq(Number(e.target.value))}>
+                      {
+                        intermediateList.map((item, ind) => <option key={ind} value={ind}>{item}</option>)
+                      }
+                    </select>
+                    before
+                    <select onChange={e => setToReq(Number(e.target.value))}>
+                      {
+                        intermediateList.map((item, ind) => <option key={ind} value={ind}>{item}</option>)
+                      }
+                    </select>
+
+                    <button onClick={handleAddRequirement}><AddIcon /></button>
+
+                  </div>
+
+                  <div>
+                    {requirements.map(item => (<RequirementTag from={intermediateList[item[0] - 1]} to={intermediateList[item[1] - 1]} removeItem={() => setRequirements(prev => prev.filter(otherItem => otherItem[0] !== item[0] || otherItem[1] !== item[1]))} />))}
+                  </div>
+                </> :
+                <div>
+                  Have at least 2 intermediate locations to set requirements.
+                </div>}
+            </div>
+          }
 
 
         </div>
 
         <div className='result'>
-          <p>Estimated time: {Math.round(estimatedTime / 6)} minutes </p>
-          {/* <FaLocationArrow onClick={() => { map.panTo(center); map.setZoom(15) }} /> */}
+          <h1>Estimated time: {Math.round(estimatedTime / 6) / 10} minutes </h1>
 
 
           {
