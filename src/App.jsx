@@ -15,6 +15,8 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import RequirementTag from './components/RequirementTag'
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import { Switch } from '@mui/material';
+
 const libraries = ['places'];
 
 
@@ -46,6 +48,7 @@ function App() {
 
 
 
+  const [sameDestination, setSameDistination] = useState(false)
 
   const [requirements, setRequirements] = useState([])
 
@@ -86,9 +89,9 @@ function App() {
     if (fromReq === toReq) return
     setRequirements(prev => {
 
-      if (prev.find(item => item[0] === fromReq + 1 && item[1] === toReq + 1))
+      if (prev.find(item => item[0] === Number(fromReq) + 1 && item[1] === Number(toReq) + 1))
         return prev
-      return [...prev, [fromReq + 1, toReq + 1]]
+      return [...prev, [Number(fromReq) + 1, Number(toReq) + 1]]
 
     })
   }
@@ -126,12 +129,14 @@ function App() {
   const handleCompute = (e) => {
     e.preventDefault()
 
-    const places = [originRef.current.value, ...intermediateList, destinationRef.current.value]
+    const places = [originRef.current.value, ...intermediateList, sameDestination ? originRef.current.value : destinationRef.current.value]
+
+    console.log(places)
     // eslint-disable-next-line no-undef
     let directionsService = new google.maps.DistanceMatrixService()
     directionsService.getDistanceMatrix({
       destinations: places,
-      origins: [originRef.current.value, ...intermediateList, destinationRef.current.value],
+      origins: places,
       travelMode: 'TRANSIT'
     }, (response, status) => {
       if (status === 'OK') {
@@ -177,16 +182,35 @@ function App() {
               <button type='button' onClick={() => handleLocate(originRef.current.value)}><LocationOnIcon /></button>
 
             </div>
-            <div className='inputLine'>
-              <Autocomplete className='input'>
-                <input type='text' required placeholder='Destination' ref={destinationRef} />
-              </Autocomplete>
-              <button type='button' onClick={() => handleLocate(destinationRef.current.value)}><LocationOnIcon /></button>
 
+
+
+            {
+              sameDestination ||
+              <>
+                <div className='inputLine'>
+                  <Autocomplete className='input'>
+                    <input type='text' required placeholder='Destination' ref={destinationRef} />
+                  </Autocomplete>
+                  <button type='button' onClick={() => handleLocate(destinationRef.current.value)}><LocationOnIcon /></button>
+
+                </div>
+              </>
+            }
+
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <label >Return to the origin</label>
+              <div style={{ marginLeft: 'auto' }}>
+                <Switch
+                  checked={sameDestination}
+                  onChange={() => setSameDistination(prev => !prev)}
+                  inputProps={{ 'aria-label': 'controlled' }}
+                />
+              </div>
             </div>
             <div className='inputLine'>
               <Autocomplete className='input'>
-                <input type='text' placeholder='Place I also want to visit' ref={intermediateRef} />
+                <input type='text' placeholder='Places I also want to visit' ref={intermediateRef} />
               </Autocomplete>
               <button type='button' onClick={handleAdd} className='addButton'><AddIcon /></button>
             </div>
@@ -213,13 +237,13 @@ function App() {
               {intermediateList.length > 1 ?
                 <>
                   <div className='settingLine'>
-                    <select onChange={e => setFromReq(Number(e.target.value))}>
+                    <select value={fromReq} onChange={e => setFromReq(e.target.value)}>
                       {
                         intermediateList.map((item, ind) => <option key={ind} value={ind}>{item}</option>)
                       }
                     </select>
                     before
-                    <select onChange={e => setToReq(Number(e.target.value))}>
+                    <select value={toReq} onChange={e => setToReq(e.target.value)}>
                       {
                         intermediateList.map((item, ind) => <option key={ind} value={ind}>{item}</option>)
                       }
