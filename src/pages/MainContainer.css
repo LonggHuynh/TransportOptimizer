@@ -141,6 +141,7 @@
 }
 
 .addButton{
+    align-self: stretch;
     background-color: black;
     color: white;
     display: flex;
