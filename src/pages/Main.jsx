@@ -11,23 +11,19 @@ import { useEffect, useRef, useState } from 'react'
 import RouteDetails from '../components/RouteDetails'
 import PlaceTag from '../components/PlaceTag'
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import RequirementTag from '../components/RequirementTag'
 import AddIcon from '@mui/icons-material/Add';
-import CloseIcon from '@mui/icons-material/Close';
 import { Switch } from '@mui/material';
-import './MainContainer.css'
+import './Main.css'
 import { useAlert } from "react-alert";
+import Requirements from '../components/Requirements'
 const libraries = ['places'];
 
 
 
-function MainContainer() {
+const Main = () => {
+
     const alert = useAlert()
-    const [center, setCenter] = useState({ lat: 48.8584, lng: 2.2945 })
-
-
-
-
+    const [center, setCenter] = useState({ lat: 60.16952, lng: 24.93545 })
 
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
@@ -37,30 +33,19 @@ function MainContainer() {
 
     const [directionsResponse, setDirectionsResponse] = useState(null)
     const [intermediateList, setIntermediateList] = useState([])
-
     const [estimatedTime, setEstimatedTime] = useState(0)
     const [routes, setRoutes] = useState([])
-
     const [fromReq, setFromReq] = useState('0')
     const [toReq, setToReq] = useState('0')
-
     const [showReq, setShowReq] = useState(false)
-
-
-
-
     const [sameDestination, setSameDistination] = useState(false)
-
     const [requirements, setRequirements] = useState([])
-
     const originRef = useRef()
     const destinationRef = useRef()
     const intermediateRef = useRef()
 
 
-
     useEffect(() => {
-
         setDirectionsResponse(null)
         setEstimatedTime(0)
         setRoutes([])
@@ -79,21 +64,16 @@ function MainContainer() {
 
     }
 
-
     const removeFromIntermediate = (item) => {
         setRequirements([])
         setIntermediateList(prev => prev.filter(otherItem => otherItem !== item))
     }
-
 
     const handleAddRequirement = () => {
         if (fromReq === toReq) {
             alert.error('Places must be different')
         }
         setRequirements(prev => {
-
-
-
             if ((fromReq === toReq) || (prev.find(item => item[0] === Number(fromReq) + 1 && item[1] === Number(toReq) + 1))) {
                 return prev
             }
@@ -101,7 +81,6 @@ function MainContainer() {
 
         })
     }
-
 
     const handleLocate = async (address) => {
         // eslint-disable-next-line no-undef
@@ -129,15 +108,11 @@ function MainContainer() {
             travelMode: google.maps.TravelMode.TRANSIT,
         })
         setDirectionsResponse(results)
-
     }
 
     const handleCompute = (e) => {
         e.preventDefault()
-
         const places = [originRef.current.value, ...intermediateList, sameDestination ? originRef.current.value : destinationRef.current.value]
-
-        console.log(places)
         // eslint-disable-next-line no-undef
         let directionsService = new google.maps.DistanceMatrixService()
         directionsService.getDistanceMatrix({
@@ -149,17 +124,14 @@ function MainContainer() {
                 const adjMatrix = response.rows.map(row => row.elements.map(elem => elem.duration?.value || Infinity))
                 const { bestRoutes, totalTime } = computeRoute(adjMatrix, places, requirements)
                 setRoutes(bestRoutes)
+                if (totalTime===Infinity)    alert.error('No routes available')
+                else alert.success('Routes computed')
                 setEstimatedTime(totalTime)
             } else {
-                alert('Api errors')
+                alert.error('Api errors')
             }
         })
-
     }
-
-
-
-
 
     return (
         <>
@@ -179,9 +151,7 @@ function MainContainer() {
                 </GoogleMap>
             </div>
             <div className='container'>
-                <div className='console'  >
-
-
+                <div className='console'>
                     <form onSubmit={handleCompute} onKeyDown={(e) => { if (e.keyCode === 13) e.preventDefault() }} >
                         <h1 className='title'>Path Planner</h1>
                         <div className='inputLine'>
@@ -191,8 +161,6 @@ function MainContainer() {
                             <button type='button' onClick={() => handleLocate(originRef.current.value)}><LocationOnIcon /></button>
 
                         </div>
-
-
 
                         {
                             sameDestination ||
@@ -224,54 +192,24 @@ function MainContainer() {
                             <button type='button' onClick={handleAdd} className='addButton'><AddIcon /></button>
                         </div>
 
-
-
-
                         <div className='tags'>
                             {intermediateList.map((item, ind) => <PlaceTag name={item} key={ind} removeItem={() => removeFromIntermediate(item)} locatePlace={() => handleLocate(item)} />)}
                         </div>
                         <button className='viewRequirementsButton' type='button' onClick={() => setShowReq(prev => !prev)}> Set requirements </button>
-
                         <button className='calculateRouteButton' type='submit'> Calculate Route </button>
-
-
-
                     </form>
-
 
                     {
                         showReq &&
-                        <div className='requirements'>
-                            <div className='closeIcon' onClick={() => setShowReq(false)}> <CloseIcon /></div>
-                            {intermediateList.length > 1 ?
-                                <>
-                                    <div className='settingLine'>
-                                        <select value={fromReq} onChange={e => setFromReq(e.target.value)}>
-                                            {
-                                                intermediateList.map((item, ind) => <option key={ind} value={ind}>{item}</option>)
-                                            }
-                                        </select>
-                                        before
-                                        <select value={toReq} onChange={e => setToReq(e.target.value)}>
-                                            {
-                                                intermediateList.map((item, ind) => <option key={ind} value={ind}>{item}</option>)
-                                            }
-                                        </select>
-
-                                        <button onClick={handleAddRequirement} className='addButton'><AddIcon /></button>
-
-                                    </div>
-
-                                    <div>
-                                        {requirements.map((item, ind) => (<RequirementTag key={ind} from={intermediateList[item[0] - 1]} to={intermediateList[item[1] - 1]} removeItem={() => setRequirements(prev => prev.filter(otherItem => otherItem[0] !== item[0] || otherItem[1] !== item[1]))} />))}
-                                    </div>
-                                </> :
-                                <div>
-                                    Please have at least 2 intermediate locations to set requirements.
-                                </div>}
-                        </div>
+                        <Requirements setShowReq={setShowReq}
+                            intermediateList={intermediateList}
+                            fromReq={fromReq}
+                            setFromReq={setFromReq}
+                            setToReq={setToReq}
+                            requirements={requirements}
+                            setRequirements={setRequirements}
+                            handleAddRequirement={handleAddRequirement} />
                     }
-
 
                 </div>
 
@@ -285,7 +223,6 @@ function MainContainer() {
                             :
                             routes.map((route, ind) => <RouteDetails route={route} key={ind} displayRoute={displayRoute} />)
                     }
-
                 </div>
             </div>
 
@@ -294,4 +231,4 @@ function MainContainer() {
     )
 }
 
-export default MainContainer
+export default Main

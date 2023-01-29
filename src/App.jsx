@@ -1,5 +1,5 @@
 import React from 'react'
-import MainContainer from './pages/MainContainer';
+import Main from './pages/Main';
 
 import { positions, Provider } from "react-alert";
 import AlertTemplate from "react-alert-template-basic";
@@ -11,7 +11,7 @@ const options = {
 const App = () => {
   return (
     <Provider template={AlertTemplate} {...options}>
-      <MainContainer />
+      <Main />
     </Provider >
   )
 }

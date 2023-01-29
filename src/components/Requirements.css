@@ -1,0 +1,39 @@
+.requirements {
+    background-color: white;
+    padding: 28px 32px;
+    padding-top: 70px;
+    padding-bottom: 50px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: relative;
+    border-radius: 0.4rem;
+
+
+
+}
+
+.requirements .closeIcon {
+    position: absolute;
+    top: 20px;
+    right: 15px;
+    cursor: pointer;
+}
+
+
+.requirements .settingLine {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.requirements select {
+    width: 300px;
+    padding: 8px;
+    background-color: white;
+    border-bottom: 1px solid;
+}
+
+.requirements select:focus {
+    outline: none;
+}
