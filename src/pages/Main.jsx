@@ -187,7 +187,7 @@ const Main = () => {
                         </div>
                         <div className='inputLine'>
                             <Autocomplete className='input'>
-                                <input type='text' placeholder='Places I also want to visit' ref={intermediateRef} />
+                                <input type='text' placeholder='Places I also want to visit (Unordered)' ref={intermediateRef} />
                             </Autocomplete>
                             <button type='button' onClick={handleAdd} className='addButton'><AddIcon /></button>
                         </div>
