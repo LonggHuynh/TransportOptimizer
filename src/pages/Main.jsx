@@ -11,7 +11,6 @@ import { useEffect, useRef, useState } from 'react'
 import RouteDetails from '../components/RouteDetails'
 import PlaceTag from '../components/PlaceTag'
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import AddIcon from '@mui/icons-material/Add';
 import { Switch } from '@mui/material';
 import './Main.css'
 import { useAlert } from "react-alert";
@@ -23,7 +22,7 @@ const libraries = ['places'];
 const Main = () => {
 
     const alert = useAlert()
-    const [center, setCenter] = useState({ lat: 60.16952, lng: 24.93545 })
+    const [center, setCenter] = useState({ lat: 59.4370, lng: 24.7536 })
 
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
@@ -187,9 +186,9 @@ const Main = () => {
                         </div>
                         <div className='inputLine'>
                             <Autocomplete className='input'>
-                                <input type='text' placeholder='Places I also want to visit (Unordered)' ref={intermediateRef} />
+                                <input type='text' placeholder='Places I also want to visit' ref={intermediateRef} />
                             </Autocomplete>
-                            <button type='button' onClick={handleAdd} className='addButton'><AddIcon /></button>
+                            <button type='button' onClick={handleAdd} className='addButton'>ADD</button>
                         </div>
 
                         <div className='tags'>
