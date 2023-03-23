@@ -1,7 +1,6 @@
 import React from 'react'
 import RequirementTag from '../components/RequirementTag'
 import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
 import './Requirements.css'
 
 const Requirements = ({setShowReq, intermediateList, fromReq, toReq, setFromReq, setToReq, requirements, setRequirements,handleAddRequirement}) => {
@@ -24,7 +23,7 @@ const Requirements = ({setShowReq, intermediateList, fromReq, toReq, setFromReq,
                             }
                         </select>
 
-                        <button onClick={handleAddRequirement} className='addButton'><AddIcon /></button>
+                        <button onClick={handleAddRequirement} className='addButton'>ADD</button>
 
                     </div>
 
