@@ -17,7 +17,7 @@ import { useAlert } from "react-alert";
 import Requirements from '../components/Requirements'
 const libraries = ['places'];
 
-
+var baseUrl = "https://www.google.com/maps/dir/?api=1";
 
 const Main = () => {
 
@@ -109,6 +109,18 @@ const Main = () => {
         setDirectionsResponse(results)
     }
 
+    async function showOnGoogleMaps(from, to) {
+        
+        const origin = `origin=${encodeURIComponent(from)}`;
+        const destination = `destination=${encodeURIComponent(to)}`;
+        const travelMode = "travelmode=transit";
+        const url = `${baseUrl}&${origin}&${destination}&${travelMode}`;
+
+        // Open Google Maps in a new tab with the generated URL
+        window.open(url, "_blank");
+    }
+
+
     const handleCompute = (e) => {
         e.preventDefault()
         const places = [originRef.current.value, ...intermediateList, sameDestination ? originRef.current.value : destinationRef.current.value]
@@ -123,7 +135,7 @@ const Main = () => {
                 const adjMatrix = response.rows.map(row => row.elements.map(elem => elem.duration?.value || Infinity))
                 const { bestRoutes, totalTime } = computeRoute(adjMatrix, places, requirements)
                 setRoutes(bestRoutes)
-                if (totalTime===Infinity)    alert.error('No routes available')
+                if (totalTime === Infinity) alert.error('No routes available')
                 else alert.success('Routes computed')
                 setEstimatedTime(totalTime)
             } else {
@@ -220,7 +232,7 @@ const Main = () => {
                                 <p>No route available</p>
                             </>
                             :
-                            routes.map((route, ind) => <RouteDetails route={route} key={ind} displayRoute={displayRoute} />)
+                            routes.map((route, ind) => <RouteDetails route={route} key={ind} displayRoute={displayRoute} showOnGoogleMaps={showOnGoogleMaps} />)
                     }
                 </div>
             </div>

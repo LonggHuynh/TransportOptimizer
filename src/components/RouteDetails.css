@@ -1,13 +1,23 @@
 .route-details {
     display: flex;
     align-items: center;
+    display: flex;
+    gap: 28px;
+    
 }
-
 
 .route-details button{
     margin-left: auto;
+    padding: 5px 7px;
+    border: 1px solid black;
+    border-radius: 0.4rem;
     background-color: black;
     color: white;
-    padding: 7px 10px;
-    border-radius: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 550;
+}
+
+.route-details .display-route{
+    background-color: white;
+    color: black;
 }
