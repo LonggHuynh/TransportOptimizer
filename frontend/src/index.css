@@ -1,0 +1,21 @@
+:root {
+    --light-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s linear;
+}
+
+html,
+body,
+html * {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji';
+}
+
+button {
+    border: none;
+    background-color: white;
+    cursor: pointer;
+}
+
+input {
+    border: none;
+}
