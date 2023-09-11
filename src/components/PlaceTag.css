@@ -1,0 +1,10 @@
+.place-tag-container {
+  display: flex;
+  overflow: hidden;
+  margin-top: 10px;
+  gap: 10px;
+}
+
+.remove-button {
+  margin-left: auto;
+}

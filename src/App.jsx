@@ -8,6 +8,8 @@ const options = {
   timeout: 5000,
   position: positions.TOP_CENTER
 };
+
+
 const App = () => {
   return (
     <Provider template={AlertTemplate} {...options}>
