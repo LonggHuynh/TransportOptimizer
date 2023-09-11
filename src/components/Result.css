@@ -1,0 +1,21 @@
+.result {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  background-color: white;
+  width: 400px;
+
+  padding: 28px 32px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  box-shadow: var(--light-shadow);
+  border-radius: 0.4rem;
+}
+
+.result h1 {
+  font-size: large;
+  font-weight: 600;
+}

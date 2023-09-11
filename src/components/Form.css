@@ -1,0 +1,36 @@
+form {
+  background-color: white;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  gap: 20px;
+
+  box-shadow: var(--light-shadow);
+  border-radius: 0.4rem;
+}
+
+.inputLine input {
+  height: 40px;
+  padding: 0px 4px;
+  font-size: medium;
+  border-bottom: 1px solid gray;
+  width: 100%;
+}
+
+.inputLine .input {
+  flex: 1;
+}
+
+input:focus {
+  outline: none;
+}
+
+.toggleOrigin {
+  display: flex;
+  align-items: center;
+}
+
+.toggleSwitch {
+  margin-left: auto;
+}

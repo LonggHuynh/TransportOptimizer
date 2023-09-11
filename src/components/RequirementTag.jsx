@@ -1,14 +1,18 @@
-import React from 'react'
+import React from 'react';
 import CloseIcon from '@mui/icons-material/Close';
-const RequirementTag = ({ from, to, removeItem }) => {
-    return (
-        <div style={{ display: 'flex', gap: '28px' }}>
-            <span>{from}</span>
-            <strong>before</strong>
-            <span >{to}</span>
-            <button style={{ marginLeft: 'auto' }} type='button' onClick={removeItem}><CloseIcon /></button>
-        </div>
-    )
-}
+import './RequirementTag.css';
 
-export default RequirementTag
+const RequirementTag = ({ from, to, removeItem }) => {
+  return (
+    <div className="tagContainer">
+      <span>{from}</span>
+      <strong>before</strong>
+      <span>{to}</span>
+      <button className="tagCloseButton" type="button" onClick={removeItem}>
+        <CloseIcon />
+      </button>
+    </div>
+  );
+};
+
+export default RequirementTag;

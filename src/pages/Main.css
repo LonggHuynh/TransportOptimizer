@@ -1,11 +1,3 @@
-.mapContainer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-
 
 .console {
     display: flex;
@@ -18,39 +10,6 @@
     align-items: flex-start;
 }
 
-.console form {
-    background-color: white;
-    padding: 28px 32px;
-    display: flex;
-    flex-direction: column;
-    width: 300px;
-    gap: 20px;
-
-    box-shadow: var(--light-shadow);
-    border-radius: 0.4rem;
-
-}
-
-
-.console form .inputLine input {
-    height: 40px;
-    padding: 0px 4px;
-    font-size: medium;
-    border-bottom: 1px solid gray;
-    width: 100%;
-
-
-}
-
-.console form .inputLine .input {
-    flex: 1;
-
-
-}
-
-.console form input:focus {
-    outline: none;
-}
 
 
 
@@ -73,45 +32,7 @@
     box-shadow: var(--light-shadow);
 }
 
-.requirements {
-    background-color: white;
-    padding: 28px 32px;
-    padding-top: 70px;
-    padding-bottom: 50px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    position: relative;
-    border-radius: 0.4rem;
 
-
-
-}
-
-.requirements .closeIcon {
-    position: absolute;
-    top: 20px;
-    right: 15px;
-    cursor: pointer;
-}
-
-
-.requirements .settingLine {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.requirements select {
-    width: 300px;
-    padding: 8px;
-    background-color: white;
-    border-bottom: 1px solid;
-}
-
-.requirements select:focus {
-    outline: none;
-}
 
 .title{
     font-size: xx-large;
@@ -119,26 +40,6 @@
 }
 
 
-
-.result {
-    position: fixed;
-    top: 100px;
-    right: 20px;
-    background-color: white;
-    width: 400px;
-
-    padding: 28px 32px;
-
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-
-
-    box-shadow: var(--light-shadow);
-    border-radius: 0.4rem;
-
-
-}
 
 .addButton{
     align-self: stretch;
@@ -151,10 +52,7 @@
 }
 
 
-.result h1 {
-    font-size: large;
-    font-weight: 600;
-}
+
 
 
 .inputLine {
