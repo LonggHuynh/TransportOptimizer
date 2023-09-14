@@ -7,7 +7,7 @@ import { useAlert } from 'react-alert';
 import { useState, useRef } from 'react';
 import { locateAddress } from '../services/mapService';
 import { computePathAndTime } from '../services/shortestRouteService';
-import './Form.css';
+import './RouteForm.css';
 const Form = ({
     setCenter,
     setIntermediateList,
@@ -136,7 +136,7 @@ const Form = ({
                 <Autocomplete className="input">
                     <input
                         type="text"
-                        placeholder="Places I also want to visit"
+                        placeholder="Intermediate places (unordered)"
                         ref={intermediateRef}
                     />
                 </Autocomplete>

@@ -6,10 +6,10 @@ import (
 )
 
 func ComputeRoute(dist [][]int, requirements []models.Requirement) (models.ComputeRouteResponse, error) {
-	reqSet := make(map[[2]int]struct{}) // Using a hashset of pairs
+	reqSet := make(map[[2]int]struct{})
 
 	for _, pair := range requirements {
-		reqSet[pair] = struct{}{} // Simply add the pair to the set
+		reqSet[pair] = struct{}{}
 	}
 
 	n := len(dist)

@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react';
 
 import Map from '../components/Map';
 import Result from '../components/Result';
-
-import Form from '../components/Form';
+import RouteForm from '../components/RouteForm';
 import './Main.css';
 import Requirements from '../components/Requirements';
 const libraries = ['places'];
@@ -40,7 +39,7 @@ const Main = () => {
 
             <div className="container">
                 <div className="console">
-                    <Form
+                    <RouteForm
                         setCenter={setCenter}
                         setRequirements={setRequirements}
                         setIntermediateList={setIntermediateList}
