@@ -1,0 +1,15 @@
+version: "3"
+
+services:
+  backend-service:
+    build: ./backend
+    ports:
+      - 8080
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - REACT_APP_GOOGLE_MAPS_API_KEY=${REACT_APP_GOOGLE_MAPS_API_KEY}
+    ports:
+      - 80:80

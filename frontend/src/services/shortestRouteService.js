@@ -1,13 +1,7 @@
 import axios from 'axios';
 
-const backendUrl = 'http://localhost:8080';
-
 const callBackendToComputeRoute = async (dist, requirements) => {
-    console.log({
-        dist: dist,
-        requirements: requirements,
-    });
-    const response = await axios.post(`${backendUrl}/compute-route`, {
+    const response = await axios.post('api/compute-route', {
         dist: dist,
         requirements: requirements,
     });
