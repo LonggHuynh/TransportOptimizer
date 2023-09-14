@@ -79,12 +79,6 @@ jobs:
       - name: Update kube config
         run: aws eks update-kubeconfig --name transport
 
-      - name: Deploy frontend to Kubernetes
+      - name: Deploy the application to Kubernetes
         run: |
-          kubectl apply -f k8s/frontend/deployment.yml
-          kubectl apply -f k8s/frontend/service.yml
-
-      - name: Deploy backend to Kubernetes
-        run: |
-          kubectl apply -f k8s/backend/deployment.yml
-          kubectl apply -f k8s/backend/service.yml
+          kubectl apply -f k8s --recursive
