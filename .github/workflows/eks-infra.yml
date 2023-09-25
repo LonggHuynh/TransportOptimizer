@@ -27,15 +27,15 @@ jobs:
           terraform -chdir=./terraform  init
           terraform refresh
 
+      - name: Terraform Plan
+        run: terraform -chdir=./terraform plan
+
       - name: Apply Terraform Changes
+        id: terraform-apply
         run: |
           terraform -chdir=./terraform apply -auto-approve
-
-      - name: Fetch Terraform outputs
-        id: tf-outputs
-        run: |
-          echo "::set-output name=cluster_name::$(terraform output -raw cluster_name)"
-          echo "::set-output name=cluster_endpoint::$(terraform output -raw cluster_endpoint)"
+    outputs:
+      cluster_name: ${{ steps.terraform-apply.outputs.cluster_name }}
 
   deploy:
     name: Deploy to Kubernetes
@@ -51,7 +51,7 @@ jobs:
           version: "v1.24.0"
 
       - name: Update kube config with Terraform output
-        run: aws eks update-kubeconfig --name ${{ steps.tf-outputs.outputs.cluster_name }}
+        run: aws eks update-kubeconfig --name ${{ needs.terraform-setup.outputs.cluster_name  }}
 
       - name: Deploy to Kubernetes
         env:
