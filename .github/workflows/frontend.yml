@@ -28,7 +28,7 @@ jobs:
       - name: Build and push frontend image
         uses: docker/build-push-action@v4
         with:
-          context: ./frontend
+          file: ./frontend/Dockerfile.prod
           push: true
           tags: ${{ vars.DOCKER_HUB_FRONT_END_IMAGE }}
           build-args: |

@@ -23,11 +23,6 @@ resource "aws_eks_node_group" "transporteks" {
   subnet_ids      = var.aws_public_subnet
   instance_types  = var.instance_types
 
-  remote_access {
-    source_security_group_ids = [aws_security_group.node_group_one.id]
-    ec2_ssh_key               = var.key_pair
-  }
-
   scaling_config {
     desired_size = var.scaling_desired_size
     max_size     = var.scaling_max_size
