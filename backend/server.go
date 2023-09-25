@@ -13,9 +13,8 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/compute-route", handlers.ComputeRouteHandler)
 
-	// Set up CORS middleware
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"}, // Be sure to adjust this in production
+		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 	})
