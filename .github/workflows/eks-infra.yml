@@ -1,0 +1,60 @@
+name: Terraform and Kubernetes Deployment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "k8s/**"
+      - "terraform/**"
+
+jobs:
+  terraform-setup:
+    name: Terraform Operations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      - name: Initialize Terraform
+        run: |
+          terraform init
+          terraform refresh
+
+      - name: Apply Terraform Changes
+        run: |
+          terraform apply -auto-approve
+
+      - name: Fetch Terraform outputs
+        id: tf-outputs
+        run: |
+          echo "::set-output name=cluster_name::$(terraform output -raw cluster_name)"
+          echo "::set-output name=cluster_endpoint::$(terraform output -raw cluster_endpoint)"
+
+  deploy:
+    name: Deploy to Kubernetes
+    needs: terraform-setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Kubeconfig
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.24.0"
+
+      - name: Update kube config with Terraform output
+        run: aws eks update-kubeconfig --name ${{ steps.tf-outputs.outputs.cluster_name }}
+
+      - name: Deploy to Kubernetes
+        env:
+          BACKEND_IMAGE: ${{vars.DOCKER_HUB_BACK_END_IMAGE}}}
+          FRONTEND_IMAGE: ${{vars.DOCKER_HUB_FRONT_END_IMAGE}}}
+        run: |
+          find k8s -name "*.yml" | while read file; do
+            envsubst < "$file" | kubectl apply -f -
+          done

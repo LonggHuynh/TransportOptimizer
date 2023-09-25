@@ -46,7 +46,7 @@ The server starts at port 8080.
 ## With Docker Compose
 You need to first set the environment variable REACT_APP_GOOGLE_MAPS_API_KEY
 ```
-REACT_APP_GOOGLE_MAPS_API_KEY='something_here'
+export REACT_APP_GOOGLE_MAPS_API_KEY='something_here'
 ```
 Then run docker compose to start
 ```
