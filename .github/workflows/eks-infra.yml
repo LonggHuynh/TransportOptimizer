@@ -21,10 +21,11 @@ jobs:
         uses: hashicorp/setup-terraform@v1
         with:
           cli_config_credentials_token: ${{ secrets.TERRAFORM_API_TOKEN }}
+          terraform_wrapper: false
 
       - name: Initialize Terraform
         run: |
-          terraform -chdir=./terraform  init
+          terraform -chdir=./terraform init
           terraform refresh
 
       - name: Terraform Plan
@@ -34,6 +35,8 @@ jobs:
         id: terraform-apply
         run: |
           terraform -chdir=./terraform apply -auto-approve
+          echo "::set-output name=cluster_name::$(terraform -chdir=./terraform output -raw cluster_name)"
+
     outputs:
       cluster_name: ${{ steps.terraform-apply.outputs.cluster_name }}
 
@@ -45,18 +48,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
       - name: Set up Kubeconfig
         uses: azure/setup-kubectl@v3
         with:
           version: "v1.24.0"
 
       - name: Update kube config with Terraform output
-        run: aws eks update-kubeconfig --name ${{ needs.terraform-setup.outputs.cluster_name  }}
+        run: aws eks update-kubeconfig --name ${{ needs.terraform-setup.outputs.cluster_name }}
 
       - name: Deploy to Kubernetes
         env:
-          BACKEND_IMAGE: ${{vars.DOCKER_HUB_BACK_END_IMAGE}}}
-          FRONTEND_IMAGE: ${{vars.DOCKER_HUB_FRONT_END_IMAGE}}}
+          BACKEND_IMAGE: ${{ vars.DOCKER_HUB_BACK_END_IMAGE }}
+          FRONTEND_IMAGE: ${{ vars.DOCKER_HUB_FRONT_END_IMAGE }}
         run: |
           find k8s -name "*.yml" | while read file; do
             envsubst < "$file" | kubectl apply -f -
