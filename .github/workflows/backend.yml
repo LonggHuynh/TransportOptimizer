@@ -28,6 +28,6 @@ jobs:
       - name: Build and push backend image
         uses: docker/build-push-action@v4
         with:
-          context: ./backend
+          file: ./backend/Dockerfile.prod
           push: true
           tags: ${{ vars.DOCKER_HUB_BACK_END_IMAGE }}

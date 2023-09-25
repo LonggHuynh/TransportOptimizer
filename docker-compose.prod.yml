@@ -2,13 +2,17 @@ version: "3"
 
 services:
   backend-service:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+
     ports:
       - 8080
 
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile.prod
       args:
         - REACT_APP_GOOGLE_MAPS_API_KEY=${REACT_APP_GOOGLE_MAPS_API_KEY}
     ports:

@@ -19,15 +19,17 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
+        with:
+          cli_config_credentials_token: ${{ secrets.TERRAFORM_API_TOKEN }}
 
       - name: Initialize Terraform
         run: |
-          terraform init
+          terraform -chdir=./terraform  init
           terraform refresh
 
       - name: Apply Terraform Changes
         run: |
-          terraform apply -auto-approve
+          terraform -chdir=./terraform apply -auto-approve
 
       - name: Fetch Terraform outputs
         id: tf-outputs
