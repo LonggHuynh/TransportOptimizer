@@ -4,16 +4,22 @@ services:
   backend-service:
     build:
       context: ./backend
-      dockerfile: Dockerfile.prod
-
-    ports:
+      dockerfile: Dockerfile
+    expose:
       - 8080
 
   frontend-service:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile
       args:
         - REACT_APP_GOOGLE_MAPS_API_KEY=${REACT_APP_GOOGLE_MAPS_API_KEY}
+    expose:
+      - 3000
+
+  nginx-proxy:
+    image: nginx:1.19.0-alpine
     ports:
       - 80:80
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
