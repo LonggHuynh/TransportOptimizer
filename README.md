@@ -1,59 +1,69 @@
-# Description
 
-The app helps users plan the most efficient order for visiting all desired destinations using the modified TSP algorithm. Optional constraints, such as a location must be visited before another location can be added. The shortest path between pairs is computed using the Google Maps API.
+# TransportOptimizer: Efficient Trip Planning Application
+## Description
 
-
-# Architecture
-Our application is a microservice application runs on Amazon EKS, which offers a managed Kubernetes service. 
-
-Scaling a Kubernetes control plane in conjunction with EKS. The number of EC2 instances (nodes) in the cluster automatically scales based on the demand  (CPU or memory utilization). 
-
-The architecture is also managed by Terraform (to be done.)
+TransportOptimizer assists users in efficiently planning their travel route by sequencing their desired destinations. Leveraging the modified Traveling Salesman Problem (TSP) algorithm, it lets users apply optional constraints, such as mandating the sequence of specific locations. We harness the power of the Google Maps API to determine the shortest paths between destinations.
 
 ## Tech stack
 - Go
 - Docker
-- K8s/EKS (to be done)
-- ReactJS (Hooks, Routers, Redux)
+- K8s/EKS
+- ReactJS
+- Terraform
+
+## Architecture
+
+Frontend: Built with ReactJS.
+
+Backend: Developed in Go to compute TSP algorithm.
+
+Our system architecture follows a microservices pattern, hosted on Amazon Elastic Kubernetes Service (EKS), a managed Kubernetes service. We've ensured scalability by automating the scaling of the Kubernetes control plane with EKS.
+
+Furthermore, we've adopted a principled approach to infrastructure management using Infrastructure as Code (IaC) with Terraform.
 
 
-# Run locally
-## Front end 
-```
-cd frontend
-npm install
-npm start
-```
-### Environment variables
+
+![Alt text](TransportEKSArchitecture.png "EKS Architecture")
+
+
+## Run locally with Docker
+You need to first the following environment variables
 
 | Variable Name           | Description                                                                                                 |
 |-------------------------|-------------------------------------------------------------------------------------------------------------|
-| REACT_APP_SERVER_URL            | URL of the backend |
 | REACT_APP_GOOGLE_MAPS_API_KEY            | Google Maps API |
 
-
-
-## Back end 
-Running go server with
-
-```
-cd backend
-go build -o main
-./main
-```
-The server starts at port 8080.
-
-## With Docker Compose
-You need to first set the environment variable REACT_APP_GOOGLE_MAPS_API_KEY
-```
-export REACT_APP_GOOGLE_MAPS_API_KEY='something_here'
-```
-Then run docker compose to start
+Run in development mode 
 ```
 docker compose up
 ```
 
+Run in production mode
+```
+docker compose up -f docker-compose.prod.yml
+```
+
+### Deploy to K8s cluster
+You first need to connect your to the K8s cluster, e.g.
+
+```
+aws eks update-kubeconfig --name _your_eks_cluster_name
+```
+
+Then set the following environment variables 
 
 
+| Variable Name           |Value                                                                                                 | 
+|-------------------------|-------------------------------------------------------------------------------------------------------------|
+| BACKEND_IMAGE            | longhuynh5713/transportback:lastest|
+| FRONTEND_IMAGE            |  longhuynh5713/transportfront:lastest|
 
+
+The k8s will pull the images from docker hub. After that, apply the k8s files with the environment variables using
+
+```
+    find k8s -name "*.yml" | while read file; do
+        envsubst < "$file" | kubectl apply -f -
+    done
+```
 
