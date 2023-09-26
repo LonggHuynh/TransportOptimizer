@@ -3,7 +3,7 @@ resource "aws_eks_cluster" "transporteks" {
   role_arn = aws_iam_role.transporteks.arn
 
   vpc_config {
-    subnet_ids              = var.aws_public_subnet
+    subnet_ids              = var.subnet_ids
     endpoint_public_access  = var.endpoint_public_access
     endpoint_private_access = var.endpoint_private_access
     public_access_cidrs     = var.public_access_cidrs
@@ -20,7 +20,7 @@ resource "aws_eks_node_group" "transporteks" {
   cluster_name    = aws_eks_cluster.transporteks.name
   node_group_name = var.node_group_name
   node_role_arn   = aws_iam_role.transporteks2.arn
-  subnet_ids      = var.aws_public_subnet
+  subnet_ids      = var.subnet_ids
   instance_types  = var.instance_types
 
   scaling_config {
