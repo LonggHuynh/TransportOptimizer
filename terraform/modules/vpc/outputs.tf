@@ -1,5 +1,7 @@
-output "aws_public_subnet" {
-  value = aws_subnet.public_transporteks_subnet.*.id
+
+
+output "aws_subnet" {
+  value = concat(aws_subnet.private_transporteks_subnet.*.id, aws_subnet.public_transporteks_subnet.*.id)
 }
 
 output "vpc_id" {

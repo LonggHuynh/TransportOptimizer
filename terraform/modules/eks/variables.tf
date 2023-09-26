@@ -1,5 +1,5 @@
 
-variable "aws_public_subnet" {}
+variable "subnet_ids" {}
 
 variable "vpc_id" {}
 
