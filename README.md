@@ -5,11 +5,12 @@
 TransportOptimizer assists users in efficiently planning their travel route by sequencing their desired destinations. Leveraging the modified Traveling Salesman Problem (TSP) algorithm, it lets users apply optional constraints, such as mandating the sequence of specific locations. We harness the power of the Google Maps API to determine the shortest paths between destinations.
 
 ## Tech stack
-- Go
+- ReactJS - Frontend
+- Go - Backend
 - Docker
 - K8s/EKS
-- ReactJS
 - Terraform
+- Github Actions - CI/CD
 
 ## Architecture
 
@@ -19,7 +20,9 @@ Backend: Developed in Go to compute TSP algorithm.
 
 Our system architecture follows a microservices pattern, hosted on Amazon Elastic Kubernetes Service (EKS), a managed Kubernetes service. We've ensured scalability by automating the scaling of the Kubernetes control plane with EKS.
 
-Furthermore, we've adopted a principled approach to infrastructure management using Infrastructure as Code (IaC) with Terraform.
+Furthermore, we've adopted a principled approach to infrastructure management using Infrastructure as Code (IaC) with Terraform. 
+
+The GitHub Actions CI/CD pipeline also keep tracks of changes in the files, and will either publish images to DockerHub or EKS infrastructure by applying changes in the new files Terraform and K8s.
 
 
 
@@ -40,10 +43,10 @@ docker compose up
 
 Run in production mode
 ```
-docker compose up -f docker-compose.prod.yml
+docker compose -f docker-compose.prod.yml up
 ```
 
-### Deploy to K8s cluster
+## Deploy to K8s cluster
 You first need to connect your to the K8s cluster, e.g.
 
 ```
@@ -59,7 +62,7 @@ Then set the following environment variables
 | FRONTEND_IMAGE            |  longhuynh5713/transportfront:lastest|
 
 
-The k8s will pull the images from docker hub. After that, apply the k8s files with the environment variables using
+The k8s cluster will pull the images from DockerHub. After that, apply the k8s files with the environment variables using
 
 ```
     find k8s -name "*.yml" | while read file; do

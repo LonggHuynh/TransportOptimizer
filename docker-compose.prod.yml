@@ -6,7 +6,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile.prod
 
-    ports:
+    expose:
       - 8080
 
   frontend-service:
