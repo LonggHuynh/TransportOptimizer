@@ -5,7 +5,7 @@ metadata:
   labels:
     app: backend
 spec:
-  replicas: 2
+  replicas: {{ .Values.backend.replicaCount }}
   selector:
     matchLabels:
       app: backend
@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: backend-container
-          image: ${BACKEND_IMAGE}
+          image: "{{ .Values.backend.image }}"
           ports:
             - containerPort: 8080
