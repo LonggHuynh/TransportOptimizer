@@ -1,0 +1,7 @@
+backend:
+  image: "longhuynh5713/transportback:latest"
+  replicaCount: 2
+
+frontend:
+  image: "longhuynh5713/transportfront:latest"
+  replicaCount: 2

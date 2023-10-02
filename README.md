@@ -53,20 +53,15 @@ You first need to connect your to the K8s cluster, e.g.
 aws eks update-kubeconfig --name _your_eks_cluster_name
 ```
 
-Then set the following environment variables 
+or create your own local cluster, e.g.
 
-
-| Variable Name           |Value                                                                                                 | 
-|-------------------------|-------------------------------------------------------------------------------------------------------------|
-| BACKEND_IMAGE            | longhuynh5713/transportback:lastest|
-| FRONTEND_IMAGE            |  longhuynh5713/transportfront:lastest|
-
+```
+k3d create cluster _your_cluster_name
+```
 
 The k8s cluster will pull the images from DockerHub. After that, apply the k8s files with the environment variables using
+```
+helm upgrade --install transport-optimizer ./app-chart
+```
 
-```
-    find k8s -name "*.yml" | while read file; do
-        envsubst < "$file" | kubectl apply -f -
-    done
-```
 
