@@ -1,7 +1,14 @@
+import React from 'react';
 import { GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import './Map.css';
 
-function Map({ center, directionsResponse }) {
+// Define the prop types
+interface MapProps {
+    center: google.maps.LatLngLiteral; // Type for center coordinates
+    directionsResponse?: google.maps.DirectionsResult | null; // Directions response, optional
+}
+
+const Map: React.FC<MapProps> = ({ center, directionsResponse }) => {
     return (
         <div className="mapContainer">
             <GoogleMap
@@ -22,6 +29,6 @@ function Map({ center, directionsResponse }) {
             </GoogleMap>
         </div>
     );
-}
+};
 
 export default Map;

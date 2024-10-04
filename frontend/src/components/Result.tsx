@@ -1,7 +1,16 @@
+
+import React from 'react';
 import RouteDetails from './RouteDetails';
 
 import './Result.css';
-function Result({ estimatedTime, routes, setDirectionsResponse }) {
+
+interface ResultProps {
+    estimatedTime: number;
+    routes: any[];
+    setDirectionsResponse: any;
+}
+
+function Result({ estimatedTime, routes, setDirectionsResponse }:ResultProps) {
     return (
         <div className="result">
             <h1>

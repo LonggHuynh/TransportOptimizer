@@ -1,22 +1,31 @@
 import React from 'react';
-import RequirementTag from '../components/RequirementTag';
+import RequirementTag from './RequirementTag';
 import CloseIcon from '@mui/icons-material/Close';
 import './Requirements.css';
 import { useState } from 'react';
 
+
+interface RequirementsProps {
+    setShowReq: (value: boolean) => void;
+    intermediateList: string[];
+    requirements: number[][];
+    setRequirements: React.Dispatch<React.SetStateAction<number[][]>>;
+}
 const Requirements = ({
     setShowReq,
     intermediateList,
     requirements,
     setRequirements,
-}) => {
+}:RequirementsProps) => {
     const [fromReq, setFromReq] = useState('0');
     const [toReq, setToReq] = useState('0');
+
+    console.log(intermediateList);
     const handleAddRequirement = () => {
         if (fromReq === toReq) {
-            alert.error('Places must be different');
+            alert.call('Places must be different');
         }
-        setRequirements((prev) => {
+        setRequirements((prev:number[][]) => {
             if (
                 fromReq === toReq ||
                 prev.find(

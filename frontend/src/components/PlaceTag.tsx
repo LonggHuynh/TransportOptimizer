@@ -3,7 +3,15 @@ import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import './PlaceTag.css';
 
-const PlaceTag = ({ name, removeItem, locatePlace }) => {
+interface PlaceTagProps {
+    name: string;
+    removeItem: () => void;
+    locatePlace: () => void;
+}
+
+const PlaceTag = (props:PlaceTagProps) => {
+
+    const { name, removeItem, locatePlace } = props;
     return (
         <div className="place-tag-container">
             <div>{name}</div>

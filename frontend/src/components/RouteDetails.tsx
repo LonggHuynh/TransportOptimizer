@@ -2,10 +2,15 @@ import React from 'react';
 import './RouteDetails.css';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { showOnGoogleMaps, mapResults } from '../services/mapService';
-const RouteDetails = ({ route, setDirectionsResponse }) => {
+
+interface RouteDetailsProps {
+    route: string[];
+    setDirectionsResponse: (value: any) => void;
+}
+const RouteDetails = ({ route, setDirectionsResponse }:RouteDetailsProps) => {
     const [from, to] = route;
 
-    async function displayRoute(from, to) {
+    async function displayRoute(from:string, to:string) {
         const resultsForDisplay = await mapResults(from, to);
         setDirectionsResponse(resultsForDisplay);
     }

@@ -1,6 +1,6 @@
 var baseUrl = 'https://www.google.com/maps/dir/?api=1';
 
-export function showOnGoogleMaps(from, to) {
+export function showOnGoogleMaps(from: string, to: string) {
     const origin = `origin=${encodeURIComponent(from)}`;
     const destination = `destination=${encodeURIComponent(to)}`;
     const travelMode = 'travelmode=transit';
@@ -10,7 +10,7 @@ export function showOnGoogleMaps(from, to) {
     window.open(url, '_blank');
 }
 
-export async function mapResults(from, to) {
+export const mapResults = async (from: string, to: string) => {
     // eslint-disable-next-line no-undef
     const directionsService = new google.maps.DirectionsService();
     const results = await directionsService.route({
@@ -21,16 +21,18 @@ export async function mapResults(from, to) {
     });
 
     return results;
-}
+};
 
-export const locateAddress = (address) => {
+export const locateAddress = (
+    address: string,
+): Promise<google.maps.LatLng | undefined> => {
     // eslint-disable-next-line no-undef
     const geoCoder = new google.maps.Geocoder();
 
     return new Promise((resolve, reject) => {
         geoCoder.geocode({ address }, (results, status) => {
             if (status === 'OK') {
-                resolve(results[0].geometry.location);
+                resolve(results?.at(0)?.geometry.location);
             } else {
                 reject(`Error: ${status}`);
             }

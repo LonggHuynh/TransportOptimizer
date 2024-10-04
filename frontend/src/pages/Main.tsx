@@ -1,3 +1,4 @@
+import React from 'react';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { useEffect, useState } from 'react';
 
@@ -9,19 +10,19 @@ import Requirements from '../components/Requirements';
 const libraries = ['places'];
 
 const Main = () => {
-    const [center, setCenter] = useState({ lat: 59.437, lng: 24.7536 });
+    const [center, setCenter] = useState<google.maps.LatLngLiteral>({ lat: 59.437, lng: 24.7536 });
 
     const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+        googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY ?? '',
         libraries,
     });
 
     const [directionsResponse, setDirectionsResponse] = useState(null);
-    const [intermediateList, setIntermediateList] = useState([]);
+    const [intermediateList, setIntermediateList] = useState<string[]>([]);
     const [estimatedTime, setEstimatedTime] = useState(0);
     const [routes, setRoutes] = useState([]);
     const [showReq, setShowReq] = useState(false);
-    const [requirements, setRequirements] = useState([]);
+    const [requirements, setRequirements] = useState<number[][]>([[]]);
 
     useEffect(() => {
         setDirectionsResponse(null);
@@ -40,9 +41,16 @@ const Main = () => {
             <div className="container">
                 <div className="console">
                     <RouteForm
-                        setCenter={setCenter}
-                        setRequirements={setRequirements}
-                        setIntermediateList={setIntermediateList}
+                        setCenter={(ctr)=>setCenter(ctr)}
+                        setRequirements={(requirements)=>setRequirements(requirements)}
+                        addToIntermediateList={(place) =>
+                            setIntermediateList((prev) =>prev.includes(place)?[...prev]: [...prev, place])
+                        }
+                        removeFromIntermediateList={(place) =>
+                            setIntermediateList((prev) =>
+                                prev.filter((p) => p !== place),
+                            )
+                        }
                         intermediateList={intermediateList}
                         toggleRequirements={() => setShowReq((prev) => !prev)}
                         setEstimatedTime={setEstimatedTime}
