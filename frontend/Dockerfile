@@ -1,5 +1,4 @@
-# Dev mode setup
-FROM node:14
+FROM node:20 AS build
 
 WORKDIR /app
 
