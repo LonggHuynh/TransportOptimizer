@@ -24,7 +24,7 @@ public class RouteService : IRouteService
 
             for (int j = 0; j < n; j++)
             {
-                minimumTime[i][j] = int.MaxValue;
+                minimumTime[i][j] = (int)1e8;
             }
         }
 
@@ -68,12 +68,12 @@ public class RouteService : IRouteService
         // Reconstruct the best route
         int cur = n - 1;
         int curMask = (1 << n) - 1;
-        List<int> bestRoutes = new List<int> { cur };
+        List<int> bestRoutes = [ cur ];
 
         while (cur != 0)
         {
             int prev = prevVisit[curMask][cur];
-            curMask ^= (1 << cur);
+            curMask ^= 1 << cur;
             bestRoutes.Add(prev);
             cur = prev;
         }
@@ -83,7 +83,7 @@ public class RouteService : IRouteService
         return new RouteResult
         {
             Order = bestRoutes,
-            TotalTime = minimumTime[(1 << n) - 1][n - 1]
+            TotalTime = minimumTime[(1 << n) - 1][n - 1] < (int)1e8 ? minimumTime[(1 << n) - 1][n - 1] : null
         };
     }
 }

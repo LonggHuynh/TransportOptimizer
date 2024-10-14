@@ -3,11 +3,12 @@ using api.Models;
 using api.Services;
 using api.DTOs;
 using AutoMapper;
+using GoogleApi.Entities.Maps.Directions.Response;
 
 namespace api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class RouteController(IRouteService routeService, IDistanceService distanceService, IMapper mapper) : ControllerBase
     {
         private readonly IRouteService _routeService = routeService;
@@ -24,5 +25,7 @@ namespace api.Controllers
             var result = _routeService.ComputeRoute(distanceMatrix, requirements);
             return _mapper.Map<RouteResultDto>(result);
         }
+
+ 
     }
 }

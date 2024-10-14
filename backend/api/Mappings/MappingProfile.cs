@@ -10,5 +10,6 @@ public class MappingProfile : Profile
         CreateMap<RequirementDto, Requirement>();
 
         CreateMap<RouteResult, RouteResultDto>();
+        CreateMap<GeoCode, GeocodeDto>();
     }
 }

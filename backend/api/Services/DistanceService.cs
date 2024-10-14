@@ -1,16 +1,18 @@
 using System.Linq;
 using System.Threading.Tasks;
+using api.Externals;
 using GoogleApi;
 using GoogleApi.Entities.Common;
 using GoogleApi.Entities.Common.Enums;
 using GoogleApi.Entities.Maps.Common;
+using GoogleApi.Entities.Maps.Common.Enums;
 using GoogleApi.Entities.Maps.DistanceMatrix.Request;
 
 namespace api.Services
 {
-    public class DistanceService(IConfiguration configuration) : IDistanceService
+    public class DistanceService(IGoogleMapsClient googleMapsClient) : IDistanceService
     {
-        private readonly string _apiKey = configuration.GetSection("GoogleMaps:ApiKey").Get<string>();
+        private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
         
         public async Task<int[][]> GetDistanceMatrixAsync(string[] places)
         {
@@ -20,11 +22,11 @@ namespace api.Services
             {
                 Origins = locations,
                 Destinations = locations,
-                TransitMode = GoogleApi.Entities.Maps.Common.Enums.TransitMode.Bus,
-                Key = _apiKey
+                TravelMode = TravelMode.TRANSIT,
             };
 
-            var response = await GoogleMaps.DistanceMatrix.QueryAsync(request);
+
+            var response = await _googleMapsClient.GetDistanceMatrixAsync(request);
 
             if (response.Status == Status.Ok && response.Rows != null)
             {
