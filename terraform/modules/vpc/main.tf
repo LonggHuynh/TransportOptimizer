@@ -22,11 +22,11 @@ data "aws_availability_zones" "available" {}
 
 resource "random_shuffle" "az_list" {
   input        = data.aws_availability_zones.available.names
-  result_count = az_count
+  result_count = local.az_count
 }
 
 resource "aws_subnet" "public_transporteks_subnet" {
-  count                   = az_count
+  count                   = local.az_count
   vpc_id                  = aws_vpc.transporteks.id
   cidr_block              = var.public_cidrs[count.index]
   availability_zone       = random_shuffle.az_list.result[count.index]
@@ -37,7 +37,7 @@ resource "aws_subnet" "public_transporteks_subnet" {
 }
 
 resource "aws_subnet" "private_transporteks_subnet" {
-  count             = az_count
+  count             = local.az_count
   vpc_id            = aws_vpc.transporteks.id
   cidr_block        = var.private_cidrs[count.index]
   availability_zone = random_shuffle.az_list.result[count.index]
@@ -47,7 +47,7 @@ resource "aws_subnet" "private_transporteks_subnet" {
 }
 
 resource "aws_nat_gateway" "transporteks_nat_gw" {
-  count         = az_count
+  count         = local.az_count
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public_transporteks_subnet[count.index].id
 
@@ -57,11 +57,11 @@ resource "aws_nat_gateway" "transporteks_nat_gw" {
 }
 
 resource "aws_eip" "nat" {
-  count = az_count
+  count = local.az_count
 }
 
 resource "aws_route_table" "private_route_table" {
-  count = az_count
+  count = local.az_count
 
   vpc_id = aws_vpc.transporteks.id
 
@@ -76,7 +76,7 @@ resource "aws_route_table" "private_route_table" {
 }
 
 resource "aws_route_table_association" "private_association" {
-  count          = az_count
+  count          = local.az_count
   subnet_id      = aws_subnet.private_transporteks_subnet[count.index].id
   route_table_id = aws_route_table.private_route_table[count.index].id
 }
@@ -95,7 +95,7 @@ resource "aws_default_route_table" "internal_transporteks_default" {
 }
 
 resource "aws_route_table_association" "public_association" {
-  count          = az_count
+  count          = local.az_count
   subnet_id      = aws_subnet.public_transporteks_subnet[count.index].id
   route_table_id = aws_default_route_table.internal_transporteks_default.id
 }
