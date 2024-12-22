@@ -21,6 +21,9 @@ jobs:
         run: |
           terraform -chdir=./terraform init
 
+      - name: Terraform Plan
+        run: terraform -chdir=./terraform plan -destroy
+        
       - name: Terraform Destroy
         run: |
           terraform -chdir=./terraform destroy -auto-approve
