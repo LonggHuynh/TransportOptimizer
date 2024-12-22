@@ -5,48 +5,39 @@
 TransportOptimizer assists users in efficiently planning their travel route by sequencing their desired destinations. Leveraging the modified Traveling Salesman Problem (TSP) algorithm, it lets users apply optional constraints, such as mandating the sequence of specific locations. We harness the power of the Google Maps API to determine the shortest paths between destinations.
 
 ## Tech stack
-- ReactJS - Frontend
-- Go - Backend
+- React/TypeScript
+- C#/.NET 8
 - Docker
-- K8s/EKS
+- Kubernetes/EKS
 - Terraform
-- Github Actions - CI/CD
+- Github Actions
 
 ## Architecture
-
-Frontend: Built with ReactJS.
-
-Backend: Developed in Go to compute TSP algorithm.
-
-Our system architecture follows a microservices pattern, hosted on Amazon Elastic Kubernetes Service (EKS), a managed Kubernetes service. We've ensured scalability by automating the scaling of the Kubernetes control plane with EKS.
-
-Furthermore, we've adopted a principled approach to infrastructure management using Infrastructure as Code (IaC) with Terraform. 
-
-The GitHub Actions CI/CD pipeline also keep tracks of changes in the files, and will either publish images to DockerHub or EKS infrastructure by applying changes in the new files Terraform and K8s.
-
 
 
 ![Alt text](TransportEKSArchitecture.png "EKS Architecture")
 
+## Variables
+### Frontend Build Environment Variables
 
-## Run locally with Docker
-You need to first the following environment variables
+| Variable Name                     | Description                                                                                                                                                         |
+|-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `REACT_APP_GOOGLE_MAPS_API_KEY`     | Google Maps API key for the interactive map. The API key is included in the build. Please restrict the API key for its specific use cases, including additional restrictions such as IPs, and rate limits. |
+| `REACT_APP_API_URL`                 | URL of the backend API.                                                                                                                                             |
+| `REACT_APP_GOOGLE_MAPS_DISPLAY_URL` | URL used for displaying Google Maps.                                                                                                                                |
 
-| Variable Name           | Description                                                                                                 |
-|-------------------------|-------------------------------------------------------------------------------------------------------------|
-| REACT_APP_GOOGLE_MAPS_API_KEY            | Google Maps API |
+### Backend Runtime Environment Variables
+| Variable Name                      | Description                                                                                         |
+|------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `CorsSettings:AllowedOrigins`      | Origins for CORS settings in the backend.                                                   |
+| `GoogleMaps:ApiKey`                | Google Maps API key used by the backend.                                                            |
+| `GoogleMaps:ApiUrl`                | API URL for Google Maps, used by the backend.                                                       |
 
-Run in development mode 
-```
-docker compose up
-```
 
-Run in production mode
-```
-docker compose -f docker-compose.prod.yml up
-```
 
-## Deploy to K8s cluster
+## Development
+
+### Deploy to K8s cluster
 You first need to connect your to the K8s cluster, e.g.
 
 ```

@@ -69,4 +69,10 @@ jobs:
 
       - name: Deploy to Kubernetes
         run: |
-          helm upgrade --install transport-optimizer ./app-chart
+          helm upgrade --install transport-optimizer ./app-chart \
+          --set environment.backend.GoogleMaps__ApiKey=${{ secrets.GoogleMaps__ApiKey }} \
+          --set environment.backend.GoogleMaps__ApiUrl=${{ secrets.GoogleMaps__ApiUrl }} \
+          --set environment.backend.count=${{ secrets.backend_count }} \
+          --set environment.backend.image=${{ secrets.backend_image }} \
+          --set environment.proxy.count=${{ secrets.proxy_count }} \
+          --set environment.proxy.image=${{ secrets.proxy_image }} 

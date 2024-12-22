@@ -7,7 +7,6 @@ import { AxiosError } from 'axios';
 import { useRequirementsStore } from '../store/useRequirementsStore';
 
 
-// Define the expected structure of the response from the backend
 
 interface ComputeRouteResponse {
     order: number[];

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: frontend
 spec:
-  replicas: {{ .Values.frontend.replicaCount }}
+  replicas: {{ .Values.environment.proxy.count }}
   selector:
     matchLabels:
       app: frontend
@@ -16,6 +16,7 @@ spec:
     spec:
       containers:
         - name: frontend-container
-          image: "{{ .Values.frontend.image }}"
+          image: {{ .Values.environment.proxy.image }}
           ports:
             - containerPort: 80
+

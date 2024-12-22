@@ -1,0 +1,30 @@
+name: Terraform Destroy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform-destroy:
+    name: Destroy Terraform Infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          cli_config_credentials_token: ${{ secrets.TERRAFORM_API_TOKEN }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          terraform -chdir=./terraform init
+
+      - name: Terraform Refresh
+        run: |
+          terraform -chdir=./terraform refresh
+
+      - name: Terraform Destroy
+        run: |
+          terraform -chdir=./terraform destroy -auto-approve

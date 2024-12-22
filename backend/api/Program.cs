@@ -23,7 +23,7 @@ builder.Services.AddHttpClient<IGoogleMapsClient, GoogleMapsClient>(client =>
 })
 .AddHttpMessageHandler<ApiKeyHandler>();
 
-var allowedOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>();
+var allowedOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string>();
 
 builder.Services.AddCors(options =>
 {

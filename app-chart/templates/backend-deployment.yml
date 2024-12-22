@@ -5,7 +5,7 @@ metadata:
   labels:
     app: backend
 spec:
-  replicas: {{ .Values.backend.replicaCount }}
+  replicas: {{ .Values.environment.backend.count }}
   selector:
     matchLabels:
       app: backend
@@ -16,6 +16,11 @@ spec:
     spec:
       containers:
         - name: backend-container
-          image: "{{ .Values.backend.image }}"
+          image: {{ .Values.environment.backend.image }}
           ports:
             - containerPort: 8080
+          env:
+            - name: GoogleMaps__ApiKey
+              value: {{ .Values.environment.backend.GoogleMaps__ApiKey }}
+            - name: GoogleMaps__ApiUrl
+              value: {{ .Values.environment.backend.GoogleMaps__ApiUrl }}

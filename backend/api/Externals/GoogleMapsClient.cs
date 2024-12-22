@@ -19,10 +19,10 @@ using api.Models;
 namespace api.Externals
 {
 
+ 
     public class GoogleMapsClient(HttpClient httpClient, IConfiguration configuration) : IGoogleMapsClient
     {
         private readonly string _apiKey = configuration.GetSection("GoogleMaps:ApiKey").Get<string>();
-
         private readonly HttpClient _httpClient = httpClient;
 
         public async Task<DistanceMatrixResponse> GetDistanceMatrixAsync(DistanceMatrixRequest request)
@@ -35,21 +35,13 @@ namespace api.Externals
         public async Task<GoogleGeocodeResponse> GetGeoCode(string address)
         {
             var encodedAddress = Uri.EscapeDataString(address);
-
             var requestUrl = $"/maps/api/geocode/json?address={encodedAddress}";
-
             var response = await _httpClient.GetAsync(requestUrl);
-
             if (!response.IsSuccessStatusCode)
             {
                 throw new Exception($"Geocoding API request failed with status code {response.StatusCode}");
             }
-
             var res = await response.Content.ReadFromJsonAsync<GoogleGeocodeResponse>();
-
-
-
-
             return res;
         }
 

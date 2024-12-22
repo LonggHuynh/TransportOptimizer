@@ -29,6 +29,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./backend
-          file: ./backend/Dockerfile.prod
+          file: ./backend/Dockerfile
           push: true
           tags: ${{ vars.DOCKER_HUB_BACK_END_IMAGE }}
