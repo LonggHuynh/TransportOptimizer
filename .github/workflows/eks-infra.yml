@@ -73,6 +73,6 @@ jobs:
           --set environment.backend.GoogleMaps__ApiKey=${{ secrets.GoogleMaps__ApiKey }} \
           --set environment.backend.GoogleMaps__ApiUrl=${{ secrets.GoogleMaps__ApiUrl }} \
           --set environment.backend.count=${{ secrets.backend_count }} \
-          --set environment.backend.image=${{ secrets.backend_image }} \
+          --set environment.backend.image=${{ secrets.DOCKER_HUB_BACK_END_IMAGE }} \
           --set environment.proxy.count=${{ secrets.proxy_count }} \
-          --set environment.proxy.image=${{ secrets.proxy_image }} 
+          --set environment.proxy.image=${{ secrets.DOCKER_HUB_FRONT_END_IMAGE }} 

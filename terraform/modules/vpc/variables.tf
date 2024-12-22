@@ -26,19 +26,11 @@ variable "map_public_ip_on_launch" {
 variable "public_cidrs" {
   type        = list(string)
   description = "CIDR blocks for public subnets."
-  validation {
-    condition     = length(var.public_cidrs) == var.az_count
-    error_message = "public_cidrs list length must match az_count."
-  }
 }
 
 variable "private_cidrs" {
   type        = list(string)
   description = "CIDR blocks for private subnets."
-  validation {
-    condition     = length(var.private_cidrs) == var.az_count
-    error_message = "private_cidrs list length must match az_count."
-  }
 }
 
 variable "rt_route_cidr_block" {
