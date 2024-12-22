@@ -10,7 +10,6 @@ interface RequirementTagProps {
 const RequirementTag = ({ requirement }: RequirementTagProps) => {
     const removeRequirement = useRequirementsStore((state) => state.removeRequirement);
     const intermediateList = useIntermediateListStore((state) => state.intermediateList);
-    console.log(requirement)
     return (
         <div className="tagContainer">
             <span>{intermediateList.at(requirement.from - 1)}</span>

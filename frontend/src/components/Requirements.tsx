@@ -10,8 +10,8 @@ import { toast } from 'react-toastify';
 
 
 const Requirements = () => {
-    const [fromReq, setFromReq] = useState('0');
-    const [toReq, setToReq] = useState('0');
+    const [fromReq, setFromReq] = useState(0);
+    const [toReq, setToReq] = useState(0);
     const intermediateList = useIntermediateListStore((state) => state.intermediateList);
     const requirements = useRequirementsStore((state) => state.requirements);
     const addRequirement = useRequirementsStore((state) => state.addRequirement);
@@ -20,7 +20,7 @@ const Requirements = () => {
             toast('Places must be different.');
         }
 
-        const newReq = { from: Number(fromReq) + 1, to: Number(toReq) + 1 }
+        const newReq = { from: fromReq + 1, to: toReq + 1 }
         addRequirement(newReq);
     };
     return (
@@ -30,7 +30,7 @@ const Requirements = () => {
                     <div className="settingLine">
                         <select
                             value={fromReq}
-                            onChange={(e) => setFromReq(e.target.value)}
+                            onChange={(e) => setFromReq(Number(e.target.value))}
                         >
                             {intermediateList.map((item, ind) => (
                                 <option key={ind} value={ind}>
@@ -41,7 +41,7 @@ const Requirements = () => {
                         before
                         <select
                             value={toReq}
-                            onChange={(e) => setToReq(e.target.value)}
+                            onChange={(e) => setToReq(Number(e.target.value))}
                         >
                             {intermediateList.map((item, ind) => (
                                 <option key={ind} value={ind}>
