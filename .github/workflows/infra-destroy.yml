@@ -21,10 +21,6 @@ jobs:
         run: |
           terraform -chdir=./terraform init
 
-      - name: Terraform Refresh
-        run: |
-          terraform -chdir=./terraform refresh
-
       - name: Terraform Destroy
         run: |
           terraform -chdir=./terraform destroy -auto-approve
