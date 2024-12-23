@@ -11,6 +11,8 @@ module "eks" {
   scaling_max_size        = 2
   scaling_min_size        = 1
   instance_types          = ["t3.small"]
+  
+  depends_on = [ module.vpc ]
 }
 
 module "vpc" {
