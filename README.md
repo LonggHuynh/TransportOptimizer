@@ -35,11 +35,10 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 | `GoogleMaps:ApiUrl`              | API URL for Google Maps, used by the backend.                                        |
 
 
-## Running locally
-### With local ...
+## Running the application
+### With locally .NET and Node.js (TBD)
 
-
-### With Docker compose
+### Deploy locally with Docker compose
 Add the backend variables in the .env.local.docker-compose-backend. Start the local cluster
 ```bash
 docker compose up -d
@@ -50,8 +49,6 @@ To shutdown
 docker compose down
 ```
 
-
-## Development
 
 ### Deploy to K8s cluster
 
