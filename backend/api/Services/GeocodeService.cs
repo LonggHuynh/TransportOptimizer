@@ -19,8 +19,9 @@ namespace api.Services
         public async Task<GeoCode?> GetGeocode(string address)
         {
             var res = await _googleMapsClient.GetGeoCode(address);
-            var googleGeocode = res.Results.FirstOrDefault();
-            if (googleGeocode == null) {
+            var googleGeocode = res?.Results.FirstOrDefault();
+            if (googleGeocode == null)
+            {
                 return null;
             }
             return new GeoCode

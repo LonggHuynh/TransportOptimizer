@@ -12,8 +12,8 @@ namespace api.Externals
 {
     public interface IGoogleMapsClient
     {
-        Task<DistanceMatrixResponse> GetDistanceMatrixAsync(DistanceMatrixRequest request);
+        Task<DistanceMatrixResponse?> GetDistanceMatrixAsync(DistanceMatrixRequest request);
 
-        Task<GoogleGeocodeResponse> GetGeoCode(string address);
+        Task<GoogleGeocodeResponse?> GetGeoCode(string address);
     }
 }

@@ -2,3 +2,4 @@
 .idea
 .secrets
 .vars
+.venv/

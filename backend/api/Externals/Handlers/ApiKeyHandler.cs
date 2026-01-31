@@ -1,12 +1,14 @@
-﻿namespace api.Externals.Handlers
+﻿using api.Configuration;
+
+namespace api.Externals.Handlers
 {
     public class ApiKeyHandler : DelegatingHandler
     {
         private readonly string _apiKey;
 
-        public ApiKeyHandler(IConfiguration configuration)
+        public ApiKeyHandler(AppOptions appOptions)
         {
-            _apiKey = configuration["GoogleMaps:ApiKey"]
+            _apiKey = appOptions.GoogleMaps.ApiKey
                       ?? throw new ArgumentNullException("GoogleMaps Api Key is missing.");
         }
 

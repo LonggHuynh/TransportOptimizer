@@ -8,6 +8,8 @@ public class MappingProfile : Profile
     {
         CreateMap<Requirement, RequirementDto>();
         CreateMap<RequirementDto, Requirement>();
+        CreateMap<ComputeOrderRequest, ComputeOrderRequestDto>();
+        CreateMap<ComputeOrderRequestDto, ComputeOrderRequest>();
 
         CreateMap<RouteResult, RouteResultDto>();
         CreateMap<GeoCode, GeocodeDto>();

@@ -16,6 +16,8 @@
 .DS_Store
 .env
 
+# Will remove when moving the key to backend
+.env.local
 
 npm-debug.log*
 yarn-debug.log*
