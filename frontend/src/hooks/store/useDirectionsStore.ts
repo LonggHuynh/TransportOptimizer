@@ -1,13 +1,14 @@
 import { create } from 'zustand';
+import { RouteLine } from '../../models/map';
 
 interface DirectionsState {
-    directionsResponse: google.maps.DirectionsResult | null;
-    setDirectionsResponse: (response: google.maps.DirectionsResult | null) => void;
+    directionsResponse: RouteLine | null;
+    setDirectionsResponse: (response: RouteLine | null) => void;
     clearDirections: () => void;
 }
 
 export const useDirectionsStore = create<DirectionsState>((set) => ({
     directionsResponse: null,
-    setDirectionsResponse: (response: google.maps.DirectionsResult | null) => set({ directionsResponse: response }),
+    setDirectionsResponse: (response: RouteLine | null) => set({ directionsResponse: response }),
     clearDirections: () => set({ directionsResponse: null }),
 }));

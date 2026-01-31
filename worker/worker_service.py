@@ -1,11 +1,40 @@
 import time
+from typing import Optional, Protocol
 
 from route_solver import compute_route
-from models import STATUS_COMPLETED, STATUS_FAILED, STATUS_PROCESSING
+from models import (
+    Requirement,
+    RouteJobPayload,
+    RouteResultDict,
+    STATUS_COMPLETED,
+    STATUS_FAILED,
+    STATUS_PROCESSING,
+)
+
+
+class JobQueue(Protocol):
+    def pop_job(self, timeout: int = 1) -> Optional[str]:
+        ...
+
+    def ack_job(self, job_id: str) -> None:
+        ...
+
+    def fetch_payload(self, job_id: str) -> Optional[RouteJobPayload]:
+        ...
+
+    def update_status(
+        self,
+        job_id: str,
+        status: str,
+        result: Optional[RouteResultDict] = None,
+        error: Optional[str] = None,
+        result_ttl_seconds: int = 300,
+    ) -> None:
+        ...
 
 
 class RouteWorker:
-    def __init__(self, queue, poll_timeout: int = 1, result_ttl_seconds: int = 300) -> None:
+    def __init__(self, queue: JobQueue, poll_timeout: int = 1, result_ttl_seconds: int = 300) -> None:
         self._queue = queue
         self._poll_timeout = poll_timeout
         self._result_ttl_seconds = result_ttl_seconds
@@ -28,7 +57,7 @@ class RouteWorker:
 
             self._queue.update_status(job_id, STATUS_PROCESSING)
             dist = payload.get("distanceMatrix", [])
-            requirements = payload.get("requirements", [])
+            requirements: list[Requirement] = payload.get("requirements", [])
             result = compute_route(dist, requirements)
 
             self._queue.update_status(

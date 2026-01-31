@@ -2,14 +2,14 @@
 
 namespace api.Externals.Handlers
 {
-    public class ApiKeyHandler : DelegatingHandler
+    public class MapboxAccessTokenHandler : DelegatingHandler
     {
-        private readonly string _apiKey;
+        private readonly string _accessToken;
 
-        public ApiKeyHandler(AppOptions appOptions)
+        public MapboxAccessTokenHandler(AppOptions appOptions)
         {
-            _apiKey = appOptions.GoogleMaps.ApiKey
-                      ?? throw new ArgumentNullException("GoogleMaps Api Key is missing.");
+            _accessToken = appOptions.Mapbox?.AccessToken
+                      ?? throw new ArgumentNullException("Mapbox access token is missing.");
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -17,7 +17,7 @@ namespace api.Externals.Handlers
             var uriBuilder = new UriBuilder(request.RequestUri);
 
             var query = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
-            query["key"] = _apiKey;
+            query["access_token"] = _accessToken;
             uriBuilder.Query = query.ToString();
             request.RequestUri = uriBuilder.Uri;
 

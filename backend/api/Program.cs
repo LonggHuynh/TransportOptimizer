@@ -13,13 +13,14 @@ builder.Services.AddSingleton(appOptions);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
 
 
-builder.Services.AddTransient<ApiKeyHandler>();
 builder.Services.AddScoped<IRouteService, RouteService>();
 builder.Services.AddScoped<IDistanceService, DistanceService>();
-builder.Services.AddScoped<IGoogleMapsClient, GoogleMapsClient>();
 builder.Services.AddScoped<IGeocodeService, GeocodeService>();
+builder.Services.AddScoped<IDirectionsService, DirectionsService>();
+builder.Services.AddScoped<ITileService, TileService>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
 {
@@ -33,18 +34,19 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
 });
 builder.Services.AddSingleton<IRouteJobQueue, RouteJobQueue>();
 
-builder.Services.AddHttpClient<IGoogleMapsClient, GoogleMapsClient>(client =>
+builder.Services.AddTransient<MapboxAccessTokenHandler>();
+builder.Services.AddHttpClient<IMapboxClient, MapboxClient>(client =>
 {
-    var apiUrl = appOptions.GoogleMaps?.ApiUrl;
+    var apiUrl = appOptions.Mapbox?.ApiUrl;
     if (string.IsNullOrWhiteSpace(apiUrl))
     {
-        throw new ArgumentException("No maps API Urls provided.");
+        throw new ArgumentException("No Mapbox API Url provided.");
     }
 
     client.BaseAddress = new Uri(apiUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 })
-.AddHttpMessageHandler<ApiKeyHandler>();
+.AddHttpMessageHandler<MapboxAccessTokenHandler>();
 
 var allowedOrigins = appOptions.CorsSettings?.AllowedOrigins ?? [];
 builder.Services.AddCors(options =>

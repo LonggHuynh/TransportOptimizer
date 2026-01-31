@@ -7,7 +7,7 @@ using api.DTOs;
 namespace api.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class RouteController(IRouteJobQueue jobQueue, IDistanceService distanceService, IRouteService routeService, IMapper mapper) : ControllerBase
     {
         private readonly IRouteJobQueue _jobQueue = jobQueue;

@@ -2,15 +2,22 @@ namespace api.Configuration
 {
     public class AppOptions
     {
-        public GoogleMapsOptions? GoogleMaps { get; set; }
+        public MapboxOptions? Mapbox { get; set; }
         public CorsSettingsOptions? CorsSettings { get; set; }
         public RedisOptions? Redis { get; set; }
     }
 
-    public class GoogleMapsOptions
+    public class MapboxOptions
     {
-        public string? ApiKey { get; set; }
+        public string? AccessToken { get; set; }
         public string? ApiUrl { get; set; }
+        public string? TileStyleId { get; set; }
+        public string? TileResolution { get; set; } = "low";
+        public int TileSize { get; set; } = 256;
+        public int GeocodeCacheMinutes { get; set; } = 1440;
+        public int GeocodeFailureCacheMinutes { get; set; } = 10;
+        public string? DirectionsProfile { get; set; } = "driving";
+        public string? MatrixProfile { get; set; } = "driving";
     }
 
     public class CorsSettingsOptions

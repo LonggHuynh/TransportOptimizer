@@ -2,17 +2,25 @@ import { useMutation } from '@tanstack/react-query';
 import { useDirectionsStore } from '../store/useDirectionsStore';
 import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
+import { apiInstance } from '../../api';
+import { RouteLine } from '../../models/geocode';
 
 
-// Function to fetch directions using Google Maps API
-const fetchDirections = async (from: string, to: string) => {
-    const directionsService = new google.maps.DirectionsService();
-    const result = await directionsService.route({
-        origin: from,
-        destination: to,
-        travelMode: google.maps.TravelMode.TRANSIT,
+interface DirectionsResponse {
+    distanceMeters?: number;
+    durationSeconds?: number;
+    coordinates: { latitude: number; longitude: number }[];
+}
+
+const fetchDirections = async (from: string, to: string): Promise<RouteLine | null> => {
+    const response = await apiInstance.get<DirectionsResponse>('directions', {
+        params: { from, to },
     });
-    return result;
+    const coordinates = response.data.coordinates ?? [];
+    if (!coordinates.length) {
+        return null;
+    }
+    return coordinates.map((coord) => ({ latitude: coord.latitude, longitude: coord.longitude }));
 };
 
 export const useDisplayDirections = () => {
