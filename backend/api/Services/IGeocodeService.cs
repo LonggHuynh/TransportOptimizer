@@ -4,6 +4,6 @@ namespace api.Services
 {
     public interface IGeocodeService
     {
-        Task<GeoCode> GetGeocode(string address);
+        Task<GeoCode?> GetGeocode(string address);
     }
 }

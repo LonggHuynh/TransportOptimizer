@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "jsx": "react",
+    "jsx": "react-jsx",
     /* Visit https://aka.ms/tsconfig to read more about this file */
 
     /* Projects */
@@ -26,7 +26,8 @@
     // "moduleDetection": "auto",                        /* Control what method is used to detect module-format JS files. */
 
     /* Modules */
-    "module": "commonjs",                                /* Specify what module code is generated. */
+    "module": "ESNext",                                  /* Specify what module code is generated. */
+    "moduleResolution": "Bundler",                       /* Vite-friendly module resolution. */
     // "rootDir": "./",                                  /* Specify the root folder within your source files. */
     // "moduleResolution": "node10",                     /* Specify how TypeScript looks up a file from a given module specifier. */
     // "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
@@ -84,6 +85,7 @@
 
     /* Type Checking */
     "strict": true,                                      /* Enable all strict type-checking options. */
+    "types": ["vite/client"],                             /* Vite env typing. */
     // "noImplicitAny": true,                            /* Enable error reporting for expressions and declarations with an implied 'any' type. */
     // "strictNullChecks": true,                         /* When type checking, take into account 'null' and 'undefined'. */
     // "strictFunctionTypes": true,                      /* When assigning functions, check to ensure parameters and the return values are subtype-compatible. */
@@ -106,6 +108,7 @@
 
     /* Completeness */
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
+    "noEmit": true,                                      /* Type-check only for Vite. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   }
 }

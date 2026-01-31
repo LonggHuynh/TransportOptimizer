@@ -11,8 +11,20 @@ import { useRequirementsStore } from '../store/useRequirementsStore';
 interface ComputeRouteResponse {
     order: number[];
     totalTime: number;
+    bestRoutes?: [string, string][];
 }
 
+interface ComputeRouteQueuedResponse {
+    jobId: string;
+    status: string;
+}
+
+interface RouteJobStatusResponse {
+    jobId: string;
+    status: string;
+    result?: ComputeRouteResponse;
+    error?: string;
+}
 
 
 interface ComputePathResult {
@@ -21,21 +33,42 @@ interface ComputePathResult {
 }
 
 
-const computeRoute = async (places: string[], requirements: Requirement[]): Promise<ComputeRouteResponse> => {
-    const response = await apiInstance.post<ComputeRouteResponse>(
+const enqueueComputeRoute = async (places: string[], requirements: Requirement[]): Promise<ComputeRouteQueuedResponse> => {
+    const response = await apiInstance.post<ComputeRouteQueuedResponse>(
         'Route/ComputeOrder',
         { places, requirements }
     );
     return response.data;
 };
 
+const pollRouteResult = async (jobId: string): Promise<ComputeRouteResponse> => {
+    const maxAttempts = 120;
+    const delayMs = 1000;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const response = await apiInstance.get<RouteJobStatusResponse>(`Route/ComputeOrder/${jobId}`);
+        const status = response.data.status;
+        if (status === 'completed' && response.data.result) {
+            return response.data.result;
+        }
+        if (status === 'failed') {
+            throw new Error(response.data.error || 'Route computation failed');
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+
+    throw new Error('Route computation timed out');
+};
 
 const computePathAndTime = async (places: string[], requirements: Requirement[]): Promise<ComputePathResult> => {
-    const result = await computeRoute(places, requirements);
+    const queued = await enqueueComputeRoute(places, requirements);
+    const result = await pollRouteResult(queued.jobId);
 
-    const bestRoutes: [string, string][] = result.order.slice(0, -1).map((_, i) => {
-        return [places[result.order[i]], places[result.order[i + 1]]];
-    });
+    const bestRoutes: [string, string][] = result.bestRoutes
+        ?? result.order.slice(0, -1).map((_, i) => {
+            return [places[result.order[i]], places[result.order[i + 1]]];
+        });
 
     return {
         bestRoutes,
@@ -71,4 +104,3 @@ export const useComputePathAndTime = () => {
         }
     )
 };
-

@@ -1,21 +1,7 @@
 version: "3"
 
 services:
-  backend-service:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    env_file:
-      - ./.env.local.docker-compose-backend
-    expose:
-      - 8080
-
-  proxy-service:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        # Use with restrictions!!
-        - REACT_APP_GOOGLE_MAPS_API_KEY=${REACT_APP_GOOGLE_MAPS_API_KEY}
+  redis:
+    image: redis:7-alpine
     ports:
-      - 8001:80
+      - "6379:6379"

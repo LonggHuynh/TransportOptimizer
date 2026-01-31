@@ -17,11 +17,8 @@ namespace api.Controllers
         [HttpGet("")]
         public async Task<GeocodeDto?> GetGeocode([FromQuery] string address)
         {
-
             var geocode= await _geocodeService.GetGeocode(address);
-
             return _mapper.Map<GeocodeDto>(geocode);
-
         }
 
 

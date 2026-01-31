@@ -4,5 +4,5 @@ namespace api.Services;
 
 public interface IRouteService
 {
-    RouteResult ComputeRoute(int[][] dist, List<Requirement> requirements);
+    List<string[]> BuildBestRoutes(List<int> order, string[] places);
 }

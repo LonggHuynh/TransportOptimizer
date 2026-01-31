@@ -11,7 +11,7 @@ const RouteDetails = ({ route }: RouteDetailsProps) => {
     const [from, to] = route;
 
 
-    const { mutate: displayRoute } = useDisplayDirections()
+    const { mutateAsync: displayRoute } = useDisplayDirections()
 
     return (
         <div className="route-details">
