@@ -33,6 +33,5 @@ jobs:
           push: true
           tags: ${{ vars.DOCKER_HUB_FRONT_END_IMAGE }}
           build-args: |
-            REACT_APP_GOOGLE_MAPS_API_KEY=${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
-            REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
-            REACT_APP_GOOGLE_MAPS_DISPLAY_URL={{ secrets.REACT_APP_GOOGLE_MAPS_DISPLAY_URL }}
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_TILE_URL=${{ secrets.VITE_TILE_URL }}

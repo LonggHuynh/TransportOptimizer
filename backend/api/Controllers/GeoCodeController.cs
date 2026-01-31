@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace api.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class GeoCodeController(IGeocodeService geocodeService, IMapper mapper) : ControllerBase
     {
         private readonly IGeocodeService _geocodeService = geocodeService;

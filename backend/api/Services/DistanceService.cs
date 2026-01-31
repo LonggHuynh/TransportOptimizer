@@ -1,45 +1,71 @@
-using System.Linq;
-using System.Threading.Tasks;
+using System.Globalization;
+using api.Configuration;
 using api.Externals;
-using GoogleApi;
-using GoogleApi.Entities.Common;
-using GoogleApi.Entities.Common.Enums;
-using GoogleApi.Entities.Maps.Common;
-using GoogleApi.Entities.Maps.Common.Enums;
-using GoogleApi.Entities.Maps.DistanceMatrix.Request;
+using api.Models;
 
 namespace api.Services
 {
-    public class DistanceService(IGoogleMapsClient googleMapsClient) : IDistanceService
+    public class DistanceService(IMapboxClient mapboxClient, IGeocodeService geocodeService, AppOptions appOptions)
+        : IDistanceService
     {
-        private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
-        
+        private readonly IMapboxClient _mapboxClient = mapboxClient;
+        private readonly IGeocodeService _geocodeService = geocodeService;
+        private readonly AppOptions _appOptions = appOptions;
+
         public async Task<int[][]> GetDistanceMatrixAsync(string[] places)
         {
-            var locations = places.Select(p => new LocationEx(new Address(p)));
-
-            var request = new DistanceMatrixRequest
+            if (places.Length == 0)
             {
-                Origins = locations,
-                Destinations = locations,
-                TravelMode = TravelMode.TRANSIT,
-            };
-
-
-            var response = await _googleMapsClient.GetDistanceMatrixAsync(request);
-
-            if (response.Status == Status.Ok && response.Rows != null)
-            {
-                var adjMatrix = response.Rows
-                    .Select(row => row.Elements
-                        .Select(elem => elem.Duration?.Value ?? 0)
-                        .ToArray())
-                    .ToArray();
-
-                return adjMatrix;
+                return [];
             }
 
-            throw new Exception("Failed to get distance matrix");
+            var geocodeTasks = new Dictionary<string, Task<GeoCode?>>();
+            foreach (var place in places)
+            {
+                var normalized = NormalizeAddress(place);
+                if (!geocodeTasks.ContainsKey(normalized))
+                {
+                    geocodeTasks[normalized] = _geocodeService.GetGeocode(place);
+                }
+            }
+
+            await Task.WhenAll(geocodeTasks.Values);
+
+            var coordinates = new List<GeoCode>();
+            foreach (var place in places)
+            {
+                var normalized = NormalizeAddress(place);
+                var geocode = await geocodeTasks[normalized];
+                if (geocode?.Latitude == null || geocode.Longitude == null)
+                {
+                    throw new Exception($"Failed to geocode address: {place}");
+                }
+
+                coordinates.Add(geocode);
+            }
+
+            var coordinateString = string.Join(";", coordinates.Select(coord =>
+                $"{coord.Longitude.Value.ToString(CultureInfo.InvariantCulture)},{coord.Latitude.Value.ToString(CultureInfo.InvariantCulture)}"));
+
+            var profile = _appOptions.Mapbox?.MatrixProfile
+                          ?? _appOptions.Mapbox?.DirectionsProfile
+                          ?? "driving";
+            var response = await _mapboxClient.GetMatrixAsync(profile, coordinateString);
+            if (response?.Durations == null)
+            {
+                throw new Exception("Failed to get distance matrix");
+            }
+
+            return response.Durations
+                .Select(row => row.Select(duration => duration.HasValue ? (int)Math.Round(duration.Value) : 0).ToArray())
+                .ToArray();
+        }
+
+        private static string NormalizeAddress(string address)
+        {
+            return string.Join(" ", address.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                .Trim()
+                .ToLowerInvariant();
         }
     }
 }

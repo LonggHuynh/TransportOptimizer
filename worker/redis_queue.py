@@ -1,5 +1,8 @@
 import json
 from datetime import datetime, timezone
+from typing import Any, Optional
+
+from models import RouteJobPayload, RouteResultDict
 
 
 class RedisQueue:
@@ -18,25 +21,32 @@ class RedisQueue:
         self._payload_suffix = ":payload"
         self._result_suffix = ":result"
 
-    def pop_job(self, timeout: int = 1):
+    def pop_job(self, timeout: int = 1) -> Optional[str]:
         return self._db.brpoplpush(self._queue_key, self._processing_key, timeout=timeout)
 
     def ack_job(self, job_id: str) -> None:
         self._db.lrem(self._processing_key, 1, job_id)
 
-    def fetch_request(self, job_id: str):
+    def fetch_request(self, job_id: str) -> Optional[dict[str, Any]]:
         data = self._db.get(self._job_request_key(job_id))
         if not data:
             return None
         return json.loads(data)
 
-    def fetch_payload(self, job_id: str):
+    def fetch_payload(self, job_id: str) -> Optional[RouteJobPayload]:
         data = self._db.get(self._job_payload_key(job_id))
         if not data:
             return None
         return json.loads(data)
 
-    def update_status(self, job_id: str, status: str, result=None, error=None, result_ttl_seconds: int = 300) -> None:
+    def update_status(
+        self,
+        job_id: str,
+        status: str,
+        result: Optional[RouteResultDict] = None,
+        error: Optional[str] = None,
+        result_ttl_seconds: int = 300,
+    ) -> None:
         payload = {
             "jobId": job_id,
             "status": status,

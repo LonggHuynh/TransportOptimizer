@@ -1,34 +1,29 @@
 import React from 'react';
-import {  useState } from 'react';
+import { useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import Map from '../components/Map';
 import Result from '../components/Result';
 import RouteForm from '../components/RouteForm';
 import './Main.css';
 import Requirements from '../components/Requirements';
-import { useJsApiLoader } from '@react-google-maps/api';
 import { useCenterStore } from '../hooks/store/useCenterStore';
 import { useDirectionsStore } from '../hooks/store/useDirectionsStore';
+import { useComputePathAndTime } from '../hooks/queries/useComputePathAndTime';
+import { toast } from 'react-toastify';
 
-type Library = 'places' | 'geometry' | 'drawing' | 'visualization';
-    const libraries: Library[] = ['places', 'geometry'];
 const Main = () => {
 
 
     const [showReq, setShowReq] = useState(false);
-    const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '',
-        libraries,
-    });
-
-
+    const { enqueueMutation, computedResult } = useComputePathAndTime();
     // Not direct subscription but to force mapping re-render.
     useCenterStore((state) => state.center); 
     useDirectionsStore((state) => state.directionsResponse);
 
-    if (!isLoaded) {
-        return <></>;
-    }
+    const handleCompute = (places: string[]) => {
+        toast('Computing best route');
+        enqueueMutation.mutate({ places });
+    };
     return (
         <>
             <Map />  
@@ -36,6 +31,7 @@ const Main = () => {
                 <div className="console">
                     <RouteForm
                         toggleRequirements={() => setShowReq(true)}
+                        onCompute={handleCompute}
                     />
 
                     {showReq && (
@@ -48,7 +44,12 @@ const Main = () => {
                         </div>
                     )}
                 </div>
-                <Result />
+                <Result
+                    routes={computedResult.bestRoutes}
+                    estimatedTime={computedResult.totalTime}
+                    status={computedResult.status}
+                    error={computedResult.error}
+                />
             </div>
         </>
     );

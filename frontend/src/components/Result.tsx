@@ -3,35 +3,35 @@ import React from 'react';
 import RouteDetails from './RouteDetails';
 
 import './Result.css';
-import { useEstimatedTimeStore } from '../hooks/store/useEstimatedTimeStore';
-import { useRoutesStore } from '../hooks/store/useRoutesStore';
 
+interface ResultProps {
+    routes: [string, string][];
+    estimatedTime: number | null;
+    status?: string;
+    error?: string;
+}
 
-
-function Result() {
-    const routes = useRoutesStore((state) => state.routes);
-
-    const estimatedTime = useEstimatedTimeStore((state) => state.estimatedTime); 
+function Result({ routes, estimatedTime, status, error }: ResultProps) {
+    const hasResult = status === 'completed' && estimatedTime !== null;
+    const isComputing = status === 'queued' || status === 'processing';
+    const minutes = estimatedTime !== null ? Math.round(estimatedTime / 60) : 0;
 
     return (
         <div className="result">
             <h1>
-                Estimated time:{' '}
-                {estimatedTime === Infinity
-                    ? 0
-                    : Math.round(estimatedTime / 60)}{' '}
-                minutes{' '}
+                Estimated time: {minutes} minutes
             </h1>
-            {estimatedTime === Infinity ? (
+            {error && <p>{error}</p>}
+            {isComputing && <p>Computing best route...</p>}
+            {!isComputing && status === 'completed' && !hasResult && (
                 <p>No route available</p>
-            ) : (
-                routes.map((route, ind) => (
-                    <RouteDetails
-                        route={route}
-                        key={ind}
-                    />
-                ))
             )}
+            {hasResult && routes.map((route, ind) => (
+                <RouteDetails
+                    route={route}
+                    key={ind}
+                />
+            ))}
         </div>
     );
 }

@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { Autocomplete } from '@react-google-maps/api';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { Switch } from '@mui/material';
 import PlaceTag from './PlaceTag';
@@ -7,14 +6,14 @@ import './RouteForm.css';
 import { toast } from 'react-toastify';
 import { useIntermediateListStore } from '../hooks/store/useIntermediateListStore';
 import { useRequirementsStore } from '../hooks/store/useRequirementsStore';
-import { useComputePathAndTime } from '../hooks/queries/useComputePathAndTime';
 import { useLocateAddress } from '../hooks/queries/useLocateAddressMutation';
 
 interface RouteFormProps {
     toggleRequirements: () => void;
+    onCompute: (places: string[]) => void;
 }
 
-const RouteForm = ({ toggleRequirements }: RouteFormProps) => {
+const RouteForm = ({ toggleRequirements, onCompute }: RouteFormProps) => {
     const [sameDestination, setSameDestination] = useState(false);
     const originRef = useRef<HTMLInputElement>(null);
     const destinationRef = useRef<HTMLInputElement>(null);
@@ -34,7 +33,6 @@ const RouteForm = ({ toggleRequirements }: RouteFormProps) => {
     );
 
     const { mutateAsync: locateAddress } = useLocateAddress();
-    const { mutateAsync: computePath } = useComputePathAndTime();
 
     const handleLocate = async (address: string) => {
         if (address) {
@@ -77,7 +75,7 @@ const RouteForm = ({ toggleRequirements }: RouteFormProps) => {
 
         const places = [originValue, ...intermediateList, destinationValue];
 
-        computePath({ places });
+        onCompute(places);
     };
 
     return (
@@ -85,14 +83,12 @@ const RouteForm = ({ toggleRequirements }: RouteFormProps) => {
             <h1 className="title">Transport Optimizer</h1>
 
             <div className="inputLine">
-                <Autocomplete>
-                    <input
-                        type="text"
-                        required
-                        placeholder="Origin"
-                        ref={originRef}
-                    />
-                </Autocomplete>
+                <input
+                    type="text"
+                    required
+                    placeholder="Origin"
+                    ref={originRef}
+                />
                 <button
                     type="button"
                     onClick={() =>
@@ -106,14 +102,12 @@ const RouteForm = ({ toggleRequirements }: RouteFormProps) => {
 
             {!sameDestination && (
                 <div className="inputLine">
-                    <Autocomplete>
-                        <input
-                            type="text"
-                            required
-                            placeholder="Destination"
-                            ref={destinationRef}
-                        />
-                    </Autocomplete>
+                    <input
+                        type="text"
+                        required
+                        placeholder="Destination"
+                        ref={destinationRef}
+                    />
                     <button
                         type="button"
                         onClick={() =>
@@ -138,13 +132,11 @@ const RouteForm = ({ toggleRequirements }: RouteFormProps) => {
             </div>
 
             <div className="inputLine">
-                <Autocomplete>
-                    <input
-                        type="text"
-                        placeholder="Intermediate places (unordered)"
-                        ref={intermediateRef}
-                    />
-                </Autocomplete>
+                <input
+                    type="text"
+                    placeholder="Intermediate places (unordered)"
+                    ref={intermediateRef}
+                />
                 <button type="button" onClick={handleAdd} className="addButton">
                     ADD
                 </button>

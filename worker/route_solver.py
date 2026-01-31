@@ -1,7 +1,9 @@
-from models import RouteResult
+from typing import Sequence
+
+from models import Requirement, RouteResult
 
 
-def compute_route(dist, requirements) -> RouteResult:
+def compute_route(dist: Sequence[Sequence[int]], requirements: Sequence[Requirement]) -> RouteResult:
     req_set = {(req["from"], req["to"]) for req in requirements}
     n = len(dist)
     max_val = 10**8

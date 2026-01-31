@@ -1,16 +1,11 @@
-import { toast } from 'react-toastify';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiInstance } from '../../api';
-import { useMutation } from '@tanstack/react-query';
-import { useEstimatedTimeStore } from '../store/useEstimatedTimeStore';
-import { useRoutesStore } from '../store/useRoutesStore';
-import { AxiosError } from 'axios';
 import { useRequirementsStore } from '../store/useRequirementsStore';
-
-
 
 interface ComputeRouteResponse {
     order: number[];
-    totalTime: number;
+    totalTime: number | null;
     bestRoutes?: [string, string][];
 }
 
@@ -26,12 +21,12 @@ interface RouteJobStatusResponse {
     error?: string;
 }
 
-
-interface ComputePathResult {
+interface RouteComputationResult {
+    status?: string;
+    error?: string;
     bestRoutes: [string, string][];
-    totalTime: number;
+    totalTime: number | null;
 }
-
 
 const enqueueComputeRoute = async (places: string[], requirements: Requirement[]): Promise<ComputeRouteQueuedResponse> => {
     const response = await apiInstance.post<ComputeRouteQueuedResponse>(
@@ -41,66 +36,71 @@ const enqueueComputeRoute = async (places: string[], requirements: Requirement[]
     return response.data;
 };
 
-const pollRouteResult = async (jobId: string): Promise<ComputeRouteResponse> => {
-    const maxAttempts = 120;
-    const delayMs = 1000;
-
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        const response = await apiInstance.get<RouteJobStatusResponse>(`Route/ComputeOrder/${jobId}`);
-        const status = response.data.status;
-        if (status === 'completed' && response.data.result) {
-            return response.data.result;
-        }
-        if (status === 'failed') {
-            throw new Error(response.data.error || 'Route computation failed');
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-
-    throw new Error('Route computation timed out');
+const fetchRouteStatus = async (jobId: string): Promise<RouteJobStatusResponse> => {
+    const response = await apiInstance.get<RouteJobStatusResponse>(`Route/ComputeOrder/${jobId}`);
+    return response.data;
 };
-
-const computePathAndTime = async (places: string[], requirements: Requirement[]): Promise<ComputePathResult> => {
-    const queued = await enqueueComputeRoute(places, requirements);
-    const result = await pollRouteResult(queued.jobId);
-
-    const bestRoutes: [string, string][] = result.bestRoutes
-        ?? result.order.slice(0, -1).map((_, i) => {
-            return [places[result.order[i]], places[result.order[i + 1]]];
-        });
-
-    return {
-        bestRoutes,
-        totalTime: result.totalTime,
-    };
-};
-
 
 export const useComputePathAndTime = () => {
-    const setEstimatedTime = useEstimatedTimeStore((state) => state.setEstimatedTime);
-    const setRoutes = useRoutesStore((state) => state.setRoutes);
     const requirements = useRequirementsStore((state) => state.requirements);
+    const [jobId, setJobId] = useState<string | null>(null);
+    const [jobPlaces, setJobPlaces] = useState<string[]>([]);
 
-    return useMutation(
+    const jobQuery = useQuery(
         {
-            mutationFn: async ({ places }: { places: string[] }) => {
-                const result = await toast.promise(computePathAndTime(places, requirements), { pending: "Computing best route" });
-                return result;
-            },
-            onSuccess: (data: ComputePathResult) => {
-                const { bestRoutes, totalTime } = data;
-                if (totalTime) {
-                    toast('Routes computed');
-                    setEstimatedTime(totalTime);
-                    setRoutes(bestRoutes);
-                } else {
-                    toast('No routes available');
+            queryKey: ['routeJob', jobId],
+            queryFn: () => fetchRouteStatus(jobId!),
+            enabled: Boolean(jobId),
+            refetchOnWindowFocus: false,
+            refetchInterval: (query) => {
+                const status = query.state.data?.status;
+                if (status === 'completed' || status === 'failed') {
+                    return false;
                 }
-            },
-            onError: (error: AxiosError) => {
-                toast(error.message);
+                return 1000;
             },
         }
-    )
+    );
+
+    const enqueueMutation = useMutation(
+        {
+            mutationFn: async ({ places }: { places: string[] }) => enqueueComputeRoute(places, requirements),
+            onSuccess: (data, variables) => {
+                setJobId(data.jobId);
+                setJobPlaces(variables.places);
+            },
+        }
+    );
+
+    const computedResult = useMemo<RouteComputationResult>(() => {
+        const status = jobQuery.data?.status;
+        const error = jobQuery.data?.error;
+        if (status !== 'completed' || !jobQuery.data?.result) {
+            return {
+                status,
+                error,
+                totalTime: null,
+                bestRoutes: [],
+            };
+        }
+
+        const result = jobQuery.data.result;
+        const bestRoutes: [string, string][] = result.bestRoutes
+            ?? result.order.slice(0, -1).map((_, i) => {
+                return [jobPlaces[result.order[i]], jobPlaces[result.order[i + 1]]];
+            });
+
+        return {
+            status,
+            error,
+            totalTime: result.totalTime ?? null,
+            bestRoutes,
+        };
+    }, [jobPlaces, jobQuery.data]);
+
+    return {
+        enqueueMutation,
+        jobQuery,
+        computedResult,
+    };
 };

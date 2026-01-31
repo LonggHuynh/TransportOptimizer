@@ -1,12 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
 import { apiInstance } from "../../api";
 import { toast } from "react-toastify";
-import { geocode } from "../../models/geocode";
+import { Geocode } from "../../models/geocode";
 import { AxiosError } from "axios";
 import { useCenterStore } from "../store/useCenterStore";
 
 const geocodeAddress = async (address: string) => {
-    const response = await apiInstance.get<geocode>('/geocode', {
+    const response = await apiInstance.get<Geocode>('geocode', {
         params: { address },
     });
     return response.data;
@@ -27,4 +27,3 @@ export const useLocateAddress = () => {
         },
     });
 };
-

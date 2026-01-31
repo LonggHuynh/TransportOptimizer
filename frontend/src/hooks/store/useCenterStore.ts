@@ -1,12 +1,13 @@
 import { create } from 'zustand';
+import { LatLng } from '../../models/map';
 
 interface CenterState {
-    center: google.maps.LatLngLiteral;
-    setCenter: (newCenter: google.maps.LatLngLiteral) => void;
+    center: LatLng;
+    setCenter: (newCenter: LatLng) => void;
     resetCenter: () => void;
 }
 
-const initialCenter: google.maps.LatLngLiteral = { lat: 59.437, lng: 24.7536 }; 
+const initialCenter: LatLng = { lat: 59.437, lng: 24.7536 };
 
 export const useCenterStore = create<CenterState>((set) => ({
     center: initialCenter, 
