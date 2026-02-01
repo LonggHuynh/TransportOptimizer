@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: transport-stage
+  labels:
+    app.kubernetes.io/part-of: transport-optimizer
+    env: stage
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: transport-prod
+  labels:
+    app.kubernetes.io/part-of: transport-optimizer
+    env: prod

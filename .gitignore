@@ -3,3 +3,9 @@
 .secrets
 .vars
 .venv/
+.plans/
+.gcloud/
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.tfstate
+terraform/*.tfstate.*
