@@ -4,6 +4,9 @@ region     = "europe-north1"
 
 environments = ["stage", "prod"]
 
+# Artifact Registry (disable when using public GHCR)
+create_artifact_registry = false
+
 # GKE
 cluster_name = "transport"
 gke_mode     = "autopilot" # autopilot | standard
@@ -37,6 +40,11 @@ services_secondary_cidrs = {
 # Images (GHCR)
 backend_image = "ghcr.io/longghuynh/transport-backend:latest"
 worker_image  = "ghcr.io/longghuynh/transport-worker:latest"
+
+# GHCR (public) - no pull secret needed
+ghcr_username          = ""
+ghcr_token             = ""
+image_pull_secret_name = ""
 
 # Backend service
 backend_container_port = 8080
