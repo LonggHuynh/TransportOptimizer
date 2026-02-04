@@ -239,6 +239,30 @@ variable "redis_port" {
   default     = 6379
 }
 
+variable "redis_chart_repository" {
+  type        = string
+  description = "Helm repository for the Redis chart."
+  default     = "https://charts.bitnami.com/bitnami"
+}
+
+variable "redis_chart_version" {
+  type        = string
+  description = "Helm chart version for Redis."
+  default     = "16.11.3"
+}
+
+variable "redis_image_repository" {
+  type        = string
+  description = "Redis image repository (without registry)."
+  default     = "bitnamilegacy/redis"
+}
+
+variable "redis_image_tag" {
+  type        = string
+  description = "Redis image tag override (empty to use chart default)."
+  default     = ""
+}
+
 variable "mapbox_api_url" {
   type        = string
   description = "Mapbox API base URL."
@@ -291,4 +315,72 @@ variable "cors_allowed_origins" {
   type        = list(string)
   description = "Allowed CORS origins for the backend."
   default     = []
+}
+
+variable "mapbox_access_token" {
+  type        = string
+  description = "Mapbox access token for the backend."
+  default     = ""
+  sensitive   = true
+}
+
+variable "mapbox_access_token_secret" {
+  type        = string
+  description = "Secret Manager secret resource name or secret id for Mapbox access token."
+  default     = ""
+}
+
+variable "secret_manager_enabled" {
+  type        = bool
+  description = "Enable Secret Manager sync via Secrets Store CSI Driver."
+  default     = false
+}
+
+variable "backend_secret_name" {
+  type        = string
+  description = "Kubernetes secret name created by Secret Manager sync."
+  default     = "backend-secrets"
+}
+
+variable "backend_secret_provider_class" {
+  type        = string
+  description = "SecretProviderClass name used by Secrets Store CSI Driver."
+  default     = "backend-secrets"
+}
+
+variable "backend_secret_mount_path" {
+  type        = string
+  description = "Mount path for the Secrets Store CSI volume."
+  default     = "/var/secrets"
+}
+
+variable "worker_result_ttl_seconds" {
+  type        = number
+  description = "Worker result TTL in seconds."
+  default     = 300
+}
+
+variable "ghcr_username" {
+  type        = string
+  description = "GHCR username for image pull secret."
+  default     = ""
+}
+
+variable "ghcr_token" {
+  type        = string
+  description = "GHCR token (PAT) for image pull secret."
+  default     = ""
+  sensitive   = true
+}
+
+variable "ghcr_server" {
+  type        = string
+  description = "Container registry server for image pull secret."
+  default     = "ghcr.io"
+}
+
+variable "image_pull_secret_name" {
+  type        = string
+  description = "Image pull secret name to use or create. Leave empty to disable."
+  default     = ""
 }

@@ -10,6 +10,7 @@ namespace api.Configuration
     public class MapboxOptions
     {
         public string? AccessToken { get; set; }
+        public string? AccessTokenSecret { get; set; }
         public string? ApiUrl { get; set; }
         public string? TileStyleId { get; set; }
         public string? TileResolution { get; set; } = "low";

@@ -115,4 +115,33 @@ locals {
   )
 
   artifact_registry_location = var.artifact_registry_location != null && var.artifact_registry_location != "" ? var.artifact_registry_location : var.region
+
+  k8s_namespace = {
+    for env in local.environments :
+    env => local.name_prefix[env]
+  }
+
+  backend_k8s_service_account = "backend"
+  worker_k8s_service_account  = "worker"
+
+  aspnetcore_environment = {
+    for env in local.environments :
+    env => env == "prod" ? "Production" : env == "stage" ? "Staging" : "Production"
+  }
+
+  redis_host_by_env = {
+    for env in local.environments :
+    env => var.redis_mode == "in-cluster" && var.redis_host == "redis-master.redis.svc.cluster.local"
+      ? "redis-master.${local.k8s_namespace[env]}.svc.cluster.local"
+      : var.redis_host
+  }
+
+  redis_connection_string_by_env = {
+    for env in local.environments :
+    env => "${local.redis_host_by_env[env]}:${var.redis_port}"
+  }
+
+  ghcr_credentials_provided       = var.ghcr_username != "" && var.ghcr_token != ""
+  effective_image_pull_secret_name = var.image_pull_secret_name != "" ? var.image_pull_secret_name : (local.ghcr_credentials_provided ? "ghcr" : "")
+  mapbox_token_provided            = var.mapbox_access_token != ""
 }

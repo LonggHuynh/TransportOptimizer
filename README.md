@@ -77,7 +77,7 @@ k3d create cluster _your_cluster_name
 The k8s cluster will pull the images from DockerHub. After that, apply the k8s files with the environment variables using
 
 ```
-kubectl apply -f k8s/namespaces.yaml
-helm upgrade --install transport-optimizer ./app-chart --namespace transport-stage
+kubectl apply -f infra/k8s/namespaces.yaml
+helm upgrade --install transport-optimizer infra/app-chart --namespace transport-stage
 # or use --namespace transport-prod
 ```

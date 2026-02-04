@@ -1,0 +1,54 @@
+{{- if .Values.worker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "transport.worker.fullname" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "transport.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "transport.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: {{ include "transport.worker.serviceAccountName" . }}
+      {{- $pullSecrets := list -}}
+      {{- if .Values.imagePullSecrets }}
+      {{- range .Values.imagePullSecrets }}
+      {{- $pullSecrets = append $pullSecrets (dict "name" .) -}}
+      {{- end }}
+      {{- end }}
+      {{- if and .Values.imagePullSecret.create .Values.imagePullSecret.name }}
+      {{- $pullSecrets = append $pullSecrets (dict "name" .Values.imagePullSecret.name) -}}
+      {{- end }}
+      {{- if gt (len $pullSecrets) 0 }}
+      imagePullSecrets:
+        {{- toYaml $pullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: worker
+          image: "{{ .Values.worker.image.repository }}{{- if .Values.worker.image.tag }}:{{ .Values.worker.image.tag }}{{- end }}"
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          {{- $hasConfig := or .Values.worker.config.enabled .Values.worker.config.existingName }}
+          {{- $hasSecret := or .Values.worker.secret.enabled .Values.worker.secret.existingName }}
+          {{- if or $hasConfig $hasSecret }}
+          envFrom:
+            {{- if $hasConfig }}
+            - configMapRef:
+                name: {{ include "transport.worker.configMapName" . }}
+            {{- end }}
+            {{- if $hasSecret }}
+            - secretRef:
+                name: {{ include "transport.worker.secretName" . }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+{{- end }}

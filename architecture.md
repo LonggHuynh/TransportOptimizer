@@ -55,7 +55,7 @@ Single Cloud Router with multiple NATs (one per subnet):
 Apply namespaces:
 
 ```bash
-kubectl apply -f k8s/namespaces.yaml
+kubectl apply -f infra/k8s/namespaces.yaml
 ```
 
 ## Frontend

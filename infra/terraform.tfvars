@@ -54,6 +54,10 @@ cdn_enabled          = true
 redis_mode = "in-cluster" # memorystore | in-cluster
 redis_host = "redis-master.redis.svc.cluster.local" # update if release/name differs
 redis_port = 6379
+redis_chart_repository = "https://charts.bitnami.com/bitnami"
+redis_chart_version    = "16.11.3"
+redis_image_repository = "bitnamilegacy/redis" # Bitnami legacy registry for old tags
+redis_image_tag        = "" # empty uses chart default
 
 # App config (non-secret values)
 mapbox_api_url                      = "https://api.mapbox.com"
