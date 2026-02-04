@@ -6,11 +6,12 @@ locals {
     "iam.googleapis.com",
     "monitoring.googleapis.com",
     "logging.googleapis.com",
+    "networkconnectivity.googleapis.com",
     "secretmanager.googleapis.com",
+    "redis.googleapis.com",
     "serviceusage.googleapis.com",
     "servicenetworking.googleapis.com",
     "storage.googleapis.com",
-    "artifactregistry.googleapis.com",
   ])
 }
 

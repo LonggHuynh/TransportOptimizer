@@ -31,3 +31,19 @@ resource "google_project_iam_member" "worker_secret_access" {
   role    = "roles/secretmanager.secretAccessor"
   member  = "serviceAccount:${google_service_account.worker[each.key].email}"
 }
+
+resource "google_project_iam_member" "backend_redis_access" {
+  for_each = toset(local.environments)
+
+  project = var.project_id
+  role    = "roles/redis.dbConnectionUser"
+  member  = "serviceAccount:${google_service_account.backend[each.key].email}"
+}
+
+resource "google_project_iam_member" "worker_redis_access" {
+  for_each = toset(local.environments)
+
+  project = var.project_id
+  role    = "roles/redis.dbConnectionUser"
+  member  = "serviceAccount:${google_service_account.worker[each.key].email}"
+}

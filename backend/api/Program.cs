@@ -3,7 +3,6 @@ using api.Externals;
 using api.Externals.Handlers;
 using api.Services;
 using Google.Cloud.SecretManager.V1;
-using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,16 +29,7 @@ builder.Services.AddScoped<IGeocodeService, GeocodeService>();
 builder.Services.AddScoped<IDirectionsService, DirectionsService>();
 builder.Services.AddScoped<ITileService, TileService>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
-{
-    var connectionString = appOptions.Redis?.ConnectionString;
-    if (string.IsNullOrWhiteSpace(connectionString))
-    {
-        throw new ArgumentException("Redis connection string is missing.");
-    }
-
-    return ConnectionMultiplexer.Connect(connectionString);
-});
+builder.Services.AddSingleton<IConnectionMultiplexerFactory, RedisConnectionFactory>();
 builder.Services.AddSingleton<IRouteJobQueue, RouteJobQueue>();
 
 builder.Services.AddTransient<MapboxAccessTokenHandler>();

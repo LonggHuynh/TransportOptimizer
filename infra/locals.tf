@@ -114,8 +114,6 @@ locals {
     length(distinct([for env in local.environments : local.services_secondary_cidr[env]])) == length(local.environments)
   )
 
-  artifact_registry_location = var.artifact_registry_location != null && var.artifact_registry_location != "" ? var.artifact_registry_location : var.region
-
   k8s_namespace = {
     for env in local.environments :
     env => local.name_prefix[env]
@@ -131,14 +129,22 @@ locals {
 
   redis_host_by_env = {
     for env in local.environments :
-    env => var.redis_mode == "in-cluster" && var.redis_host == "redis-master.redis.svc.cluster.local"
-      ? "redis-master.${local.k8s_namespace[env]}.svc.cluster.local"
-      : var.redis_host
+    env => google_redis_cluster.redis[env].discovery_endpoints[0].address
   }
 
-  redis_connection_string_by_env = {
+  redis_port_by_env = {
     for env in local.environments :
-    env => "${local.redis_host_by_env[env]}:${var.redis_port}"
+    env => google_redis_cluster.redis[env].discovery_endpoints[0].port
+  }
+
+  redis_app_host_by_env = {
+    for env in local.environments :
+    env => var.redis_k8s_service_enabled ? var.redis_k8s_service_name : local.redis_host_by_env[env]
+  }
+
+  redis_endpoint_by_env = {
+    for env in local.environments :
+    env => "${local.redis_app_host_by_env[env]}:${local.redis_port_by_env[env]}"
   }
 
   ghcr_credentials_provided       = var.ghcr_username != "" && var.ghcr_token != ""

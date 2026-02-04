@@ -1,0 +1,30 @@
+{{- if and .Values.redis.enabled .Values.redis.host }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "transport.redis.serviceName" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis
+      port: {{ .Values.redis.port }}
+      protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: {{ include "transport.redis.serviceName" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+subsets:
+  - addresses:
+      - ip: {{ .Values.redis.host }}
+    ports:
+      - name: redis
+        port: {{ .Values.redis.port }}
+        protocol: TCP
+{{- end }}

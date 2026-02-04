@@ -4,9 +4,6 @@ region     = "europe-north1"
 
 environments = ["stage", "prod"]
 
-# Artifact Registry (disable when using public GHCR)
-create_artifact_registry = false
-
 # GKE
 cluster_name = "transport"
 gke_mode     = "autopilot" # autopilot | standard
@@ -58,14 +55,17 @@ backend_path_prefix = "/api"
 frontend_bucket_name = "transport-frontend-pathoptimizer-486102"
 cdn_enabled          = true
 
-# Redis
-redis_mode = "in-cluster" # memorystore | in-cluster
-redis_host = "redis-master.redis.svc.cluster.local" # update if release/name differs
-redis_port = 6379
-redis_chart_repository = "https://charts.bitnami.com/bitnami"
-redis_chart_version    = "16.11.3"
-redis_image_repository = "bitnamilegacy/redis" # Bitnami legacy registry for old tags
-redis_image_tag        = "" # empty uses chart default
+# Redis (Memorystore Redis Cluster)
+redis_mode                    = "cluster"
+redis_shard_count             = 1
+redis_replica_count           = 1
+redis_node_type               = "REDIS_SHARED_CORE_NANO"
+redis_auth_mode               = "AUTH_MODE_IAM_AUTH"
+redis_transit_encryption_mode = "TRANSIT_ENCRYPTION_MODE_DISABLED"
+psc_subnet_cidr               = "10.60.0.0/24"
+redis_psc_connection_limit    = 10
+redis_k8s_service_enabled     = true
+redis_k8s_service_name        = "redis"
 
 # App config (non-secret values)
 mapbox_api_url                      = "https://api.mapbox.com"

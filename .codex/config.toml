@@ -1,3 +1,8 @@
 [mcp_servers.playwright]
 command = "npx"
 args = ["@playwright/mcp@latest"]
+
+[mcp_servers.gcp]
+command = "python"
+args = ["-m", "gcp_mcp.server"]
+

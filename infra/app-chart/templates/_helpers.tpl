@@ -34,6 +34,14 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s-worker" (include "transport.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "transport.redis.serviceName" -}}
+{{- if .Values.redis.serviceName -}}
+{{- .Values.redis.serviceName -}}
+{{- else -}}
+{{- printf "%s-redis" (include "transport.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "transport.backend.serviceAccountName" -}}
 {{- if .Values.backend.serviceAccount.name -}}
 {{- .Values.backend.serviceAccount.name -}}

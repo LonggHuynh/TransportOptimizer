@@ -150,24 +150,6 @@ variable "services_secondary_cidrs" {
   default     = {}
 }
 
-variable "create_artifact_registry" {
-  type        = bool
-  description = "Whether to create an Artifact Registry repository."
-  default     = false
-}
-
-variable "artifact_registry_location" {
-  type        = string
-  description = "Artifact Registry location (defaults to region if empty)."
-  default     = null
-}
-
-variable "artifact_registry_repo_id" {
-  type        = string
-  description = "Artifact Registry repository ID."
-  default     = "transport"
-}
-
 variable "environments" {
   type        = list(string)
   description = "Environment names for multi-env infra (e.g. [\"stage\", \"prod\"]). Empty = single env."
@@ -218,49 +200,88 @@ variable "backend_path_prefix" {
 
 variable "redis_mode" {
   type        = string
-  description = "Redis mode (memorystore or in-cluster)."
-  default     = "in-cluster"
+  description = "Redis mode (cluster only)."
+  default     = "cluster"
 
   validation {
-    condition     = contains(["memorystore", "in-cluster"], var.redis_mode)
-    error_message = "redis_mode must be \"memorystore\" or \"in-cluster\"."
+    condition     = var.redis_mode == "cluster"
+    error_message = "redis_mode must be \"cluster\"."
   }
 }
 
-variable "redis_host" {
-  type        = string
-  description = "Redis hostname."
-  default     = "redis-master.redis.svc.cluster.local"
-}
-
-variable "redis_port" {
+variable "redis_shard_count" {
   type        = number
-  description = "Redis port."
-  default     = 6379
+  description = "Number of shards for the Redis Cluster."
+  default     = 1
 }
 
-variable "redis_chart_repository" {
-  type        = string
-  description = "Helm repository for the Redis chart."
-  default     = "https://charts.bitnami.com/bitnami"
+variable "redis_replica_count" {
+  type        = number
+  description = "Number of replicas per shard for the Redis Cluster."
+  default     = 1
 }
 
-variable "redis_chart_version" {
+variable "redis_node_type" {
   type        = string
-  description = "Helm chart version for Redis."
-  default     = "16.11.3"
+  description = "Redis Cluster node type (e.g. REDIS_SHARED_CORE_NANO)."
+  default     = "REDIS_SHARED_CORE_NANO"
 }
 
-variable "redis_image_repository" {
+variable "redis_auth_mode" {
   type        = string
-  description = "Redis image repository (without registry)."
-  default     = "bitnamilegacy/redis"
+  description = "Redis Cluster authorization mode."
+  default     = "AUTH_MODE_IAM_AUTH"
+
+  validation {
+    condition = contains([
+      "AUTH_MODE_IAM_AUTH",
+      "AUTH_MODE_DISABLED",
+    ], var.redis_auth_mode)
+    error_message = "redis_auth_mode must be AUTH_MODE_IAM_AUTH or AUTH_MODE_DISABLED."
+  }
 }
 
-variable "redis_image_tag" {
+variable "redis_transit_encryption_mode" {
   type        = string
-  description = "Redis image tag override (empty to use chart default)."
-  default     = ""
+  description = "Redis Cluster transit encryption mode."
+  default     = "TRANSIT_ENCRYPTION_MODE_DISABLED"
+
+  validation {
+    condition = contains([
+      "TRANSIT_ENCRYPTION_MODE_DISABLED",
+      "TRANSIT_ENCRYPTION_MODE_SERVER_AUTHENTICATION",
+    ], var.redis_transit_encryption_mode)
+    error_message = "redis_transit_encryption_mode must be TRANSIT_ENCRYPTION_MODE_DISABLED or TRANSIT_ENCRYPTION_MODE_SERVER_AUTHENTICATION."
+  }
+}
+
+variable "psc_subnet_cidr" {
+  type        = string
+  description = "CIDR range for the Private Service Connect subnet."
+  default     = "10.60.0.0/24"
+}
+
+variable "redis_psc_connection_limit" {
+  type        = number
+  description = "Service connection policy connection limit for Redis PSC endpoints."
+  default     = 10
+}
+
+variable "redis_k8s_service_enabled" {
+  type        = bool
+  description = "Create a Kubernetes Service/Endpoints for Redis Cluster in the app namespaces."
+  default     = true
+}
+
+variable "redis_k8s_service_name" {
+  type        = string
+  description = "Kubernetes Service name for Redis Cluster."
+  default     = "redis"
+
+  validation {
+    condition     = !var.redis_k8s_service_enabled || var.redis_k8s_service_name != ""
+    error_message = "redis_k8s_service_name must be set when redis_k8s_service_enabled is true."
+  }
 }
 
 variable "mapbox_api_url" {

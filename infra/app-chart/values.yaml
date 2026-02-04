@@ -89,3 +89,9 @@ worker:
     maxReplicas: 3
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+
+redis:
+  enabled: false
+  serviceName: ""
+  host: ""
+  port: 6379

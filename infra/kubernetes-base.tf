@@ -30,6 +30,25 @@ locals {
       : {}
   }
 
+  backend_redis_config_entries = {
+    for env in local.environments :
+    env => {
+      "Redis__Endpoint"        = local.redis_endpoint_by_env[env]
+      "Redis__IamAuthEnabled" = tostring(var.redis_auth_mode == "AUTH_MODE_IAM_AUTH")
+    }
+  }
+
+  worker_redis_config_entries = {
+    for env in local.environments :
+    env => {
+      "REDIS_URL"               = local.redis_endpoint_by_env[env]
+      "REDIS_IAM_AUTH_ENABLED" = tostring(var.redis_auth_mode == "AUTH_MODE_IAM_AUTH")
+    }
+  }
+
+  backend_secret_enabled = !var.secret_manager_enabled && local.mapbox_token_provided
+  worker_secret_enabled  = false
+
   backend_config = {
     for env in local.environments : env => merge(
       {
@@ -43,48 +62,35 @@ locals {
         "Mapbox__MatrixProfile"              = var.mapbox_matrix_profile
         "ASPNETCORE_ENVIRONMENT"             = local.aspnetcore_environment[env]
         "ASPNETCORE_URLS"                    = "http://0.0.0.0:${var.backend_container_port}"
-        "Redis__ConnectionString"            = local.redis_connection_string_by_env[env]
       },
       local.cors_origin_entries[env],
-      local.mapbox_secret_entries[env]
+      local.mapbox_secret_entries[env],
+      local.backend_redis_config_entries[env]
     )
   }
 
   worker_config = {
-    for env in local.environments : env => {
-      "REDIS_URL"          = local.redis_connection_string_by_env[env]
-      "RESULT_TTL_SECONDS" = tostring(var.worker_result_ttl_seconds)
-    }
-  }
-}
-
-resource "helm_release" "redis" {
-  for_each = var.redis_mode == "in-cluster" ? toset(local.environments) : []
-
-  name             = "redis"
-  repository       = var.redis_chart_repository
-  chart            = "redis"
-  version          = var.redis_chart_version
-  namespace        = local.k8s_namespace[each.key]
-  create_namespace = true
-  wait             = true
-  timeout          = 600
-  atomic           = true
-  cleanup_on_fail  = true
-
-  values = [yamlencode({
-    auth = {
-      enabled = false
-    }
-    image = merge(
+    for env in local.environments : env => merge(
       {
-        repository = var.redis_image_repository
+        "RESULT_TTL_SECONDS" = tostring(var.worker_result_ttl_seconds)
       },
-      var.redis_image_tag != "" ? { tag = var.redis_image_tag } : {}
+      local.worker_redis_config_entries[env]
     )
-  })]
+  }
 
-  depends_on = [google_container_cluster.primary]
+  helm_sensitive_values_by_env = {
+    for env in local.environments :
+    env => concat(
+      local.mapbox_token_provided && !var.secret_manager_enabled ? [{
+        name  = "backend.secret.data.Mapbox__AccessToken"
+        value = var.mapbox_access_token
+      }] : [],
+      local.ghcr_credentials_provided ? [{
+        name  = "imagePullSecret.password"
+        value = var.ghcr_token
+      }] : []
+    )
+  }
 }
 
 resource "helm_release" "app" {
@@ -127,7 +133,7 @@ resource "helm_release" "app" {
         data    = local.backend_config[each.key]
       }
       secret = {
-        enabled      = local.mapbox_token_provided && !var.secret_manager_enabled
+        enabled      = local.backend_secret_enabled
         existingName = var.secret_manager_enabled ? var.backend_secret_name : ""
       }
       secretsStore = {
@@ -151,24 +157,25 @@ resource "helm_release" "app" {
         enabled = true
         data    = local.worker_config[each.key]
       }
+      secret = {
+        enabled = local.worker_secret_enabled
+      }
+    }
+    redis = {
+      enabled     = var.redis_k8s_service_enabled
+      serviceName = var.redis_k8s_service_name
+      host        = local.redis_host_by_env[each.key]
+      port        = local.redis_port_by_env[each.key]
     }
   })]
 
   dynamic "set_sensitive" {
-    for_each = local.mapbox_token_provided ? [1] : []
+    for_each = local.helm_sensitive_values_by_env[each.key]
     content {
-      name  = "backend.secret.data.Mapbox__AccessToken"
-      value = var.mapbox_access_token
+      name  = set_sensitive.value.name
+      value = set_sensitive.value.value
     }
   }
 
-  dynamic "set_sensitive" {
-    for_each = local.ghcr_credentials_provided ? [1] : []
-    content {
-      name  = "imagePullSecret.password"
-      value = var.ghcr_token
-    }
-  }
-
-  depends_on = [google_container_cluster.primary, helm_release.redis]
+  depends_on = [google_container_cluster.primary, google_redis_cluster.redis]
 }

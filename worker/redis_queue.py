@@ -9,13 +9,13 @@ class RedisQueue:
     def __init__(
         self,
         redis_client,
-        queue_key: str = "route:queue",
-        processing_key: str = "route:queue:processing",
+        queue_key: str = "{route}:queue",
+        processing_key: str = "{route}:queue:processing",
     ) -> None:
         self._db = redis_client
         self._queue_key = queue_key
         self._processing_key = processing_key
-        self._job_key_prefix = "route:job:"
+        self._job_key_prefix = "{route}:job:"
         self._request_suffix = ":request"
         self._status_suffix = ":status"
         self._payload_suffix = ":payload"
