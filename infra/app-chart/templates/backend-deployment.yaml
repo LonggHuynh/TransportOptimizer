@@ -1,0 +1,73 @@
+{{- if .Values.backend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "transport.backend.fullname" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "transport.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "transport.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      serviceAccountName: {{ include "transport.backend.serviceAccountName" . }}
+      {{- $pullSecrets := list -}}
+      {{- if .Values.imagePullSecrets }}
+      {{- range .Values.imagePullSecrets }}
+      {{- $pullSecrets = append $pullSecrets (dict "name" .) -}}
+      {{- end }}
+      {{- end }}
+      {{- if and .Values.imagePullSecret.create .Values.imagePullSecret.name }}
+      {{- $pullSecrets = append $pullSecrets (dict "name" .Values.imagePullSecret.name) -}}
+      {{- end }}
+      {{- if gt (len $pullSecrets) 0 }}
+      imagePullSecrets:
+        {{- toYaml $pullSecrets | nindent 8 }}
+      {{- end }}
+      {{- if .Values.backend.secretsStore.enabled }}
+      volumes:
+        - name: backend-secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Values.backend.secretsStore.providerClass | quote }}
+      {{- end }}
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}{{- if .Values.backend.image.tag }}:{{ .Values.backend.image.tag }}{{- end }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.service.containerPort }}
+              protocol: TCP
+          {{- $hasConfig := or .Values.backend.config.enabled .Values.backend.config.existingName }}
+          {{- $hasSecret := or .Values.backend.secret.enabled .Values.backend.secret.existingName }}
+          {{- if or $hasConfig $hasSecret }}
+          envFrom:
+            {{- if $hasConfig }}
+            - configMapRef:
+                name: {{ include "transport.backend.configMapName" . }}
+            {{- end }}
+            {{- if $hasSecret }}
+            - secretRef:
+                name: {{ include "transport.backend.secretName" . }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.backend.secretsStore.enabled }}
+          volumeMounts:
+            - name: backend-secrets-store
+              mountPath: {{ .Values.backend.secretsStore.mountPath | quote }}
+              readOnly: true
+          {{- end }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+{{- end }}

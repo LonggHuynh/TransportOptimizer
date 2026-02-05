@@ -12,24 +12,25 @@ public interface IRouteJobQueue
     Task<ComputeOrderRequest?> GetRequestAsync(string jobId);
 }
 
-public class RouteJobQueue(IConnectionMultiplexer redis) : IRouteJobQueue
+public class RouteJobQueue(IConnectionMultiplexerFactory redisFactory) : IRouteJobQueue
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    private const string QueueKey = "route:queue";
-    private const string JobKeyPrefix = "route:job:";
+    private const string QueueKey = "{route}:queue";
+    private const string JobKeyPrefix = "{route}:job:";
     private const string RequestSuffix = ":request";
     private const string StatusSuffix = ":status";
     private const string PayloadSuffix = ":payload";
     private const string ResultSuffix = ":result";
 
-    private readonly IDatabase _db = redis.GetDatabase();
+    private readonly IConnectionMultiplexerFactory _redisFactory = redisFactory;
 
     public async Task<string> EnqueueAsync(ComputeOrderRequest request, int[][] distanceMatrix)
     {
+        var db = (await _redisFactory.GetAsync()).GetDatabase();
         // Hashed input as key for cached, results removed after configured TTL
         var jobId = request.ComputeJobId();
         var requestKey = GetRequestKey(jobId);
@@ -51,7 +52,7 @@ public class RouteJobQueue(IConnectionMultiplexer redis) : IRouteJobQueue
         };
         var statusJson = JsonSerializer.Serialize(status, JsonOptions);
 
-        var tran = _db.CreateTransaction();
+        var tran = db.CreateTransaction();
         tran.AddCondition(Condition.KeyNotExists(statusKey));
         _ = tran.StringSetAsync(requestKey, requestJson);
         _ = tran.StringSetAsync(payloadKey, payloadJson);
@@ -60,8 +61,8 @@ public class RouteJobQueue(IConnectionMultiplexer redis) : IRouteJobQueue
         var enqueued = await tran.ExecuteAsync();
         if (!enqueued)
         {
-            await _db.StringSetAsync(requestKey, requestJson, when: When.NotExists);
-            await _db.StringSetAsync(payloadKey, payloadJson, when: When.NotExists);
+            await db.StringSetAsync(requestKey, requestJson, when: When.NotExists);
+            await db.StringSetAsync(payloadKey, payloadJson, when: When.NotExists);
         }
 
         return jobId;
@@ -69,7 +70,8 @@ public class RouteJobQueue(IConnectionMultiplexer redis) : IRouteJobQueue
 
     public async Task<ComputeOrderRequest?> GetRequestAsync(string jobId)
     {
-        var requestJson = await _db.StringGetAsync(GetRequestKey(jobId));
+        var db = (await _redisFactory.GetAsync()).GetDatabase();
+        var requestJson = await db.StringGetAsync(GetRequestKey(jobId));
         if (requestJson.IsNullOrEmpty)
         {
             return null;
@@ -80,7 +82,8 @@ public class RouteJobQueue(IConnectionMultiplexer redis) : IRouteJobQueue
 
     public async Task<RouteJobStatusDto?> GetStatusAsync(string jobId)
     {
-        var statusJson = await _db.StringGetAsync(GetStatusKey(jobId));
+        var db = (await _redisFactory.GetAsync()).GetDatabase();
+        var statusJson = await db.StringGetAsync(GetStatusKey(jobId));
         if (statusJson.IsNullOrEmpty)
         {
             return null;
@@ -113,7 +116,8 @@ public class RouteJobQueue(IConnectionMultiplexer redis) : IRouteJobQueue
 
     private async Task<RouteResultDto?> GetResultAsync(string jobId)
     {
-        var resultJson = await _db.StringGetAsync(GetResultKey(jobId));
+        var db = (await _redisFactory.GetAsync()).GetDatabase();
+        var resultJson = await db.StringGetAsync(GetResultKey(jobId));
         if (resultJson.IsNullOrEmpty)
         {
             return null;

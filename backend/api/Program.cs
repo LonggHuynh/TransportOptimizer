@@ -2,13 +2,20 @@ using api.Configuration;
 using api.Externals;
 using api.Externals.Handlers;
 using api.Services;
-using StackExchange.Redis;
+using Google.Cloud.SecretManager.V1;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var appOptions = new AppOptions();
 builder.Configuration.Bind(appOptions);
 builder.Services.AddSingleton(appOptions);
+
+if (appOptions.Mapbox is not null &&
+    string.IsNullOrWhiteSpace(appOptions.Mapbox.AccessToken) &&
+    !string.IsNullOrWhiteSpace(appOptions.Mapbox.AccessTokenSecret))
+{
+    appOptions.Mapbox.AccessToken = LoadSecretFromManager(appOptions.Mapbox.AccessTokenSecret);
+}
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -22,16 +29,7 @@ builder.Services.AddScoped<IGeocodeService, GeocodeService>();
 builder.Services.AddScoped<IDirectionsService, DirectionsService>();
 builder.Services.AddScoped<ITileService, TileService>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
-{
-    var connectionString = appOptions.Redis?.ConnectionString;
-    if (string.IsNullOrWhiteSpace(connectionString))
-    {
-        throw new ArgumentException("Redis connection string is missing.");
-    }
-
-    return ConnectionMultiplexer.Connect(connectionString);
-});
+builder.Services.AddSingleton<IConnectionMultiplexerFactory, RedisConnectionFactory>();
 builder.Services.AddSingleton<IRouteJobQueue, RouteJobQueue>();
 
 builder.Services.AddTransient<MapboxAccessTokenHandler>();
@@ -75,3 +73,43 @@ app.UseCors("CorsPolicy");
 app.MapControllers();
 
 app.Run();
+
+static string LoadSecretFromManager(string secretRef)
+{
+    string resolvedRef = secretRef;
+    if (!resolvedRef.Contains("/versions/"))
+    {
+        if (!resolvedRef.StartsWith("projects/", StringComparison.OrdinalIgnoreCase))
+        {
+            var projectId = Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT")
+                            ?? Environment.GetEnvironmentVariable("GCLOUD_PROJECT");
+            if (string.IsNullOrWhiteSpace(projectId))
+            {
+                throw new ArgumentException("Mapbox access token secret must be a full resource name or GOOGLE_CLOUD_PROJECT must be set.");
+            }
+
+            resolvedRef = $"projects/{projectId}/secrets/{resolvedRef}/versions/latest";
+        }
+        else
+        {
+            resolvedRef = $"{resolvedRef}/versions/latest";
+        }
+    }
+
+    try
+    {
+        var client = SecretManagerServiceClient.Create();
+        var response = client.AccessSecretVersion(resolvedRef);
+        var payload = response.Payload?.Data?.ToStringUtf8();
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            throw new ArgumentException("Secret payload is empty.");
+        }
+
+        return payload;
+    }
+    catch (Exception ex)
+    {
+        throw new ArgumentException($"Failed to load Mapbox access token from Secret Manager: {resolvedRef}", ex);
+    }
+}

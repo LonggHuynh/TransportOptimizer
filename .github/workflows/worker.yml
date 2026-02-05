@@ -1,4 +1,4 @@
-name: Backend Deployment
+name: Worker Deployment
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - stage
       - prod
     paths:
-      - "backend/**"
+      - "worker/**"
       - ".github/workflows/**"
 
 permissions:
@@ -14,12 +14,12 @@ permissions:
   packages: write
 
 jobs:
-  build-and-push-backend:
-    name: Build and Push Backend Docker Image to GHCR
+  build-and-push-worker:
+    name: Build and Push Worker Docker Image to GHCR
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.0.0
@@ -31,12 +31,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push backend image
+      - name: Build and push worker image
         uses: docker/build-push-action@v4
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: ./worker
+          file: ./worker/Dockerfile
           push: true
           tags: |
-            ghcr.io/longghuynh/transport-backend:latest
-            ghcr.io/longghuynh/transport-backend:sha-${{ github.sha }}
+            ghcr.io/longghuynh/transport-worker:latest
+            ghcr.io/longghuynh/transport-worker:sha-${{ github.sha }}

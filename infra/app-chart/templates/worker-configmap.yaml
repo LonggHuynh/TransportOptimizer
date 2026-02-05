@@ -1,0 +1,13 @@
+{{- if and .Values.worker.enabled .Values.worker.config.enabled (not .Values.worker.config.existingName) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "transport.worker.configMapName" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+data:
+{{- range $key, $value := .Values.worker.config.data }}
+  {{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}

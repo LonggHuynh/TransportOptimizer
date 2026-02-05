@@ -10,6 +10,7 @@ namespace api.Configuration
     public class MapboxOptions
     {
         public string? AccessToken { get; set; }
+        public string? AccessTokenSecret { get; set; }
         public string? ApiUrl { get; set; }
         public string? TileStyleId { get; set; }
         public string? TileResolution { get; set; } = "low";
@@ -28,5 +29,18 @@ namespace api.Configuration
     public class RedisOptions
     {
         public string? ConnectionString { get; set; }
+        public string? Endpoint { get; set; }
+        public bool IamAuthEnabled { get; set; }
+
+        public string GetEndpoint()
+        {
+            var endpoint = Endpoint ?? ConnectionString;
+            if (string.IsNullOrWhiteSpace(endpoint))
+            {
+                throw new ArgumentException("Redis endpoint is missing.");
+            }
+
+            return endpoint;
+        }
     }
 }

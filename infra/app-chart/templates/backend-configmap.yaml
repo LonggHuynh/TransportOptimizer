@@ -1,0 +1,13 @@
+{{- if and .Values.backend.enabled .Values.backend.config.enabled (not .Values.backend.config.existingName) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "transport.backend.configMapName" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+data:
+{{- range $key, $value := .Values.backend.config.data }}
+  {{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
