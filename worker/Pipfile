@@ -8,6 +8,8 @@ redis = "==5.0.4"
 pydantic = "==2.7.4"
 pydantic-settings = "==2.3.4"
 google-auth = "==2.29.0"
+celery = "==5.4.0"
+requests = "==2.32.3"
 
 [requires]
 python_version = "3.11"
