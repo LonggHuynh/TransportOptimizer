@@ -3,7 +3,8 @@ name: Worker Deployment
 on:
   push:
     branches:
-      - main
+      - stage
+      - prod
     paths:
       - "worker/**"
       - ".github/workflows/**"

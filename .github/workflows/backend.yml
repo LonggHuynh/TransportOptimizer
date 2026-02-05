@@ -3,7 +3,8 @@ name: Backend Deployment
 on:
   push:
     branches:
-      - main
+      - stage
+      - prod
     paths:
       - "backend/**"
       - ".github/workflows/**"
