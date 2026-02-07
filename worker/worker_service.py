@@ -33,41 +33,38 @@ class JobQueue(Protocol):
         ...
 
 
+def process_job(queue: JobQueue, job_id: str, result_ttl_seconds: int) -> None:
+    print(f"Processing job {job_id}")
+    try:
+        payload = queue.fetch_payload(job_id)
+        if not payload:
+            queue.update_status(job_id, STATUS_FAILED, error="Job payload not found.")
+            queue.ack_job(job_id)
+            return
+
+        queue.update_status(job_id, STATUS_PROCESSING)
+        dist = payload.get("distanceMatrix", [])
+        requirements: list[Requirement] = payload.get("requirements", [])
+        result = compute_route(dist, requirements)
+
+        queue.update_status(
+            job_id,
+            STATUS_COMPLETED,
+            result=result.to_dict(),
+            result_ttl_seconds=result_ttl_seconds,
+        )
+        queue.ack_job(job_id)
+    except Exception as exc:
+        queue.update_status(job_id, STATUS_FAILED, error=str(exc))
+        queue.ack_job(job_id)
+        time.sleep(0.5)
+
+
 class RouteWorker:
     def __init__(self, queue: JobQueue, poll_timeout: int = 1, result_ttl_seconds: int = 300) -> None:
         self._queue = queue
         self._poll_timeout = poll_timeout
         self._result_ttl_seconds = result_ttl_seconds
 
-    def run_forever(self) -> None:
-        while True:
-            job_id = self._queue.pop_job(timeout=self._poll_timeout)
-            if not job_id:
-                continue
-            self._process_job(job_id)
-
     def _process_job(self, job_id: str) -> None:
-        print("Processing job")
-        try:
-            payload = self._queue.fetch_payload(job_id)
-            if not payload:
-                self._queue.update_status(job_id, "failed", error="Job payload not found.")
-                self._queue.ack_job(job_id)
-                return
-
-            self._queue.update_status(job_id, STATUS_PROCESSING)
-            dist = payload.get("distanceMatrix", [])
-            requirements: list[Requirement] = payload.get("requirements", [])
-            result = compute_route(dist, requirements)
-
-            self._queue.update_status(
-                job_id,
-                STATUS_COMPLETED,
-                result=result.to_dict(),
-                result_ttl_seconds=self._result_ttl_seconds,
-            )
-            self._queue.ack_job(job_id)
-        except Exception as exc:
-            self._queue.update_status(job_id, STATUS_FAILED, error=str(exc))
-            self._queue.ack_job(job_id)
-            time.sleep(0.5)
+        process_job(self._queue, job_id, self._result_ttl_seconds)

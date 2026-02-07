@@ -1,4 +1,6 @@
+using System;
 using System.Text.Json;
+using api.Configuration;
 using api.DTOs;
 using api.Models;
 using StackExchange.Redis;
@@ -12,14 +14,14 @@ public interface IRouteJobQueue
     Task<ComputeOrderRequest?> GetRequestAsync(string jobId);
 }
 
-public class RouteJobQueue(IConnectionMultiplexerFactory redisFactory) : IRouteJobQueue
+public class RouteJobQueue(IConnectionMultiplexerFactory redisFactory, AppOptions appOptions) : IRouteJobQueue
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    private const string QueueKey = "{route}:queue";
+    private const string DefaultOrigin = "transport-optimizer@api";
     private const string JobKeyPrefix = "{route}:job:";
     private const string RequestSuffix = ":request";
     private const string StatusSuffix = ":status";
@@ -27,6 +29,7 @@ public class RouteJobQueue(IConnectionMultiplexerFactory redisFactory) : IRouteJ
     private const string ResultSuffix = ":result";
 
     private readonly IConnectionMultiplexerFactory _redisFactory = redisFactory;
+    private readonly CeleryOptions _celeryOptions = appOptions.Celery ?? new CeleryOptions();
 
     public async Task<string> EnqueueAsync(ComputeOrderRequest request, int[][] distanceMatrix)
     {
@@ -51,13 +54,15 @@ public class RouteJobQueue(IConnectionMultiplexerFactory redisFactory) : IRouteJ
             UpdatedAt = DateTimeOffset.UtcNow,
         };
         var statusJson = JsonSerializer.Serialize(status, JsonOptions);
+        var origin = $"{DefaultOrigin}-{Environment.MachineName}";
+        var celeryMessage = CeleryMessageBuilder.Build(_celeryOptions.TaskName, _celeryOptions.Queue, jobId, origin);
 
         var tran = db.CreateTransaction();
         tran.AddCondition(Condition.KeyNotExists(statusKey));
         _ = tran.StringSetAsync(requestKey, requestJson);
         _ = tran.StringSetAsync(payloadKey, payloadJson);
         _ = tran.StringSetAsync(statusKey, statusJson);
-        _ = tran.ListLeftPushAsync(QueueKey, jobId);
+        _ = tran.ListLeftPushAsync(_celeryOptions.Queue, celeryMessage);
         var enqueued = await tran.ExecuteAsync();
         if (!enqueued)
         {

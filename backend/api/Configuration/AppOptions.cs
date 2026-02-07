@@ -5,6 +5,7 @@ namespace api.Configuration
         public MapboxOptions? Mapbox { get; set; }
         public CorsSettingsOptions? CorsSettings { get; set; }
         public RedisOptions? Redis { get; set; }
+        public CeleryOptions? Celery { get; set; }
     }
 
     public class MapboxOptions
@@ -42,5 +43,11 @@ namespace api.Configuration
 
             return endpoint;
         }
+    }
+
+    public class CeleryOptions
+    {
+        public string Queue { get; set; } = "route";
+        public string TaskName { get; set; } = "route.process_job";
     }
 }
