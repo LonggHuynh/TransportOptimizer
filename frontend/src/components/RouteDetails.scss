@@ -1,0 +1,40 @@
+.route-details {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    padding: var(--space-10) var(--space-12);
+    border-radius: var(--radius-lg);
+    background: var(--color-panel-muted);
+    border: var(--border-width) solid var(--color-border);
+}
+
+.route-details button {
+    margin-left: auto;
+    padding: var(--space-6) var(--space-12);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-panel);
+    color: var(--color-ink);
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.route-details .display-route {
+    background: var(--color-panel);
+    border-color: var(--color-border);
+    color: var(--color-ink);
+}
+
+.route-details .display-route:hover {
+    background: var(--color-accent);
+    border-color: var(--color-accent-strong);
+    color: var(--color-panel);
+}
+
+.route-details span {
+    font-weight: 500;
+}
+
+.route-details svg {
+    color: var(--color-ink-muted);
+}

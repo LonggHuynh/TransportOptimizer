@@ -1,0 +1,158 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+$ink: #0b0b0b;
+$ink-muted: #3a3a3a;
+$page: #f6f6f6;
+$panel: #ffffff;
+$panel-muted: #f0f0f0;
+$input: #f3f3f3;
+$border: rgba(0, 0, 0, 0.12);
+$border-strong: rgba(0, 0, 0, 0.22);
+$shadow: rgba(0, 0, 0, 0.08);
+$shadow-strong: rgba(0, 0, 0, 0.12);
+$accent: #111111;
+$accent-strong: #000000;
+$accent-soft: rgba(0, 0, 0, 0.7);
+$chip-bg: rgba(0, 0, 0, 0.06);
+$chip-border: rgba(0, 0, 0, 0.16);
+$handle-bg: rgba(0, 0, 0, 0.05);
+$focus-ring: rgba(0, 0, 0, 0.18);
+
+$space-scale: (
+    0: 0px,
+    2: 2px,
+    3: 3px,
+    4: 4px,
+    6: 6px,
+    8: 8px,
+    10: 10px,
+    12: 12px,
+    14: 14px,
+    16: 16px,
+    18: 18px,
+    20: 20px,
+    22: 22px,
+    24: 24px,
+    26: 26px,
+    28: 28px,
+    30: 30px,
+    32: 32px,
+    34: 34px,
+    38: 38px,
+    40: 40px,
+    44: 44px,
+    50: 50px,
+    64: 64px,
+    72: 72px,
+    160: 160px,
+    340: 340px,
+    380: 380px
+);
+
+$radius-scale: (
+    xs: 8px,
+    sm: 10px,
+    md: 12px,
+    lg: 14px,
+    xl: 16px,
+    "2xl": 22px,
+    pill: 999px,
+    round: 50%
+);
+
+$text-scale: (
+    tiny: 0.7rem,
+    micro: 0.72rem,
+    sm: 0.8rem,
+    input-sm: 0.82rem,
+    badge: 0.84rem,
+    body: 0.85rem,
+    body-md: 0.9rem,
+    body-lg: 0.92rem,
+    input: 0.95rem,
+    button: 1rem,
+    title-sm: 1.1rem,
+    title-lg: 2rem,
+    icon: 1.18rem
+);
+
+:root {
+    --font-sans: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+
+    --color-ink: #{$ink};
+    --color-ink-muted: #{$ink-muted};
+    --color-page: #{$page};
+    --color-panel: #{$panel};
+    --color-panel-muted: #{$panel-muted};
+    --color-input-bg: #{$input};
+    --color-surface: #{$panel};
+    --color-surface-strong: #{$panel};
+    --color-surface-soft: #{$panel-muted};
+    --color-border: #{$border};
+    --color-border-strong: #{$border-strong};
+    --color-chip-bg: #{$chip-bg};
+    --color-chip-border: #{$chip-border};
+    --color-handle-bg: #{$handle-bg};
+    --color-accent: #{$accent};
+    --color-accent-strong: #{$accent-strong};
+    --color-accent-warm: #{$accent};
+    --color-success: #{$accent};
+    --color-danger: #{$accent-strong};
+
+    --shadow-sm: 0 6px 16px #{$shadow};
+    --shadow-md: 0 14px 32px #{$shadow};
+    --shadow-lg: 0 24px 48px #{$shadow-strong};
+    --shadow-glow: 0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+
+    --focus-ring: 0 0 0 var(--space-3) #{$focus-ring};
+    --map-overlay: transparent;
+
+    --transition: all 0.25s ease;
+    --duration-enter: 0.6s;
+    --delay-enter: 0.1s;
+    --easing-enter: ease-out;
+
+    --line-height-base: 1.5;
+    --scale-float-start: 0.98;
+    --opacity-muted: 0.7;
+
+    --tracking-tight: -0.02em;
+    --tracking-base: 0.01em;
+    --tracking-mono: 0.04em;
+
+    --lift-hover: -1px;
+    --border-width: 1px;
+
+    --z-map: 0;
+    --z-content: 2;
+    --z-overlay: 3;
+    --z-menu: 30;
+
+    --map-marker-radius: 6;
+    --map-route-weight: 4;
+    --map-route-opacity: 0.9;
+    --map-fit-padding: 40;
+
+    --color-map-marker-stroke: var(--color-accent);
+    --color-map-marker-fill: var(--color-panel);
+    --color-map-route: var(--color-accent);
+}
+
+@each $key, $value in $space-scale {
+    :root {
+        --space-#{$key}: #{$value};
+    }
+}
+
+@each $name, $value in $radius-scale {
+    :root {
+        --radius-#{$name}: #{$value};
+    }
+}
+
+@each $name, $value in $text-scale {
+    :root {
+        --text-#{$name}: #{$value};
+    }
+}

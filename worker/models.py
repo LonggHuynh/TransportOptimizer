@@ -7,13 +7,18 @@ STATUS_COMPLETED = "completed"
 STATUS_FAILED = "failed"
 
 
-class Requirement(TypedDict):
-    __annotations__ = {"from": int, "to": int}
+class StopWindow(TypedDict):
+    __annotations__ = {
+        "stopIndex": int,
+        "windowStartMinutes": int,
+        "windowEndMinutes": int,
+        "serviceMinutes": int,
+    }
 
 
 class RouteJobPayload(TypedDict):
     distanceMatrix: List[List[int]]
-    requirements: List[Requirement]
+    stopWindows: List[StopWindow]
 
 
 class RouteResultDict(TypedDict):

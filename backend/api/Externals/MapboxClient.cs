@@ -22,6 +22,19 @@ namespace api.Externals
             return await _httpClient.GetFromJsonAsync<MapboxGeocodeResponse>(url, JsonOptions);
         }
 
+        public async Task<MapboxGeocodeResponse?> ForwardGeocodeAutocompleteAsync(string query, int limit, string? types = null)
+        {
+            var encoded = Uri.EscapeDataString(query);
+            var clampedLimit = Math.Max(1, Math.Min(limit, 10));
+            var url = $"/geocoding/v5/mapbox.places/{encoded}.json?limit={clampedLimit}&autocomplete=true";
+            if (!string.IsNullOrWhiteSpace(types))
+            {
+                url += $"&types={Uri.EscapeDataString(types)}";
+            }
+
+            return await _httpClient.GetFromJsonAsync<MapboxGeocodeResponse>(url, JsonOptions);
+        }
+
         public async Task<MapboxMatrixResponse?> GetMatrixAsync(string profile, string coordinates)
         {
             var url = $"/directions-matrix/v1/mapbox/{profile}/{coordinates}?annotations=duration";

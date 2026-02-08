@@ -22,6 +22,11 @@ namespace api.Services
             var geocodeTasks = new Dictionary<string, Task<GeoCode?>>();
             foreach (var place in places)
             {
+                if (TryParseCoordinate(place, out _))
+                {
+                    continue;
+                }
+
                 var normalized = NormalizeAddress(place);
                 if (!geocodeTasks.ContainsKey(normalized))
                 {
@@ -34,6 +39,12 @@ namespace api.Services
             var coordinates = new List<GeoCode>();
             foreach (var place in places)
             {
+                if (TryParseCoordinate(place, out var parsedCoordinate))
+                {
+                    coordinates.Add(parsedCoordinate);
+                    continue;
+                }
+
                 var normalized = NormalizeAddress(place);
                 var geocode = await geocodeTasks[normalized];
                 if (geocode?.Latitude == null || geocode.Longitude == null)
@@ -45,7 +56,14 @@ namespace api.Services
             }
 
             var coordinateString = string.Join(";", coordinates.Select(coord =>
-                $"{coord.Longitude.Value.ToString(CultureInfo.InvariantCulture)},{coord.Latitude.Value.ToString(CultureInfo.InvariantCulture)}"));
+            {
+                if (!coord.Longitude.HasValue || !coord.Latitude.HasValue)
+                {
+                    throw new Exception("Coordinate is missing latitude or longitude.");
+                }
+
+                return $"{coord.Longitude.Value.ToString(CultureInfo.InvariantCulture)},{coord.Latitude.Value.ToString(CultureInfo.InvariantCulture)}";
+            }));
 
             var profile = _appOptions.Mapbox?.MatrixProfile
                           ?? _appOptions.Mapbox?.DirectionsProfile
@@ -66,6 +84,34 @@ namespace api.Services
             return string.Join(" ", address.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                 .Trim()
                 .ToLowerInvariant();
+        }
+
+        private static bool TryParseCoordinate(string value, out GeoCode coordinate)
+        {
+            coordinate = new GeoCode();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var parts = value.Split(',', StringSplitOptions.TrimEntries);
+            if (parts.Length != 2)
+            {
+                return false;
+            }
+
+            if (!double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var longitude)
+                || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var latitude))
+            {
+                return false;
+            }
+
+            coordinate = new GeoCode
+            {
+                Longitude = longitude,
+                Latitude = latitude,
+            };
+            return true;
         }
     }
 }

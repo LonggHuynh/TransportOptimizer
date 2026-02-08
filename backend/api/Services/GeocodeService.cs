@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
+using System.Globalization;
 using api.Configuration;
 using api.Externals;
 using api.Models;
@@ -13,6 +14,7 @@ namespace api.Services
         private readonly IMemoryCache _cache = cache;
         private readonly AppOptions _appOptions = appOptions;
         private const string NotFoundMarker = "__not_found__";
+        private const string SuggestionTypes = "address,place,locality,neighborhood,region,country,postcode";
 
         public async Task<GeoCode?> GetGeocode(string address)
         {
@@ -56,6 +58,68 @@ namespace api.Services
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_appOptions.Mapbox?.GeocodeCacheMinutes ?? 1440),
             });
             return geocode;
+        }
+
+        public async Task<IReadOnlyList<GeocodeSuggestion>> GetSuggestions(string query, int limit)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return [];
+            }
+
+            var trimmed = query.Trim();
+            if (trimmed.Length < 3)
+            {
+                return Array.Empty<GeocodeSuggestion>();
+            }
+
+            var normalized = NormalizeAddress(trimmed);
+            var clampedLimit = Math.Max(1, Math.Min(limit, 10));
+            var cacheKey = $"geocode:suggest:{clampedLimit}:{normalized}";
+            if (_cache.TryGetValue(cacheKey, out object? cached) && cached is List<GeocodeSuggestion> cachedList)
+            {
+                return cachedList;
+            }
+
+            var res = await _mapboxClient.ForwardGeocodeAutocompleteAsync(trimmed, clampedLimit, SuggestionTypes);
+            var suggestions = new List<GeocodeSuggestion>();
+            var dedupe = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var feature in res?.Features ?? [])
+            {
+                var label = feature.PlaceName ?? feature.Text;
+                if (string.IsNullOrWhiteSpace(label) || feature.Center == null || feature.Center.Length < 2)
+                {
+                    continue;
+                }
+
+                var longitude = feature.Center[0];
+                var latitude = feature.Center[1];
+                var dedupeKey = $"{NormalizeAddress(label)}|{longitude.ToString("F6", CultureInfo.InvariantCulture)}|{latitude.ToString("F6", CultureInfo.InvariantCulture)}";
+                if (!dedupe.Add(dedupeKey))
+                {
+                    continue;
+                }
+
+                suggestions.Add(new GeocodeSuggestion
+                {
+                    Label = label,
+                    Longitude = longitude,
+                    Latitude = latitude,
+                });
+
+                if (suggestions.Count >= clampedLimit)
+                {
+                    break;
+                }
+            }
+
+            _cache.Set(cacheKey, suggestions, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_appOptions.Mapbox?.GeocodeSuggestCacheMinutes ?? 60),
+            });
+
+            return suggestions;
         }
 
         private static string NormalizeAddress(string address)

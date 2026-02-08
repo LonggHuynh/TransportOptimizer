@@ -21,6 +21,13 @@ namespace api.Controllers
             return _mapper.Map<GeocodeDto>(geocode);
         }
 
+        [HttpGet("suggest")]
+        public async Task<IEnumerable<GeocodeSuggestionDto>> GetSuggestions([FromQuery] string query, [FromQuery] int limit = 6)
+        {
+            var suggestions = await _geocodeService.GetSuggestions(query, limit);
+            return suggestions.Select(suggestion => _mapper.Map<GeocodeSuggestionDto>(suggestion));
+        }
+
 
     }
 }

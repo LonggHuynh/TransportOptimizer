@@ -18,6 +18,7 @@ namespace api.Configuration
         public int TileSize { get; set; } = 256;
         public int GeocodeCacheMinutes { get; set; } = 1440;
         public int GeocodeFailureCacheMinutes { get; set; } = 10;
+        public int GeocodeSuggestCacheMinutes { get; set; } = 60;
         public string? DirectionsProfile { get; set; } = "driving";
         public string? MatrixProfile { get; set; } = "driving";
     }

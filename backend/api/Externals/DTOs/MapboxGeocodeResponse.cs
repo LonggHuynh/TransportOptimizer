@@ -12,5 +12,11 @@ namespace api.Externals.DTOs
     {
         [JsonPropertyName("center")]
         public double[]? Center { get; set; }
+
+        [JsonPropertyName("place_name")]
+        public string? PlaceName { get; set; }
+
+        [JsonPropertyName("text")]
+        public string? Text { get; set; }
     }
 }

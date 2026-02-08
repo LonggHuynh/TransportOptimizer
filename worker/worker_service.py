@@ -3,7 +3,7 @@ from typing import Optional, Protocol
 
 from route_solver import compute_route
 from models import (
-    Requirement,
+    StopWindow,
     RouteJobPayload,
     RouteResultDict,
     STATUS_COMPLETED,
@@ -44,8 +44,8 @@ def process_job(queue: JobQueue, job_id: str, result_ttl_seconds: int) -> None:
 
         queue.update_status(job_id, STATUS_PROCESSING)
         dist = payload.get("distanceMatrix", [])
-        requirements: list[Requirement] = payload.get("requirements", [])
-        result = compute_route(dist, requirements)
+        stop_windows: list[StopWindow] = payload.get("stopWindows", [])
+        result = compute_route(dist, stop_windows)
 
         queue.update_status(
             job_id,

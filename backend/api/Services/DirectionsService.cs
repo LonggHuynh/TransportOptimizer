@@ -14,8 +14,12 @@ namespace api.Services
 
         public async Task<DirectionsResult?> GetDirectionsAsync(string from, string to)
         {
-            var origin = await _geocodeService.GetGeocode(from);
-            var destination = await _geocodeService.GetGeocode(to);
+            var origin = TryParseCoordinate(from, out var parsedOrigin)
+                ? parsedOrigin
+                : await _geocodeService.GetGeocode(from);
+            var destination = TryParseCoordinate(to, out var parsedDestination)
+                ? parsedDestination
+                : await _geocodeService.GetGeocode(to);
 
             if (origin?.Latitude == null || origin.Longitude == null ||
                 destination?.Latitude == null || destination.Longitude == null)
@@ -52,6 +56,34 @@ namespace api.Services
                 DistanceMeters = route.Distance,
                 DurationSeconds = route.Duration,
             };
+        }
+
+        private static bool TryParseCoordinate(string value, out GeoCode coordinate)
+        {
+            coordinate = new GeoCode();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var parts = value.Split(',', StringSplitOptions.TrimEntries);
+            if (parts.Length != 2)
+            {
+                return false;
+            }
+
+            if (!double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var longitude)
+                || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var latitude))
+            {
+                return false;
+            }
+
+            coordinate = new GeoCode
+            {
+                Longitude = longitude,
+                Latitude = latitude,
+            };
+            return true;
         }
     }
 }

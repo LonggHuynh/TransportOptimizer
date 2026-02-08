@@ -1,0 +1,408 @@
+.routePanel {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    pointer-events: auto;
+}
+
+.routePanel .routeForm {
+    pointer-events: auto;
+}
+
+.routeForm {
+    background: var(--color-panel);
+    padding: var(--space-28);
+    display: flex;
+    flex-direction: column;
+    width: min(90vw, var(--space-340));
+    max-height: calc(100vh - var(--space-64));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    gap: var(--space-18);
+    border: var(--border-width) solid var(--color-border-strong);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-2xl);
+    animation: floatIn var(--duration-enter) var(--easing-enter) both;
+}
+
+.routeForm .panel-handle {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.routeForm h1 {
+    margin: 0;
+}
+
+.routeForm p {
+    margin: 0;
+    color: var(--color-ink-muted);
+    font-size: var(--text-input);
+}
+
+.subtitle {
+    margin-top: calc(var(--space-10) * -1);
+    font-size: var(--text-body-md);
+}
+
+.inputLine > input {
+    height: var(--space-44);
+    padding: 0 var(--space-14);
+    font-size: var(--text-input);
+    border-radius: var(--radius-md);
+    background: var(--color-input-bg);
+    border: var(--border-width) solid var(--color-border);
+    width: 100%;
+    transition: var(--transition);
+}
+
+.inputLine .input {
+    flex: 1;
+}
+
+.inputLine > input:focus {
+    outline: none;
+    border-color: var(--color-border-strong);
+    box-shadow: var(--focus-ring);
+    background: var(--color-surface-strong);
+}
+
+.inputLine > input::placeholder {
+    color: var(--color-ink-muted);
+    opacity: var(--opacity-muted);
+}
+
+.toggleOrigin {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    padding: var(--space-8) var(--space-12);
+    border-radius: var(--radius-md);
+    background: var(--color-panel-muted);
+    border: var(--border-width) solid var(--color-border);
+}
+
+.toggleSwitch {
+    margin-left: auto;
+}
+
+.inputLine button {
+    width: var(--space-44);
+    height: var(--space-44);
+    border-radius: var(--radius-md);
+    background: var(--color-accent-strong);
+    color: var(--color-panel);
+    display: grid;
+    place-items: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.inputLine .depotLocateButton {
+    width: var(--space-34);
+    height: var(--space-34);
+    border-radius: var(--radius-sm);
+    background: var(--color-panel-muted);
+    color: var(--color-ink-muted);
+    border: var(--border-width) solid var(--color-border);
+    box-shadow: none;
+    flex: 0 0 auto;
+}
+
+.inputLine .depotLocateButton svg {
+    font-size: var(--text-icon);
+}
+
+.inputLine .inputLocateButton {
+    display: none;
+}
+
+.inputLine:not(.stopLine):focus-within .inputLocateButton,
+.stopLine .stopLineTop:focus-within .inputLocateButton,
+.inputLine .inputLocateButton:focus-visible {
+    display: grid;
+}
+
+.inputLine .depotLocateButton:hover,
+.inputLine .depotLocateButton:focus-visible {
+    transform: none;
+    background: var(--color-panel);
+    color: var(--color-ink);
+    border-color: var(--color-border-strong);
+}
+
+.route-autocomplete {
+    flex: 1;
+    min-width: 0;
+}
+
+.route-autocomplete .MuiOutlinedInput-root {
+    height: var(--space-44);
+    border-radius: var(--radius-md);
+    background: var(--color-input-bg);
+}
+
+.route-autocomplete .MuiOutlinedInput-notchedOutline {
+    border: var(--border-width) solid var(--color-border);
+}
+
+.route-autocomplete .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+    border-color: var(--color-border-strong);
+}
+
+.route-autocomplete .MuiOutlinedInput-root.Mui-focused {
+    box-shadow: none;
+}
+
+.route-autocomplete .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: var(--color-border-strong);
+    border-width: var(--border-width);
+}
+
+.route-autocomplete .MuiInputBase-input {
+    padding: 0 var(--space-14);
+    font-size: var(--text-input);
+    color: var(--color-ink);
+}
+
+.route-autocomplete .MuiInputBase-input::placeholder {
+    color: var(--color-ink-muted);
+    opacity: var(--opacity-muted);
+}
+
+.route-autocomplete .MuiInputBase-input:focus-visible {
+    box-shadow: none;
+}
+
+.route-autocomplete .MuiAutocomplete-endAdornment {
+    right: var(--space-10);
+}
+
+.route-autocomplete .MuiAutocomplete-clearIndicator,
+.route-autocomplete .MuiAutocomplete-popupIndicator {
+    color: var(--color-ink-muted);
+}
+
+.route-autocomplete .MuiAutocomplete-popper {
+    z-index: var(--z-menu);
+}
+
+.route-autocomplete .MuiAutocomplete-paper {
+    border-radius: var(--radius-md);
+    border: var(--border-width) solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.route-autocomplete .MuiAutocomplete-option {
+    font-size: var(--text-body-md);
+    padding: var(--space-8) var(--space-12);
+}
+
+.route-autocomplete .MuiAutocomplete-option[aria-selected="true"],
+.route-autocomplete .MuiAutocomplete-option.Mui-focused {
+    background: var(--color-panel-muted);
+}
+
+.inputLine .addButton {
+    width: 100%;
+    min-height: var(--space-40);
+    padding: 0 var(--space-14);
+    background: transparent;
+    color: var(--color-ink);
+    border: var(--border-width) dashed var(--color-border-strong);
+    box-shadow: none;
+    letter-spacing: var(--tracking-base);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.inputLine .addButton:hover,
+.inputLine .addButton:focus-visible {
+    transform: none;
+    background: var(--color-panel-muted);
+    border-color: var(--color-ink);
+}
+
+.inputLine .removeStopButton {
+    background: var(--color-panel-muted);
+    color: var(--color-ink);
+    border: var(--border-width) solid var(--color-border);
+    box-shadow: none;
+}
+
+.stopLine {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-6);
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.stopLine .stopLineTop {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    width: 100%;
+}
+
+.stopLine .stopLineTop .route-autocomplete {
+    flex: 1;
+    min-width: 0;
+}
+
+.stopLine .stopIconButton {
+    width: var(--space-30);
+    height: var(--space-30);
+    border-radius: var(--radius-xs);
+    padding: 0;
+    background: transparent;
+    color: var(--color-ink-muted);
+    border: var(--border-width) solid transparent;
+    box-shadow: none;
+}
+
+.stopLine .stopIconButton svg {
+    font-size: var(--text-icon);
+}
+
+.stopLine .stopLineBottom {
+    display: flex;
+    align-items: center;
+    gap: var(--space-10);
+    padding-left: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.stopLine .stopEndWindow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    height: var(--space-34);
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-ink-muted);
+    white-space: nowrap;
+}
+
+.stopLine .stopStayWindow {
+    margin-left: var(--space-2);
+}
+
+.stopLine .stopEndWindow:focus-within {
+    color: var(--color-ink);
+}
+
+.stopLine .stopEndPrefix,
+.stopLine .stopEndSuffix {
+    font-size: var(--text-micro);
+    color: var(--color-ink-muted);
+    letter-spacing: var(--tracking-base);
+}
+
+.stopLine .stopDeadlineInput {
+    width: var(--space-30);
+    min-width: var(--space-30);
+    height: auto;
+    padding: 0;
+    border: none;
+    border-bottom: var(--border-width) solid var(--color-border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-ink);
+    font-size: var(--text-input-sm);
+    font-weight: 600;
+    text-align: center;
+    box-shadow: none;
+}
+
+.stopLine .stopServiceInput {
+    width: var(--space-28);
+    min-width: var(--space-28);
+}
+
+.stopLine .stopDeadlineInput:focus {
+    border: none;
+    border-bottom: var(--border-width) solid var(--color-border-strong);
+    box-shadow: none;
+    background: transparent;
+}
+
+.stopLine .stopDeadlineInput::placeholder {
+    color: var(--color-ink-muted);
+}
+
+.stopLine .stopDeadlineInput::-webkit-inner-spin-button,
+.stopLine .stopDeadlineInput::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.stopLine .stopDeadlineInput[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.stopLine .stopIconButton:hover,
+.stopLine .stopIconButton:focus-visible {
+    background: transparent;
+    color: var(--color-ink);
+    border-color: transparent;
+    box-shadow: none;
+    transform: none;
+}
+
+.stopLine .removeStopButton {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-ink-muted);
+}
+
+.stopLine .removeStopButton:hover {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-ink);
+}
+
+.stopLine button:hover {
+    transform: none;
+}
+
+.inputLine .removeStopButton:hover {
+    background: var(--color-panel);
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.intermediateList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+}
+
+.emptyHint {
+    margin: 0;
+    color: var(--color-ink-muted);
+    font-size: var(--text-body);
+}
+
+@media (max-width: 1100px) {
+    .routePanel {
+        flex-direction: column;
+        gap: var(--space-10);
+    }
+}
+
+@media (max-width: 900px) {
+    .routeForm {
+        max-height: calc(100vh - var(--space-40));
+    }
+}

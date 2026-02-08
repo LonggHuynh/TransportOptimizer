@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiInstance } from '../../api';
-import { useRequirementsStore } from '../store/useRequirementsStore';
+import { useStopWindowsStore } from '../store/useStopWindowsStore';
+import { StopWindow } from '../../models/stopWindow';
 
 interface ComputeRouteResponse {
     order: number[];
@@ -28,10 +29,10 @@ interface RouteComputationResult {
     totalTime: number | null;
 }
 
-const enqueueComputeRoute = async (places: string[], requirements: Requirement[]): Promise<ComputeRouteQueuedResponse> => {
+const enqueueComputeRoute = async (places: string[], stopWindows: StopWindow[]): Promise<ComputeRouteQueuedResponse> => {
     const response = await apiInstance.post<ComputeRouteQueuedResponse>(
         'Route/ComputeOrder',
-        { places, requirements }
+        { places, stopWindows }
     );
     return response.data;
 };
@@ -42,7 +43,7 @@ const fetchRouteStatus = async (jobId: string): Promise<RouteJobStatusResponse> 
 };
 
 export const useComputePathAndTime = () => {
-    const requirements = useRequirementsStore((state) => state.requirements);
+    const stopWindows = useStopWindowsStore((state) => state.stopWindows);
     const [jobId, setJobId] = useState<string | null>(null);
     const [jobPlaces, setJobPlaces] = useState<string[]>([]);
 
@@ -64,7 +65,7 @@ export const useComputePathAndTime = () => {
 
     const enqueueMutation = useMutation(
         {
-            mutationFn: async ({ places }: { places: string[] }) => enqueueComputeRoute(places, requirements),
+            mutationFn: async ({ places }: { places: string[] }) => enqueueComputeRoute(places, stopWindows),
             onSuccess: (data, variables) => {
                 setJobId(data.jobId);
                 setJobPlaces(variables.places);

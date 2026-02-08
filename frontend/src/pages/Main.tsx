@@ -1,55 +1,62 @@
-import React from 'react';
-import { useState } from 'react';
-import CloseIcon from '@mui/icons-material/Close';
+import React, { useRef } from 'react';
 import Map from '../components/Map';
-import Result from '../components/Result';
 import RouteForm from '../components/RouteForm';
-import './Main.css';
-import Requirements from '../components/Requirements';
+import Result from '../components/Result';
+import './Main.scss';
 import { useCenterStore } from '../hooks/store/useCenterStore';
 import { useDirectionsStore } from '../hooks/store/useDirectionsStore';
 import { useComputePathAndTime } from '../hooks/queries/useComputePathAndTime';
 import { toast } from 'react-toastify';
+import Draggable from 'react-draggable';
 
 const Main = () => {
 
-
-    const [showReq, setShowReq] = useState(false);
     const { enqueueMutation, computedResult } = useComputePathAndTime();
     // Not direct subscription but to force mapping re-render.
     useCenterStore((state) => state.center); 
     useDirectionsStore((state) => state.directionsResponse);
+    const routePanelRef = useRef<HTMLDivElement>(null);
+    const resultPanelRef = useRef<HTMLDivElement>(null);
+    const resultStatus = computedResult.status ?? (enqueueMutation.isPending ? 'queued' : undefined);
+    const shouldShowResultPanel = Boolean(resultStatus || computedResult.error);
 
     const handleCompute = (places: string[]) => {
-        toast('Computing best route');
+        toast('Optimizing technician route');
         enqueueMutation.mutate({ places });
     };
     return (
         <>
             <Map />  
             <div className="container">
-                <div className="console">
-                    <RouteForm
-                        toggleRequirements={() => setShowReq(true)}
-                        onCompute={handleCompute}
-                    />
-
-                    {showReq && (
-                        <div className="requirements">
-                            <div className="closeIcon" onClick={() => setShowReq(false)}>
-                                {' '}
-                                <CloseIcon />
-                            </div>
-                            <Requirements />
+                <div className="dragLayer">
+                    <Draggable
+                        nodeRef={routePanelRef}
+                        handle=".panel-handle"
+                        cancel="input,textarea,button,select,option,.MuiSwitch-root,.MuiAutocomplete-root,.MuiAutocomplete-popper,.MuiAutocomplete-option"
+                        bounds="parent"
+                    >
+                        <div ref={routePanelRef} className="draggable-panel dragPanel dragPanel--planner">
+                            <RouteForm onCompute={handleCompute} />
                         </div>
-                    )}
+                    </Draggable>
+                    {shouldShowResultPanel ? (
+                        <Draggable
+                            nodeRef={resultPanelRef}
+                            handle=".panel-handle"
+                            cancel="input,textarea,button,select,option,.MuiSwitch-root,.MuiAutocomplete-root,.MuiAutocomplete-popper,.MuiAutocomplete-option"
+                            bounds="parent"
+                        >
+                            <div ref={resultPanelRef} className="draggable-panel dragPanel dragPanel--result">
+                                <Result
+                                    routes={computedResult.bestRoutes}
+                                    estimatedTime={computedResult.totalTime}
+                                    status={resultStatus}
+                                    error={computedResult.error}
+                                />
+                            </div>
+                        </Draggable>
+                    ) : null}
                 </div>
-                <Result
-                    routes={computedResult.bestRoutes}
-                    estimatedTime={computedResult.totalTime}
-                    status={computedResult.status}
-                    error={computedResult.error}
-                />
             </div>
         </>
     );

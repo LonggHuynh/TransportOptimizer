@@ -44,7 +44,7 @@ public class RouteJobQueue(IConnectionMultiplexerFactory redisFactory, AppOption
         var payload = new RouteJobPayload
         {
             DistanceMatrix = distanceMatrix,
-            Requirements = request.Requirements,
+            StopWindows = request.StopWindows,
         };
         var payloadJson = JsonSerializer.Serialize(payload, JsonOptions);
         var status = new RouteJobRecord

@@ -12,14 +12,14 @@ public class ComputeOrderRequest
     };
 
     public string[] Places { get; init; } = Array.Empty<string>();
-    public List<Requirement> Requirements { get; init; } = new();
+    public List<StopWindow> StopWindows { get; init; } = new();
 
     public string ComputeJobId()
     {
         var payload = new
         {
             places = Places ?? Array.Empty<string>(),
-            requirements = Requirements ?? new List<Requirement>(),
+            stopWindows = StopWindows ?? new List<StopWindow>(),
         };
         var json = JsonSerializer.Serialize(payload, JsonOptions);
         using var sha = SHA256.Create();
