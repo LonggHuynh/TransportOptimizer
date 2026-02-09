@@ -10,7 +10,6 @@ namespace api.Configuration
 
     public class GoogleMapsOptions
     {
-        public string? ServiceAccountJsonPath { get; set; }
         public string[] ServiceAccountScopes { get; set; } = ["https://www.googleapis.com/auth/cloud-platform"];
         public string? QuotaProject { get; set; }
         public string TilesApiUrl { get; set; } = "https://tile.googleapis.com/v1";

@@ -15,7 +15,6 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
     private const string IamScope = "https://www.googleapis.com/auth/cloud-platform";
 
     private readonly RedisOptions _options;
-    private readonly string? _serviceAccountJsonPath;
     private readonly IGoogleAccessTokenProvider _googleAccessTokenProvider;
     private readonly SemaphoreSlim _mutex = new(1, 1);
     private IConnectionMultiplexer? _cached;
@@ -24,7 +23,6 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
     public RedisConnectionFactory(AppOptions appOptions, IGoogleAccessTokenProvider googleAccessTokenProvider)
     {
         _options = appOptions.Redis ?? throw new ArgumentException("Redis settings are missing.");
-        _serviceAccountJsonPath = appOptions.GoogleMaps?.ServiceAccountJsonPath;
         _googleAccessTokenProvider = googleAccessTokenProvider;
     }
 
@@ -88,7 +86,7 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
 
     private async Task<string> GetAccessTokenAsync()
     {
-        return await _googleAccessTokenProvider.GetAccessTokenAsync([IamScope], _serviceAccountJsonPath);
+        return await _googleAccessTokenProvider.GetAccessTokenAsync([IamScope]);
     }
 
     public async ValueTask DisposeAsync()

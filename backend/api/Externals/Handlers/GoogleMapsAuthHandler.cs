@@ -20,7 +20,6 @@ public sealed class GoogleMapsAuthHandler(
         var googleOptions = _appOptions.GoogleMaps;
         var token = await _googleAccessTokenProvider.GetAccessTokenAsync(
             googleOptions?.ServiceAccountScopes,
-            googleOptions?.ServiceAccountJsonPath,
             googleOptions?.QuotaProject,
             cancellationToken
         );

@@ -6,7 +6,6 @@ public interface IGoogleAccessTokenProvider
 {
     Task<string> GetAccessTokenAsync(
         IEnumerable<string>? scopes,
-        string? serviceAccountJsonPath = null,
         string? quotaProject = null,
         CancellationToken cancellationToken = default
     );
@@ -15,23 +14,19 @@ public interface IGoogleAccessTokenProvider
 public sealed class GoogleAccessTokenProvider : IGoogleAccessTokenProvider
 {
     private const string DefaultScope = "https://www.googleapis.com/auth/cloud-platform";
-
     private readonly SemaphoreSlim _credentialLock = new(1, 1);
     private readonly Dictionary<string, GoogleCredential> _credentialCache = new(StringComparer.Ordinal);
 
     public async Task<string> GetAccessTokenAsync(
         IEnumerable<string>? scopes,
-        string? serviceAccountJsonPath = null,
         string? quotaProject = null,
         CancellationToken cancellationToken = default
     )
     {
         var normalizedScopes = NormalizeScopes(scopes);
-        var normalizedPath = NormalizeString(serviceAccountJsonPath);
         var normalizedQuotaProject = NormalizeString(quotaProject);
         var credential = await GetOrCreateCredentialAsync(
             normalizedScopes,
-            normalizedPath,
             normalizedQuotaProject,
             cancellationToken
         );
@@ -49,12 +44,11 @@ public sealed class GoogleAccessTokenProvider : IGoogleAccessTokenProvider
 
     private async Task<GoogleCredential> GetOrCreateCredentialAsync(
         string[] scopes,
-        string? serviceAccountJsonPath,
         string? quotaProject,
         CancellationToken cancellationToken
     )
     {
-        var cacheKey = BuildCacheKey(scopes, serviceAccountJsonPath, quotaProject);
+        var cacheKey = BuildCacheKey(scopes, quotaProject);
         if (_credentialCache.TryGetValue(cacheKey, out var cachedCredential))
         {
             return cachedCredential;
@@ -68,7 +62,7 @@ public sealed class GoogleAccessTokenProvider : IGoogleAccessTokenProvider
                 return cachedCredential;
             }
 
-            var credential = await LoadCredentialAsync(scopes, serviceAccountJsonPath, quotaProject, cancellationToken);
+            var credential = await LoadCredentialAsync(scopes, quotaProject, cancellationToken);
             _credentialCache[cacheKey] = credential;
             return credential;
         }
@@ -80,22 +74,13 @@ public sealed class GoogleAccessTokenProvider : IGoogleAccessTokenProvider
 
     private static async Task<GoogleCredential> LoadCredentialAsync(
         IEnumerable<string> scopes,
-        string? serviceAccountJsonPath,
         string? quotaProject,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            GoogleCredential credential;
-            if (!string.IsNullOrWhiteSpace(serviceAccountJsonPath))
-            {
-                credential = GoogleCredential.FromFile(serviceAccountJsonPath);
-            }
-            else
-            {
-                credential = await GoogleCredential.GetApplicationDefaultAsync(cancellationToken);
-            }
+            var credential = await GoogleCredential.GetApplicationDefaultAsync(cancellationToken);
 
             if (credential.IsCreateScopedRequired)
             {
@@ -112,7 +97,7 @@ public sealed class GoogleAccessTokenProvider : IGoogleAccessTokenProvider
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
         {
             throw new InvalidOperationException(
-                "Failed to load Google credentials. Configure service-account JSON path or GOOGLE_APPLICATION_CREDENTIALS.",
+                "Failed to load Google credentials via ADC. Configure GOOGLE_APPLICATION_CREDENTIALS or workload identity.",
                 ex
             );
         }
@@ -137,11 +122,10 @@ public sealed class GoogleAccessTokenProvider : IGoogleAccessTokenProvider
         return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 
-    private static string BuildCacheKey(IEnumerable<string> scopes, string? serviceAccountJsonPath, string? quotaProject)
+    private static string BuildCacheKey(IEnumerable<string> scopes, string? quotaProject)
     {
         var scopeKey = string.Join(" ", scopes);
-        var pathKey = serviceAccountJsonPath ?? "<adc>";
         var quotaKey = quotaProject ?? "<none>";
-        return $"{pathKey}|{quotaKey}|{scopeKey}";
+        return $"<adc>|{quotaKey}|{scopeKey}";
     }
 }

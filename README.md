@@ -31,7 +31,6 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 | Variable Name                 | Description                                                                  |
 | ----------------------------- | ---------------------------------------------------------------------------- |
 | `CorsSettings:AllowedOrigins` | Origins for CORS settings in the backend. No cors needed for the deployment. |
-| `GoogleMaps:ServiceAccountJsonPath` | Absolute path to service-account JSON key used by backend Google clients. |
 | `GoogleMaps:ServiceAccountScopes:0` | OAuth scope item. Default is `https://www.googleapis.com/auth/cloud-platform`. |
 | `GoogleMaps:QuotaProject` | Optional billing/quota project ID sent as `X-Goog-User-Project`. |
 | `GoogleMaps:TilesApiUrl` | Tiles base URL (default: `https://tile.googleapis.com/v1`). |
@@ -88,10 +87,8 @@ helm upgrade --install transport-optimizer infra/app-chart --namespace transport
 `roles/serviceusage.serviceUsageConsumer` (or another role that includes `serviceusage.services.use`).
 4. Create and download a JSON key for the service account.
 5. Store the key securely on the backend host (for example `/secrets/google-maps-sa.json`).
-6. Configure backend env vars (or appsettings):
-`GoogleMaps:ServiceAccountJsonPath=/secrets/google-maps-sa.json`
-and optionally
+6. Configure backend env vars:
+`GOOGLE_APPLICATION_CREDENTIALS=/secrets/google-maps-sa.json`
+and optionally set app config
 `GoogleMaps:QuotaProject=<your-gcp-project-id>`.
 7. Restart backend and verify `/api/tiles/{z}/{x}/{y}.png` and route/geocode flows.
-
-Alternative: instead of `GoogleMaps:ServiceAccountJsonPath`, set `GOOGLE_APPLICATION_CREDENTIALS` to the same JSON file path.
