@@ -3,6 +3,7 @@
 .secrets
 .vars
 .venv/
+__pycache__/
 .plans/
 .gcloud/
 infra/.terraform/
