@@ -17,6 +17,18 @@ $chip-bg: rgba(0, 0, 0, 0.06);
 $chip-border: rgba(0, 0, 0, 0.16);
 $handle-bg: rgba(0, 0, 0, 0.05);
 $focus-ring: rgba(0, 0, 0, 0.18);
+$panel-overlay-soft: rgba(255, 255, 255, 0.65);
+$panel-overlay: rgba(255, 255, 255, 0.74);
+$panel-overlay-strong: rgba(255, 255, 255, 0.82);
+$panel-overlay-stronger: rgba(255, 255, 255, 0.92);
+$panel-sheen: rgba(255, 255, 255, 0.95);
+$panel-gradient-radial: rgba(0, 0, 0, 0.08);
+$panel-gradient-start: #ffffff;
+$panel-gradient-end: #f4f4f4;
+$error-bg: #fef0f0;
+$error-border: #f4b7b7;
+$error-ink: #8f2626;
+$scrollbar-thumb: rgba(0, 0, 0, 0.2);
 
 $space-scale: (
     0: 0px,
@@ -94,6 +106,18 @@ $text-scale: (
     --color-chip-bg: #{$chip-bg};
     --color-chip-border: #{$chip-border};
     --color-handle-bg: #{$handle-bg};
+    --color-panel-overlay-soft: #{$panel-overlay-soft};
+    --color-panel-overlay: #{$panel-overlay};
+    --color-panel-overlay-strong: #{$panel-overlay-strong};
+    --color-panel-overlay-stronger: #{$panel-overlay-stronger};
+    --color-panel-sheen: #{$panel-sheen};
+    --color-panel-gradient-radial: #{$panel-gradient-radial};
+    --color-panel-gradient-start: #{$panel-gradient-start};
+    --color-panel-gradient-end: #{$panel-gradient-end};
+    --color-error-bg: #{$error-bg};
+    --color-error-border: #{$error-border};
+    --color-error-ink: #{$error-ink};
+    --color-scrollbar-thumb: #{$scrollbar-thumb};
     --color-accent: #{$accent};
     --color-accent-strong: #{$accent-strong};
     --color-accent-warm: #{$accent};
@@ -104,6 +128,7 @@ $text-scale: (
     --shadow-md: 0 14px 32px #{$shadow};
     --shadow-lg: 0 24px 48px #{$shadow-strong};
     --shadow-glow: 0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+    --shadow-inset-sheen: inset 0 1px 0 #{$panel-sheen};
 
     --focus-ring: 0 0 0 var(--space-3) #{$focus-ring};
     --map-overlay: transparent;
