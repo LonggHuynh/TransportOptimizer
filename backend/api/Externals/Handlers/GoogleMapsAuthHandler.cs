@@ -7,7 +7,6 @@ namespace api.Externals.Handlers;
 public sealed class GoogleMapsAuthHandler(AppOptions appOptions) : DelegatingHandler
 {
     private readonly AppOptions _appOptions = appOptions;
-    private GoogleCredential? _credential;
     private const string DefaultScope = "https://www.googleapis.com/auth/cloud-platform";
 
     protected override async Task<HttpResponseMessage> SendAsync(
@@ -16,67 +15,31 @@ public sealed class GoogleMapsAuthHandler(AppOptions appOptions) : DelegatingHan
     )
     {
         var googleOptions = _appOptions.GoogleMaps;
-        var token = await GetAccessTokenAsync(
-            googleOptions?.ServiceAccountScopes,
-            googleOptions?.QuotaProject,
-            cancellationToken
-        );
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var quotaProject = googleOptions?.QuotaProject?.Trim();
-        if (!string.IsNullOrWhiteSpace(quotaProject))
-        {
-            request.Headers.Remove("X-Goog-User-Project");
-            request.Headers.TryAddWithoutValidation("X-Goog-User-Project", quotaProject);
-        }
-
-        return await base.SendAsync(request, cancellationToken);
-    }
-
-    private async Task<string> GetAccessTokenAsync(
-        IEnumerable<string>? configuredScopes,
-        string? quotaProject,
-        CancellationToken cancellationToken
-    )
-    {
-        var credential = await GetCredentialAsync(configuredScopes, quotaProject, cancellationToken);
-        var token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: cancellationToken);
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            throw new InvalidOperationException("Google access token is missing.");
-        }
-
-        return token;
-    }
-
-    private async Task<GoogleCredential> GetCredentialAsync(
-        IEnumerable<string>? configuredScopes,
-        string? quotaProject,
-        CancellationToken cancellationToken
-    )
-    {
-        if (_credential is GoogleCredential existingCredential)
-        {
-            return existingCredential;
-        }
-
+        var scopes = NormalizeScopes(googleOptions?.ServiceAccountScopes);
         try
         {
-            var scopes = NormalizeScopes(configuredScopes);
             var credential = await GoogleCredential.GetApplicationDefaultAsync(cancellationToken);
             if (credential.IsCreateScopedRequired)
             {
                 credential = credential.CreateScoped(scopes);
             }
 
-            var normalizedQuotaProject = quotaProject?.Trim();
-            if (!string.IsNullOrWhiteSpace(normalizedQuotaProject))
+            var quotaProject = googleOptions?.QuotaProject?.Trim();
+            if (!string.IsNullOrWhiteSpace(quotaProject))
             {
-                credential = credential.CreateWithQuotaProject(normalizedQuotaProject);
+                credential = credential.CreateWithQuotaProject(quotaProject);
+                request.Headers.Remove("X-Goog-User-Project");
+                request.Headers.TryAddWithoutValidation("X-Goog-User-Project", quotaProject);
             }
 
-            _credential = credential;
-            return _credential;
+            var token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: cancellationToken);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                throw new InvalidOperationException("Google access token is missing.");
+            }
+
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return await base.SendAsync(request, cancellationToken);
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
         {

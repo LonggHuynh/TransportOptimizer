@@ -17,7 +17,6 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
 
     private readonly RedisOptions _options;
     private readonly SemaphoreSlim _mutex = new(1, 1);
-    private GoogleCredential? _credential;
     private IConnectionMultiplexer? _cached;
     private DateTimeOffset _refreshAfter = DateTimeOffset.MinValue;
 
@@ -86,23 +85,6 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
 
     private async Task<string> GetAccessTokenAsync()
     {
-        var credential = await GetCredentialAsync();
-        var token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: default);
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            throw new InvalidOperationException("Google access token is missing.");
-        }
-
-        return token;
-    }
-
-    private async Task<GoogleCredential> GetCredentialAsync()
-    {
-        if (_credential is GoogleCredential existingCredential)
-        {
-            return existingCredential;
-        }
-
         try
         {
             var credential = await GoogleCredential.GetApplicationDefaultAsync();
@@ -111,8 +93,13 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
                 credential = credential.CreateScoped(IamScope);
             }
 
-            _credential = credential;
-            return _credential;
+            var token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: default);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                throw new InvalidOperationException("Google access token is missing.");
+            }
+
+            return token;
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
         {
