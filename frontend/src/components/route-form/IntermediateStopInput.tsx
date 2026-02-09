@@ -2,7 +2,7 @@ import React from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { Autocomplete, CircularProgress, TextField } from '@mui/material';
-import { MapboxSuggestion, useMapboxSuggestions } from '../../hooks/queries/useMapboxSuggestions';
+import { GeocodeSuggestion, useGeocodeSuggestions } from '../../hooks/queries/useGeocodeSuggestions';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
 import { toCoordinateKey } from '../../utils/coordinates';
 
@@ -15,7 +15,7 @@ interface IntermediateStopInputProps {
     onChange: (value: string) => void;
     onChangeDeadlineTime: (value: string) => void;
     onChangeServiceMinutes: (value: string) => void;
-    onSelectSuggestion: (value: MapboxSuggestion) => void;
+    onSelectSuggestion: (value: GeocodeSuggestion) => void;
     onLocate: () => void;
     onRemove: () => void;
 }
@@ -34,11 +34,11 @@ const IntermediateStopInput = ({
     onRemove,
 }: IntermediateStopInputProps) => {
     const debouncedValue = useDebouncedValue(value, 300);
-    const { suggestions, loading } = useMapboxSuggestions(debouncedValue);
+    const { suggestions, loading } = useGeocodeSuggestions(debouncedValue);
 
     const renderSuggestionOption = (
         props: React.HTMLAttributes<HTMLLIElement>,
-        option: MapboxSuggestion,
+        option: GeocodeSuggestion,
     ) => {
         const { key: _key, ...optionProps } = props as React.HTMLAttributes<HTMLLIElement> & {
             key?: React.Key;

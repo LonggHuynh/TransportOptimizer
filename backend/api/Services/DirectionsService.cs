@@ -1,16 +1,17 @@
 using System.Globalization;
-using api.Configuration;
 using api.Externals;
 using api.Models;
 
 namespace api.Services
 {
-    public class DirectionsService(IMapboxClient mapboxClient, IGeocodeService geocodeService, AppOptions appOptions)
+    public class DirectionsService(
+        IGoogleMapsClient googleMapsClient,
+        IGeocodeService geocodeService
+    )
         : IDirectionsService
     {
-        private readonly IMapboxClient _mapboxClient = mapboxClient;
+        private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
         private readonly IGeocodeService _geocodeService = geocodeService;
-        private readonly AppOptions _appOptions = appOptions;
 
         public async Task<DirectionsResult?> GetDirectionsAsync(string from, string to)
         {
@@ -27,36 +28,47 @@ namespace api.Services
                 return null;
             }
 
-            var coordinates = string.Join(";",
-                $"{origin.Longitude.Value.ToString(CultureInfo.InvariantCulture)},{origin.Latitude.Value.ToString(CultureInfo.InvariantCulture)}",
-                $"{destination.Longitude.Value.ToString(CultureInfo.InvariantCulture)},{destination.Latitude.Value.ToString(CultureInfo.InvariantCulture)}");
+            var originLocation =
+                $"{origin.Latitude.Value.ToString(CultureInfo.InvariantCulture)},{origin.Longitude.Value.ToString(CultureInfo.InvariantCulture)}";
+            var destinationLocation =
+                $"{destination.Latitude.Value.ToString(CultureInfo.InvariantCulture)},{destination.Longitude.Value.ToString(CultureInfo.InvariantCulture)}";
 
-            var profile = _appOptions.Mapbox?.DirectionsProfile
-                          ?? _appOptions.Mapbox?.MatrixProfile
-                          ?? "driving";
-            var response = await _mapboxClient.GetDirectionsAsync(profile, coordinates);
-            var route = response?.Routes?.FirstOrDefault();
-            if (route?.Geometry?.Coordinates == null)
+            var response = await _googleMapsClient.GetDirectionsAsync(
+                originLocation,
+                destinationLocation,
+                "driving"
+            );
+            if (!IsGoogleOkStatus(response?.Status))
             {
                 return null;
             }
 
-            var points = route.Geometry.Coordinates
-                .Where(coord => coord.Length >= 2)
-                .Select(coord => new GeoCode
-                {
-                    Longitude = coord[0],
-                    Latitude = coord[1],
-                })
-                .ToList();
+            var route = response?.Routes?.FirstOrDefault();
+            var encodedPath = route?.OverviewPolyline?.Points;
+            if (string.IsNullOrWhiteSpace(encodedPath))
+            {
+                return null;
+            }
+
+            var points = DecodePolyline(encodedPath);
+            if (points.Count == 0)
+            {
+                return null;
+            }
+
+            var distanceMeters = route?.Legs?.Sum(leg => leg.Distance?.Value ?? 0) ?? 0;
+            var durationSeconds = route?.Legs?.Sum(leg => leg.Duration?.Value ?? 0) ?? 0;
 
             return new DirectionsResult
             {
                 Coordinates = points,
-                DistanceMeters = route.Distance,
-                DurationSeconds = route.Duration,
+                DistanceMeters = distanceMeters,
+                DurationSeconds = durationSeconds,
             };
         }
+
+        private static bool IsGoogleOkStatus(string? status) =>
+            string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase);
 
         private static bool TryParseCoordinate(string value, out GeoCode coordinate)
         {
@@ -84,6 +96,47 @@ namespace api.Services
                 Latitude = latitude,
             };
             return true;
+        }
+
+        private static List<GeoCode> DecodePolyline(string encodedPath)
+        {
+            var points = new List<GeoCode>();
+            var index = 0;
+            var latitude = 0;
+            var longitude = 0;
+
+            while (index < encodedPath.Length)
+            {
+                latitude += DecodeSignedValue(encodedPath, ref index);
+                longitude += DecodeSignedValue(encodedPath, ref index);
+                points.Add(new GeoCode
+                {
+                    Latitude = latitude / 1e5,
+                    Longitude = longitude / 1e5,
+                });
+            }
+
+            return points;
+        }
+
+        private static int DecodeSignedValue(string encodedPath, ref int index)
+        {
+            var result = 0;
+            var shift = 0;
+            int value;
+            do
+            {
+                if (index >= encodedPath.Length)
+                {
+                    return 0;
+                }
+
+                value = encodedPath[index++] - 63;
+                result |= (value & 0x1f) << shift;
+                shift += 5;
+            } while (value >= 0x20);
+
+            return (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
         }
     }
 }

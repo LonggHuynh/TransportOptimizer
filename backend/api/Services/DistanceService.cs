@@ -1,5 +1,4 @@
 using System.Globalization;
-using api.Configuration;
 using api.Externals;
 using api.Externals.DTOs;
 using api.Models;
@@ -7,14 +6,10 @@ using api.Models;
 namespace api.Services
 {
     public class DistanceService(
-        IMapboxClient mapboxClient,
-        IGoogleMapsClient googleMapsClient,
-        AppOptions appOptions
+        IGoogleMapsClient googleMapsClient
     ) : IDistanceService
     {
-        private readonly IMapboxClient _mapboxClient = mapboxClient;
         private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
-        private readonly AppOptions _appOptions = appOptions;
 
         public async Task<int[][]> GetDistanceMatrixAsync(Coordinate[] places, DateTimeOffset? startTimeUtc, string? travelMode)
         {
@@ -46,50 +41,13 @@ namespace api.Services
                 normalizedTravelMode,
                 startTimeUtc
             );
-            if (googleResponse is not null)
+            if (googleResponse is null)
             {
-                var shouldUseTrafficDuration = normalizedTravelMode == "driving" && startTimeUtc.HasValue;
-                return ToGoogleDurationMatrix(googleResponse, coordinates.Count, shouldUseTrafficDuration);
+                throw new Exception("Google Maps Distance Matrix API key is missing or invalid.");
             }
 
-            var mapboxProfile = ResolveMapboxProfile(normalizedTravelMode);
-            if (string.IsNullOrWhiteSpace(mapboxProfile))
-            {
-                throw new Exception("Transit mode requires Google Maps Distance Matrix API key configuration.");
-            }
-
-            var mapboxCoordinateString = string.Join(";", coordinates.Select(coord =>
-            {
-                if (!coord.Longitude.HasValue || !coord.Latitude.HasValue)
-                {
-                    throw new Exception("Coordinate is missing latitude or longitude.");
-                }
-
-                return $"{coord.Longitude.Value.ToString(CultureInfo.InvariantCulture)},{coord.Latitude.Value.ToString(CultureInfo.InvariantCulture)}";
-            }));
-
-            var response = await _mapboxClient.GetMatrixAsync(mapboxProfile, mapboxCoordinateString);
-            if (response?.Durations == null)
-            {
-                throw new Exception("Failed to get distance matrix");
-            }
-
-            return response.Durations
-                .Select(row => row.Select(duration => duration.HasValue ? (int)Math.Round(duration.Value) : 0).ToArray())
-                .ToArray();
-        }
-
-        private string? ResolveMapboxProfile(string normalizedTravelMode)
-        {
-            return normalizedTravelMode switch
-            {
-                "driving" => _appOptions.Mapbox?.MatrixProfile
-                    ?? _appOptions.Mapbox?.DirectionsProfile
-                    ?? "driving",
-                "walking" => "walking",
-                "bicycling" => "cycling",
-                _ => null,
-            };
+            var shouldUseTrafficDuration = normalizedTravelMode == "driving" && startTimeUtc.HasValue;
+            return ToGoogleDurationMatrix(googleResponse, coordinates.Count, shouldUseTrafficDuration);
         }
 
         private static int[][] ToGoogleDurationMatrix(

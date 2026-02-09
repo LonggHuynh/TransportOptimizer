@@ -23,9 +23,9 @@ import {
     toTimeLocalValue,
 } from './utils';
 import {
-    MapboxSuggestion,
-    useMapboxSuggestions,
-} from '../../hooks/queries/useMapboxSuggestions';
+    GeocodeSuggestion,
+    useGeocodeSuggestions,
+} from '../../hooks/queries/useGeocodeSuggestions';
 import { useCenterStore } from '../../hooks/store/useCenterStore';
 import { useIntermediateListStore } from '../../hooks/store/useIntermediateListStore';
 import { useLocationLabelsStore } from '../../hooks/store/useLocationLabelsStore';
@@ -88,9 +88,9 @@ const RouteForm = () => {
     const debouncedOrigin = useDebouncedValue(origin.value, 300);
     const debouncedDestination = useDebouncedValue(destination.value, 300);
     const { suggestions: originSuggestions, loading: originLoading } =
-        useMapboxSuggestions(debouncedOrigin);
+        useGeocodeSuggestions(debouncedOrigin);
     const { suggestions: destinationSuggestions, loading: destinationLoading } =
-        useMapboxSuggestions(debouncedDestination);
+        useGeocodeSuggestions(debouncedDestination);
 
     useEffect(() => {
         const routeStartLocal = toLocalDateTimeFromTime(departTimeLocal);
@@ -103,7 +103,7 @@ const RouteForm = () => {
         setStopWindows(toStopWindows(normalizedStops));
     }, [departTimeLocal, setIntermediateList, setStopWindows, stops]);
 
-    const handleRememberLocation = (suggestion: MapboxSuggestion) => {
+    const handleRememberLocation = (suggestion: GeocodeSuggestion) => {
         if (!suggestion.coordinate) {
             return;
         }
@@ -144,7 +144,7 @@ const RouteForm = () => {
         appendStop({ ...DEFAULT_STOP });
     };
 
-    const handleSelectOrigin = (suggestion: MapboxSuggestion) => {
+    const handleSelectOrigin = (suggestion: GeocodeSuggestion) => {
         if (!suggestion.coordinate) {
             return;
         }
@@ -160,7 +160,7 @@ const RouteForm = () => {
         );
     };
 
-    const handleSelectDestination = (suggestion: MapboxSuggestion) => {
+    const handleSelectDestination = (suggestion: GeocodeSuggestion) => {
         if (!suggestion.coordinate) {
             return;
         }
@@ -178,7 +178,7 @@ const RouteForm = () => {
 
     const handleSelectIntermediate = (
         index: number,
-        suggestion: MapboxSuggestion,
+        suggestion: GeocodeSuggestion,
     ) => {
         const coordinate = suggestion.coordinate;
         if (!coordinate) {
@@ -195,7 +195,7 @@ const RouteForm = () => {
 
     const renderSuggestionOption = (
         props: React.HTMLAttributes<HTMLLIElement>,
-        option: MapboxSuggestion,
+        option: GeocodeSuggestion,
     ) => {
         const { key: _key, ...optionProps } =
             props as React.HTMLAttributes<HTMLLIElement> & {

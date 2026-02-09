@@ -1,10 +1,10 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { apiInstance } from '../../api';
 import { AxiosError } from 'axios';
+import { apiInstance } from '../../api';
 import { Coordinate } from '../../models/coordinate';
 import { toCoordinateKey } from '../../utils/coordinates';
 
-export interface MapboxSuggestion {
+export interface GeocodeSuggestion {
     id: string;
     label: string;
     coordinate?: Coordinate;
@@ -13,8 +13,13 @@ export interface MapboxSuggestion {
 const MIN_QUERY_LENGTH = 3;
 const SUGGESTION_LIMIT = 6;
 
-type MapboxSuggestionsQueryOptions = Omit<
-    UseQueryOptions<MapboxSuggestion[], AxiosError, MapboxSuggestion[], [string, string]>,
+type GeocodeSuggestionsQueryOptions = Omit<
+    UseQueryOptions<
+        GeocodeSuggestion[],
+        AxiosError,
+        GeocodeSuggestion[],
+        [string, string]
+    >,
     'queryKey' | 'queryFn' | 'enabled'
 >;
 
@@ -35,12 +40,16 @@ const isRecord = (value: unknown): value is SuggestionRecord =>
 const getFiniteNumber = (value: unknown): number | null =>
     typeof value === 'number' && Number.isFinite(value) ? value : null;
 
-const parseSuggestion = (input: unknown, index: number): MapboxSuggestion | null => {
+const parseSuggestion = (
+    input: unknown,
+    index: number,
+): GeocodeSuggestion | null => {
     if (typeof input === 'string') {
         const label = input.trim();
         if (!label) {
             return null;
         }
+
         return {
             id: `${label}-${index}`,
             label,
@@ -63,7 +72,11 @@ const parseSuggestion = (input: unknown, index: number): MapboxSuggestion | null
 
     let latitude = getFiniteNumber(input.latitude);
     let longitude = getFiniteNumber(input.longitude);
-    if ((latitude === null || longitude === null) && Array.isArray(input.center) && input.center.length >= 2) {
+    if (
+        (latitude === null || longitude === null)
+        && Array.isArray(input.center)
+        && input.center.length >= 2
+    ) {
         longitude = getFiniteNumber(input.center[0]);
         latitude = getFiniteNumber(input.center[1]);
     }
@@ -72,10 +85,11 @@ const parseSuggestion = (input: unknown, index: number): MapboxSuggestion | null
         ? { longitude, latitude }
         : undefined;
 
-    const id =
-        typeof input.id === 'string' && input.id.trim()
-            ? input.id
-            : (coordinate ? toCoordinateKey(coordinate) : `${label}-${index}`);
+    const id = typeof input.id === 'string' && input.id.trim()
+        ? input.id
+        : coordinate
+            ? toCoordinateKey(coordinate)
+            : `${label}-${index}`;
 
     return {
         id,
@@ -84,9 +98,9 @@ const parseSuggestion = (input: unknown, index: number): MapboxSuggestion | null
     };
 };
 
-const parseSuggestions = (data: unknown): MapboxSuggestion[] => {
+const parseSuggestions = (data: unknown): GeocodeSuggestion[] => {
     const payload = Array.isArray(data) ? data : [];
-    const dedupe = new Map<string, MapboxSuggestion>();
+    const dedupe = new Map<string, GeocodeSuggestion>();
 
     payload.forEach((item, index) => {
         const parsed = parseSuggestion(item, index);
@@ -105,7 +119,13 @@ const parseSuggestions = (data: unknown): MapboxSuggestion[] => {
     return Array.from(dedupe.values());
 };
 
-const fetchSuggestions = async ({ query, signal }: { query: string; signal: AbortSignal }) => {
+const fetchSuggestions = async ({
+    query,
+    signal,
+}: {
+    query: string;
+    signal: AbortSignal;
+}) => {
     const response = await apiInstance.get<unknown>('geocode/suggest', {
         params: { query, limit: SUGGESTION_LIMIT },
         signal,
@@ -113,20 +133,20 @@ const fetchSuggestions = async ({ query, signal }: { query: string; signal: Abor
     return response.data;
 };
 
-export const useMapboxSuggestions = (
+export const useGeocodeSuggestions = (
     query: string,
-    options: MapboxSuggestionsQueryOptions = {},
+    options: GeocodeSuggestionsQueryOptions = {},
 ) => {
     const trimmedQuery = query.trim();
     const canSearch = trimmedQuery.length >= MIN_QUERY_LENGTH;
 
     const suggestionQuery = useQuery<
-        MapboxSuggestion[],
+        GeocodeSuggestion[],
         AxiosError,
-        MapboxSuggestion[],
+        GeocodeSuggestion[],
         [string, string]
     >({
-        queryKey: ['mapboxSuggestions', trimmedQuery],
+        queryKey: ['geocodeSuggestions', trimmedQuery],
         queryFn: async ({ signal }) =>
             parseSuggestions(await fetchSuggestions({ query: trimmedQuery, signal })),
         enabled: canSearch,

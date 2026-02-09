@@ -8,9 +8,23 @@
     filter: none;
 }
 
-.mapLeaflet {
+.mapGoogle {
     width: 100%;
     height: 100%;
+}
+
+.mapError {
+    position: absolute;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(20, 20, 20, 0.82);
+    color: #fff;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    z-index: calc(var(--z-map) + 1);
 }
 
 .mapContainer::after {
