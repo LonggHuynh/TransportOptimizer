@@ -5,9 +5,9 @@ using api.Models;
 
 namespace api.Services
 {
-    public class GeocodeService(IGoogleMapsClient googleMapsClient) : IGeocodeService
+    public class GeocodeService(IGooglePlacesClient googlePlacesClient) : IGeocodeService
     {
-        private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
+        private readonly IGooglePlacesClient _googlePlacesClient = googlePlacesClient;
 
         public async Task<GeoCode?> GetGeocode(string? address, string? placeId = null)
         {
@@ -19,8 +19,8 @@ namespace api.Services
             }
 
             var res = !string.IsNullOrWhiteSpace(normalizedPlaceId)
-                ? await _googleMapsClient.ForwardGeocodeByPlaceIdAsync(normalizedPlaceId)
-                : await _googleMapsClient.ForwardGeocodeAsync(normalizedAddress!);
+                ? await _googlePlacesClient.ForwardGeocodeByPlaceIdAsync(normalizedPlaceId)
+                : await _googlePlacesClient.ForwardGeocodeAsync(normalizedAddress!);
             var location = res?.Results?.FirstOrDefault()?.Geometry?.Location;
             if (!IsGoogleOkStatus(res?.Status) || location == null)
             {
@@ -48,7 +48,7 @@ namespace api.Services
             }
 
             var clampedLimit = Math.Max(1, Math.Min(limit, 10));
-            var res = await _googleMapsClient.ForwardGeocodeAutocompleteAsync(trimmed, biasCenter);
+            var res = await _googlePlacesClient.ForwardGeocodeAutocompleteAsync(trimmed, biasCenter);
             var suggestions = new List<GeocodeSuggestion>();
             var dedupe = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

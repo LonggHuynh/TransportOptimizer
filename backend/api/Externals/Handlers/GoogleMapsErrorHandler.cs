@@ -1,20 +1,16 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using api.Configuration;
 
 namespace api.Externals.Handlers;
 
-public class GoogleMapsErrorHandler(AppOptions appOptions) : DelegatingHandler
+public class GoogleMapsErrorHandler : DelegatingHandler
 {
-    private readonly string _googleMapsApiKey = appOptions.GoogleMaps?.ApiKey?.Trim() ?? string.Empty;
-
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken
     )
     {
-        TryAppendLegacyApiKey(request);
 
         var response = await base.SendAsync(request, cancellationToken);
         var payload = response.Content is null
@@ -92,6 +88,24 @@ public class GoogleMapsErrorHandler(AppOptions appOptions) : DelegatingHandler
                 errorMessage = errorMessageElement.GetString();
             }
 
+            if (root.TryGetProperty("message", out var topMessageElement) && topMessageElement.ValueKind == JsonValueKind.String)
+            {
+                errorMessage ??= topMessageElement.GetString();
+            }
+
+            if (root.TryGetProperty("error", out var errorElement) && errorElement.ValueKind == JsonValueKind.Object)
+            {
+                if (errorElement.TryGetProperty("status", out var nestedStatusElement) && nestedStatusElement.ValueKind == JsonValueKind.String)
+                {
+                    status ??= nestedStatusElement.GetString();
+                }
+
+                if (errorElement.TryGetProperty("message", out var nestedMessageElement) && nestedMessageElement.ValueKind == JsonValueKind.String)
+                {
+                    errorMessage ??= nestedMessageElement.GetString();
+                }
+            }
+
             return (status, errorMessage);
         }
         catch (JsonException)
@@ -119,6 +133,10 @@ public class GoogleMapsErrorHandler(AppOptions appOptions) : DelegatingHandler
 
         return googleStatus switch
         {
+            "INVALID_ARGUMENT" => "Upstream map service received an invalid request.",
+            "PERMISSION_DENIED" => "Upstream map service denied the request.",
+            "RESOURCE_EXHAUSTED" => "Upstream map service quota limit exceeded.",
+            "UNAUTHENTICATED" => "Upstream map service authentication failed.",
             "REQUEST_DENIED" => "Upstream map service denied the request.",
             "OVER_QUERY_LIMIT" => "Upstream map service quota limit exceeded.",
             "OVER_DAILY_LIMIT" => "Upstream map service daily quota exceeded.",
@@ -133,6 +151,10 @@ public class GoogleMapsErrorHandler(AppOptions appOptions) : DelegatingHandler
     {
         return status switch
         {
+            "INVALID_ARGUMENT" => HttpStatusCode.BadRequest,
+            "PERMISSION_DENIED" => HttpStatusCode.Forbidden,
+            "RESOURCE_EXHAUSTED" => HttpStatusCode.TooManyRequests,
+            "UNAUTHENTICATED" => HttpStatusCode.Unauthorized,
             "REQUEST_DENIED" => HttpStatusCode.Forbidden,
             "OVER_QUERY_LIMIT" => HttpStatusCode.TooManyRequests,
             "OVER_DAILY_LIMIT" => HttpStatusCode.TooManyRequests,
@@ -141,34 +163,5 @@ public class GoogleMapsErrorHandler(AppOptions appOptions) : DelegatingHandler
             "UNKNOWN_ERROR" => HttpStatusCode.BadGateway,
             _ => HttpStatusCode.BadGateway,
         };
-    }
-
-    private void TryAppendLegacyApiKey(HttpRequestMessage request)
-    {
-        if (string.IsNullOrWhiteSpace(_googleMapsApiKey) || request.RequestUri is null)
-        {
-            return;
-        }
-
-        var uriText = request.RequestUri.ToString();
-        if (string.IsNullOrWhiteSpace(uriText)
-            || uriText.Contains("key=", StringComparison.OrdinalIgnoreCase)
-            || !IsLegacyMapsApiRequest(uriText))
-        {
-            return;
-        }
-
-        var separator = uriText.Contains('?', StringComparison.Ordinal) ? "&" : "?";
-        request.RequestUri = new Uri(
-            $"{uriText}{separator}key={Uri.EscapeDataString(_googleMapsApiKey)}",
-            request.RequestUri.IsAbsoluteUri ? UriKind.Absolute : UriKind.Relative
-        );
-    }
-
-    private static bool IsLegacyMapsApiRequest(string uriText)
-    {
-        return uriText.Contains("distancematrix/json", StringComparison.OrdinalIgnoreCase)
-            || uriText.Contains("geocode/json", StringComparison.OrdinalIgnoreCase)
-            || uriText.Contains("directions/json", StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -7,11 +7,11 @@ using api.Models;
 namespace api.Services
 {
     public class DistanceService(
-        IGoogleMapsClient googleMapsClient
+        IGoogleRoutesClient googleRoutesClient
     ) : IDistanceService
     {
         private const int GoogleMatrixMaxElements = 100;
-        private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
+        private readonly IGoogleRoutesClient _googleRoutesClient = googleRoutesClient;
 
         public async Task<int[][]> GetDistanceMatrixAsync(Coordinate[] places, DateTimeOffset? startTimeUtc, string? travelMode)
         {
@@ -43,7 +43,7 @@ namespace api.Services
                 return $"{coord.Latitude.Value.ToString(CultureInfo.InvariantCulture)},{coord.Longitude.Value.ToString(CultureInfo.InvariantCulture)}";
             }));
 
-            var googleResponse = await _googleMapsClient.GetDistanceMatrixAsync(
+            var googleResponse = await _googleRoutesClient.GetDistanceMatrixAsync(
                 googleCoordinateString,
                 googleCoordinateString,
                 normalizedTravelMode,

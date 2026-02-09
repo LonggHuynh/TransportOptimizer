@@ -36,6 +36,48 @@ builder.Services.AddHttpClient<IGoogleMapsClient, GoogleMapsClient>(client =>
 
     var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
     client.BaseAddress = new Uri(normalizedApiUrl);
+    client.DefaultRequestHeaders.Add("Accept", "*/*");
+
+    var googleMapsApiKey = appOptions.GoogleMaps?.ApiKey;
+    if (!string.IsNullOrWhiteSpace(googleMapsApiKey))
+    {
+        client.DefaultRequestHeaders.Remove("X-Goog-Api-Key");
+        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Goog-Api-Key", googleMapsApiKey);
+    }
+})
+.AddHttpMessageHandler<GoogleMapsErrorHandler>();
+
+builder.Services.AddHttpClient<IGooglePlacesClient, GooglePlacesClient>(client =>
+{
+    var apiUrl = appOptions.GoogleMaps?.PlacesApiUrl;
+    if (string.IsNullOrWhiteSpace(apiUrl))
+    {
+        apiUrl = "https://places.googleapis.com/v1";
+    }
+
+    var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
+    client.BaseAddress = new Uri(normalizedApiUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+    var googleMapsApiKey = appOptions.GoogleMaps?.ApiKey;
+    if (!string.IsNullOrWhiteSpace(googleMapsApiKey))
+    {
+        client.DefaultRequestHeaders.Remove("X-Goog-Api-Key");
+        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Goog-Api-Key", googleMapsApiKey);
+    }
+})
+.AddHttpMessageHandler<GoogleMapsErrorHandler>();
+
+builder.Services.AddHttpClient<IGoogleRoutesClient, GoogleRoutesClient>(client =>
+{
+    var apiUrl = appOptions.GoogleMaps?.RoutesApiUrl;
+    if (string.IsNullOrWhiteSpace(apiUrl))
+    {
+        apiUrl = "https://routes.googleapis.com";
+    }
+
+    var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
+    client.BaseAddress = new Uri(normalizedApiUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 
     var googleMapsApiKey = appOptions.GoogleMaps?.ApiKey;

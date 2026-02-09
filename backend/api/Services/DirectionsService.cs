@@ -5,12 +5,12 @@ using api.Models;
 namespace api.Services
 {
     public class DirectionsService(
-        IGoogleMapsClient googleMapsClient,
+        IGoogleRoutesClient googleRoutesClient,
         IGeocodeService geocodeService
     )
         : IDirectionsService
     {
-        private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
+        private readonly IGoogleRoutesClient _googleRoutesClient = googleRoutesClient;
         private readonly IGeocodeService _geocodeService = geocodeService;
 
         public async Task<DirectionsResult?> GetDirectionsAsync(string from, string to)
@@ -33,7 +33,7 @@ namespace api.Services
             var destinationLocation =
                 $"{destination.Latitude.Value.ToString(CultureInfo.InvariantCulture)},{destination.Longitude.Value.ToString(CultureInfo.InvariantCulture)}";
 
-            var response = await _googleMapsClient.GetDirectionsAsync(
+            var response = await _googleRoutesClient.GetDirectionsAsync(
                 originLocation,
                 destinationLocation,
                 "driving"

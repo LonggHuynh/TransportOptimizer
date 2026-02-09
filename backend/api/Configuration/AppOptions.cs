@@ -13,6 +13,7 @@ namespace api.Configuration
         public string? ApiKey { get; set; }
         public string ApiUrl { get; set; } = "https://maps.googleapis.com/maps/api";
         public string PlacesApiUrl { get; set; } = "https://places.googleapis.com/v1";
+        public string RoutesApiUrl { get; set; } = "https://routes.googleapis.com";
         public int TileSize { get; set; } = 256;
         public string TileMapType { get; set; } = "roadmap";
     }
