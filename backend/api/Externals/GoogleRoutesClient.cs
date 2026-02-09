@@ -20,7 +20,7 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
     private const string RoutesComputeRoutesFieldMask =
         "routes.polyline.encodedPolyline,routes.distanceMeters,routes.duration";
     private const string RoutesComputeRouteMatrixFieldMask =
-        "originIndex,destinationIndex,condition,duration,staticDuration";
+        "originIndex,destinationIndex,status,condition,duration,staticDuration";
 
     public async Task<GoogleDistanceMatrixResponse?> GetDistanceMatrixAsync(
         string origins,
@@ -37,6 +37,7 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
         var originPoints = ParseCoordinateList(origins);
         var destinationPoints = ParseCoordinateList(destinations);
         var normalizedTravelMode = ToRoutesTravelMode(travelMode);
+        var matrixDepartureTimeUtc = ToValidDrivingDepartureTimeUtc(normalizedTravelMode, departureTimeUtc);
 
         using var request = CreateRoutesRequest(
             "distanceMatrix/v2:computeRouteMatrix",
@@ -46,10 +47,10 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
                 Origins = originPoints.Select(ToMatrixOrigin).ToList(),
                 Destinations = destinationPoints.Select(ToMatrixDestination).ToList(),
                 TravelMode = normalizedTravelMode,
-                RoutingPreference = normalizedTravelMode == "DRIVE" && departureTimeUtc.HasValue
+                RoutingPreference = matrixDepartureTimeUtc.HasValue
                     ? "TRAFFIC_AWARE"
                     : null,
-                DepartureTime = departureTimeUtc?.UtcDateTime.ToString("O"),
+                DepartureTime = matrixDepartureTimeUtc?.UtcDateTime.ToString("O"),
             }
         );
 
@@ -167,6 +168,24 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
         };
     }
 
+    private static DateTimeOffset? ToValidDrivingDepartureTimeUtc(
+        string normalizedTravelMode,
+        DateTimeOffset? departureTimeUtc
+    )
+    {
+        if (normalizedTravelMode != "DRIVE" || !departureTimeUtc.HasValue)
+        {
+            return null;
+        }
+
+        var normalizedDeparture = departureTimeUtc.Value.ToUniversalTime();
+        // Routes Matrix rejects past/near-past driving departure times.
+        var minimumAcceptedDeparture = DateTimeOffset.UtcNow.AddMinutes(1);
+        return normalizedDeparture > minimumAcceptedDeparture
+            ? normalizedDeparture
+            : null;
+    }
+
     private static (double Latitude, double Longitude) ParseCoordinate(string value)
     {
         var parts = value.Split(',', StringSplitOptions.TrimEntries);
@@ -186,9 +205,7 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
 
     private static List<(double Latitude, double Longitude)> ParseCoordinateList(string value)
     {
-        return value.Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .Select(ParseCoordinate)
-            .ToList();
+        return [.. value.Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Select(ParseCoordinate)];
     }
 
     private static RoutesWaypoint ToRouteWaypoint((double Latitude, double Longitude) point)
