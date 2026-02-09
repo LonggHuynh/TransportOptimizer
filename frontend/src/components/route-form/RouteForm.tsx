@@ -448,7 +448,7 @@ const RouteForm = () => {
                                 <IntermediateStopInput
                                     key={field.id}
                                     value={stop.value}
-                                    placeholder={`Job stop ${index + 1}`}
+                                    placeholder={`Stop`}
                                     hasCoordinate={Boolean(stop.coordinate)}
                                     deadlineTimeLocal={stop.deadlineTimeLocal}
                                     serviceMinutes={stop.serviceMinutes}

@@ -128,7 +128,7 @@ const IntermediateStopInput = ({
                         min={0}
                         max={1439}
                         step={5}
-                        placeholder="15"
+                        placeholder=""
                         value={serviceMinutes}
                         aria-label={`${placeholder} stay for minutes`}
                         onChange={(e) => onChangeServiceMinutes(e.target.value)}
