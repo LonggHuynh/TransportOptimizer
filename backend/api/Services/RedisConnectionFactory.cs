@@ -1,5 +1,6 @@
 using System.Threading;
 using api.Configuration;
+using Google.Apis.Auth.OAuth2;
 using StackExchange.Redis;
 
 namespace api.Services;
@@ -15,15 +16,15 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
     private const string IamScope = "https://www.googleapis.com/auth/cloud-platform";
 
     private readonly RedisOptions _options;
-    private readonly IGoogleAccessTokenProvider _googleAccessTokenProvider;
+    private readonly SemaphoreSlim _credentialLock = new(1, 1);
     private readonly SemaphoreSlim _mutex = new(1, 1);
+    private GoogleCredential? _credential;
     private IConnectionMultiplexer? _cached;
     private DateTimeOffset _refreshAfter = DateTimeOffset.MinValue;
 
-    public RedisConnectionFactory(AppOptions appOptions, IGoogleAccessTokenProvider googleAccessTokenProvider)
+    public RedisConnectionFactory(AppOptions appOptions)
     {
         _options = appOptions.Redis ?? throw new ArgumentException("Redis settings are missing.");
-        _googleAccessTokenProvider = googleAccessTokenProvider;
     }
 
     public Task<IConnectionMultiplexer> GetAsync() => GetOrCreateAsync();
@@ -86,7 +87,51 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
 
     private async Task<string> GetAccessTokenAsync()
     {
-        return await _googleAccessTokenProvider.GetAccessTokenAsync([IamScope]);
+        var credential = await GetCredentialAsync();
+        var token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: default);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            throw new InvalidOperationException("Google access token is missing.");
+        }
+
+        return token;
+    }
+
+    private async Task<GoogleCredential> GetCredentialAsync()
+    {
+        if (_credential is not null)
+        {
+            return _credential;
+        }
+
+        await _credentialLock.WaitAsync();
+        try
+        {
+            if (_credential is not null)
+            {
+                return _credential;
+            }
+
+            var credential = await GoogleCredential.GetApplicationDefaultAsync();
+            if (credential.IsCreateScopedRequired)
+            {
+                credential = credential.CreateScoped(IamScope);
+            }
+
+            _credential = credential;
+            return _credential;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            throw new InvalidOperationException(
+                "Failed to load Google credentials via ADC. Configure GOOGLE_APPLICATION_CREDENTIALS or workload identity.",
+                ex
+            );
+        }
+        finally
+        {
+            _credentialLock.Release();
+        }
     }
 
     public async ValueTask DisposeAsync()
