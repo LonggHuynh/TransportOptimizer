@@ -22,6 +22,9 @@ namespace api.Externals.Handlers
             CancellationToken cancellationToken
         )
         {
+            request.Headers.Remove("X-Goog-Api-Key");
+            request.Headers.TryAddWithoutValidation("X-Goog-Api-Key", _apiKey);
+
             if (request.RequestUri is null)
             {
                 return await base.SendAsync(request, cancellationToken);
