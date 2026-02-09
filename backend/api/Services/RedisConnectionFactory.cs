@@ -1,6 +1,5 @@
 using System.Threading;
 using api.Configuration;
-using Google.Apis.Auth.OAuth2;
 using StackExchange.Redis;
 
 namespace api.Services;
@@ -16,19 +15,17 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
     private const string IamScope = "https://www.googleapis.com/auth/cloud-platform";
 
     private readonly RedisOptions _options;
+    private readonly string? _serviceAccountJsonPath;
+    private readonly IGoogleAccessTokenProvider _googleAccessTokenProvider;
     private readonly SemaphoreSlim _mutex = new(1, 1);
-    private readonly GoogleCredential? _credential;
     private IConnectionMultiplexer? _cached;
     private DateTimeOffset _refreshAfter = DateTimeOffset.MinValue;
 
-    public RedisConnectionFactory(AppOptions appOptions)
+    public RedisConnectionFactory(AppOptions appOptions, IGoogleAccessTokenProvider googleAccessTokenProvider)
     {
         _options = appOptions.Redis ?? throw new ArgumentException("Redis settings are missing.");
-        if (_options.IamAuthEnabled)
-        {
-            var credential = GoogleCredential.GetApplicationDefault();
-            _credential = credential.IsCreateScopedRequired ? credential.CreateScoped(IamScope) : credential;
-        }
+        _serviceAccountJsonPath = appOptions.GoogleMaps?.ServiceAccountJsonPath;
+        _googleAccessTokenProvider = googleAccessTokenProvider;
     }
 
     public Task<IConnectionMultiplexer> GetAsync() => GetOrCreateAsync();
@@ -91,22 +88,7 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
 
     private async Task<string> GetAccessTokenAsync()
     {
-        if (_credential == null)
-        {
-            throw new InvalidOperationException("IAM auth is enabled but no Google credential is available.");
-        }
-
-        if (_credential is ITokenAccess tokenAccess)
-        {
-            return await tokenAccess.GetAccessTokenForRequestAsync();
-        }
-
-        if (_credential.UnderlyingCredential is ITokenAccess underlyingAccess)
-        {
-            return await underlyingAccess.GetAccessTokenForRequestAsync();
-        }
-
-        throw new InvalidOperationException("Google credential does not support access tokens.");
+        return await _googleAccessTokenProvider.GetAccessTokenAsync([IamScope], _serviceAccountJsonPath);
     }
 
     public async ValueTask DisposeAsync()
