@@ -22,12 +22,14 @@ public class GooglePlacesClient(HttpClient httpClient) : IGooglePlacesClient
 
     public async Task<PlacesSearchTextResponse?> SearchTextAsync(PlacesSearchTextRequest requestDto)
     {
-        using var request = CreateRequest(
+        using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            "places:searchText",
-            PlacesSearchTextFieldMask,
-            requestDto
-        );
+            new Uri("./places:searchText", UriKind.Relative)
+        )
+        {
+            Content = JsonContent.Create(requestDto),
+        };
+        request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", PlacesSearchTextFieldMask);
 
         using var response = await _httpClient.SendAsync(request);
         return await response.Content.ReadFromJsonAsync<PlacesSearchTextResponse>(JsonOptions);
@@ -44,11 +46,11 @@ public class GooglePlacesClient(HttpClient httpClient) : IGooglePlacesClient
             ? placeId["places/".Length..]
             : placeId;
 
-        using var request = CreateRequest(
+        using var request = new HttpRequestMessage(
             HttpMethod.Get,
-            $"places/{Uri.EscapeDataString(normalizedPlaceId)}",
-            PlaceDetailsFieldMask
+            new Uri($"./places/{Uri.EscapeDataString(normalizedPlaceId)}", UriKind.Relative)
         );
+        request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", PlaceDetailsFieldMask);
 
         using var response = await _httpClient.SendAsync(request);
         return await response.Content.ReadFromJsonAsync<PlaceDetailsResponse>(JsonOptions);
@@ -56,41 +58,16 @@ public class GooglePlacesClient(HttpClient httpClient) : IGooglePlacesClient
 
     public async Task<PlacesAutocompleteResponse?> AutocompleteAsync(PlacesAutocompleteRequest requestDto)
     {
-        using var request = CreateRequest(
+        using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            "places:autocomplete",
-            PlacesAutocompleteFieldMask,
-            requestDto
-        );
+            new Uri("./places:autocomplete", UriKind.Relative)
+        )
+        {
+            Content = JsonContent.Create(requestDto),
+        };
+        request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", PlacesAutocompleteFieldMask);
 
         using var response = await _httpClient.SendAsync(request);
         return await response.Content.ReadFromJsonAsync<PlacesAutocompleteResponse>(JsonOptions);
-    }
-
-    private static HttpRequestMessage CreateRequest(
-        HttpMethod method,
-        string path,
-        string fieldMask,
-        object? payload = null
-    )
-    {
-        var request = new HttpRequestMessage(method, new Uri(ToRelativePath(path), UriKind.Relative));
-        request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", fieldMask);
-        if (payload is not null)
-        {
-            request.Content = JsonContent.Create(payload);
-        }
-
-        return request;
-    }
-
-    private static string ToRelativePath(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return "./";
-        }
-
-        return path.StartsWith("./", StringComparison.Ordinal) ? path : $"./{path}";
     }
 }

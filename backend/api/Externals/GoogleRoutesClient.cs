@@ -22,11 +22,14 @@ public class GoogleRoutesClient(HttpClient httpClient) : IGoogleRoutesClient
         RoutesComputeRouteMatrixRequest requestDto
     )
     {
-        using var request = CreateRequest(
-            "distanceMatrix/v2:computeRouteMatrix",
-            ComputeRouteMatrixFieldMask,
-            requestDto
-        );
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            new Uri("./distanceMatrix/v2:computeRouteMatrix", UriKind.Relative)
+        )
+        {
+            Content = JsonContent.Create(requestDto),
+        };
+        request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", ComputeRouteMatrixFieldMask);
 
         using var response = await _httpClient.SendAsync(request);
         var payload = await response.Content.ReadAsStringAsync();
@@ -61,33 +64,16 @@ public class GoogleRoutesClient(HttpClient httpClient) : IGoogleRoutesClient
 
     public async Task<RoutesComputeRoutesResponse?> ComputeRoutesAsync(RoutesComputeRoutesRequest requestDto)
     {
-        using var request = CreateRequest(
-            "directions/v2:computeRoutes",
-            ComputeRoutesFieldMask,
-            requestDto
-        );
-
-        using var response = await _httpClient.SendAsync(request);
-        return await response.Content.ReadFromJsonAsync<RoutesComputeRoutesResponse>(JsonOptions);
-    }
-
-    private static HttpRequestMessage CreateRequest(string path, string fieldMask, object requestDto)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Post, new Uri(ToRelativePath(path), UriKind.Relative))
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            new Uri("./directions/v2:computeRoutes", UriKind.Relative)
+        )
         {
             Content = JsonContent.Create(requestDto),
         };
-        request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", fieldMask);
-        return request;
-    }
+        request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", ComputeRoutesFieldMask);
 
-    private static string ToRelativePath(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return "./";
-        }
-
-        return path.StartsWith("./", StringComparison.Ordinal) ? path : $"./{path}";
+        using var response = await _httpClient.SendAsync(request);
+        return await response.Content.ReadFromJsonAsync<RoutesComputeRoutesResponse>(JsonOptions);
     }
 }
