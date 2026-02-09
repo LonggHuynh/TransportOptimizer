@@ -43,7 +43,7 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             queryParts.Add($"departure_time={departureTimeUtc.Value.ToUnixTimeSeconds()}");
         }
 
-        var url = $"distancematrix/json?{string.Join("&", queryParts)}";
+        var url = AppendLegacyApiKey($"distancematrix/json?{string.Join("&", queryParts)}");
         return await _httpClient.GetFromJsonAsync<GoogleDistanceMatrixResponse>(url, JsonOptions);
     }
 
@@ -54,7 +54,7 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             return null;
         }
 
-        var url = $"geocode/json?address={Uri.EscapeDataString(address)}";
+        var url = AppendLegacyApiKey($"geocode/json?address={Uri.EscapeDataString(address)}");
         return await _httpClient.GetFromJsonAsync<GoogleGeocodeResponse>(url, JsonOptions);
     }
 
@@ -216,7 +216,9 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
     )
     {
         var mode = string.IsNullOrWhiteSpace(travelMode) ? "driving" : travelMode;
-        var url = $"directions/json?origin={Uri.EscapeDataString(origin)}&destination={Uri.EscapeDataString(destination)}&mode={Uri.EscapeDataString(mode)}";
+        var url = AppendLegacyApiKey(
+            $"directions/json?origin={Uri.EscapeDataString(origin)}&destination={Uri.EscapeDataString(destination)}&mode={Uri.EscapeDataString(mode)}"
+        );
         return await _httpClient.GetFromJsonAsync<GoogleDirectionsResponse>(url, JsonOptions);
     }
 
@@ -274,6 +276,18 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             latitude.ToString(System.Globalization.CultureInfo.InvariantCulture),
             longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)
         );
+    }
+
+    private string AppendLegacyApiKey(string url)
+    {
+        var apiKey = _appOptions.GoogleMaps?.ApiKey?.Trim();
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            return url;
+        }
+
+        var separator = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{url}{separator}key={Uri.EscapeDataString(apiKey)}";
     }
 
     private class PlacesAutocompleteRequest

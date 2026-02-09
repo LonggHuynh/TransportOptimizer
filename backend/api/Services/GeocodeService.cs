@@ -51,10 +51,7 @@ namespace api.Services
             var res = await _googleMapsClient.ForwardGeocodeAutocompleteAsync(trimmed, clampedLimit, biasCenter);
             var suggestions = new List<GeocodeSuggestion>();
             var dedupe = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (!IsGoogleOkStatus(res?.Status))
-            {
-                return suggestions;
-            }
+
 
             foreach (var prediction in res?.Predictions ?? [])
             {
@@ -67,7 +64,7 @@ namespace api.Services
                 var placeId = prediction.PlaceId?.Trim();
                 var dedupeKey = !string.IsNullOrWhiteSpace(placeId)
                     ? $"place:{placeId.ToLowerInvariant()}"
-                    : $"label:{NormalizeAddress(label)}";
+                    : $"label:{label}";
                 if (!dedupe.Add(dedupeKey))
                 {
                     continue;
@@ -88,14 +85,9 @@ namespace api.Services
             return suggestions;
         }
 
-        private static bool IsGoogleOkStatus(string? status) =>
-            string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase);
-
-        private static string NormalizeAddress(string address)
+        private static bool IsGoogleOkStatus(string? status)
         {
-            return string.Join(" ", address.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-                .Trim()
-                .ToLowerInvariant();
+            return string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase);
         }
     }
 
