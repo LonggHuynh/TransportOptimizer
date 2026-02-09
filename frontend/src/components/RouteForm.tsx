@@ -62,7 +62,7 @@ const RouteForm = () => {
         setValue,
     } = useForm<RouteFormValues>({
         defaultValues: {
-            sameDestination: false,
+            sameDestination: true,
             origin: { value: '', coordinateKey: null },
             destination: { value: '', coordinateKey: null },
             stops: [],
@@ -371,7 +371,7 @@ const RouteForm = () => {
                 )}
 
                 <div className="toggleOrigin">
-                    <label>Return to start depot</label>
+                    <label>Return to origin</label>
                     <div className="toggleSwitch">
                         <Switch
                             checked={sameDestination}
