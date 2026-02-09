@@ -19,6 +19,11 @@ namespace api.Externals.Handlers
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request.RequestUri is null)
+            {
+                return await base.SendAsync(request, cancellationToken);
+            }
+
             var uriBuilder = new UriBuilder(request.RequestUri);
 
             var query = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);

@@ -33,6 +33,7 @@ builder.Services.AddSingleton<IConnectionMultiplexerFactory, RedisConnectionFact
 builder.Services.AddSingleton<IRouteJobQueue, RouteJobQueue>();
 
 builder.Services.AddTransient<MapboxAccessTokenHandler>();
+builder.Services.AddTransient<GoogleMapsApiKeyHandler>();
 builder.Services.AddHttpClient<IMapboxClient, MapboxClient>(client =>
 {
     var apiUrl = appOptions.Mapbox?.ApiUrl;
@@ -54,9 +55,11 @@ builder.Services.AddHttpClient<IGoogleMapsClient, GoogleMapsClient>(client =>
         apiUrl = "https://maps.googleapis.com/maps/api";
     }
 
-    client.BaseAddress = new Uri(apiUrl);
+    var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
+    client.BaseAddress = new Uri(normalizedApiUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-});
+})
+.AddHttpMessageHandler<GoogleMapsApiKeyHandler>();
 
 var allowedOrigins = appOptions.CorsSettings?.AllowedOrigins ?? [];
 builder.Services.AddCors(options =>
