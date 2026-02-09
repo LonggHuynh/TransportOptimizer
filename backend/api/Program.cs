@@ -26,7 +26,7 @@ builder.Services.AddSingleton<IConnectionMultiplexerFactory, RedisConnectionFact
 builder.Services.AddSingleton<IRouteJobQueue, RouteJobQueue>();
 
 builder.Services.AddTransient<GoogleMapsErrorHandler>();
-builder.Services.AddHttpClient<IGoogleMapsClient, GoogleMapsClient>(client =>
+builder.Services.AddHttpClient<IGoogleTilesClient, GoogleTilesClient>(client =>
 {
     var apiUrl = appOptions.GoogleMaps?.ApiUrl;
     if (string.IsNullOrWhiteSpace(apiUrl))

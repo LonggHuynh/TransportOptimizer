@@ -5,9 +5,9 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace api.Services
 {
-    public class TileService(IGoogleMapsClient googleMapsClient, AppOptions appOptions, IMemoryCache cache) : ITileService
+    public class TileService(IGoogleTilesClient googleTilesClient, AppOptions appOptions, IMemoryCache cache) : ITileService
     {
-        private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
+        private readonly IGoogleTilesClient _googleTilesClient = googleTilesClient;
         private readonly AppOptions _appOptions = appOptions;
         private readonly IMemoryCache _cache = cache;
 
@@ -48,7 +48,7 @@ namespace api.Services
                 }
             }
 
-            var tile = await _googleMapsClient.GetTileAsync(tileSize, z, x, y, mapType);
+            var tile = await _googleTilesClient.GetTileAsync(tileSize, z, x, y, mapType);
             if (tile == null)
             {
                 _cache.Set(cacheKey, NotFoundMarker, new MemoryCacheEntryOptions

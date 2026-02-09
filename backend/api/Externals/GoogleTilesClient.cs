@@ -3,12 +3,12 @@ using api.Configuration;
 
 namespace api.Externals;
 
-public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IGoogleMapsClient
+public class GoogleTilesClient(HttpClient httpClient, AppOptions appOptions) : IGoogleTilesClient
 {
     private readonly HttpClient _httpClient = httpClient;
     private readonly AppOptions _appOptions = appOptions;
 
-    public async Task<GoogleMapsTile?> GetTileAsync(int tileSize, int z, int x, int y, string mapType)
+    public async Task<GoogleTile?> GetTileAsync(int tileSize, int z, int x, int y, string mapType)
     {
         if (z < 0 || x < 0 || y < 0)
         {
@@ -47,7 +47,7 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
         }
 
         var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/png";
-        return new GoogleMapsTile(data, contentType);
+        return new GoogleTile(data, contentType);
     }
 
     private static (string Latitude, string Longitude) GetTileCenter(int z, int x, int y)
