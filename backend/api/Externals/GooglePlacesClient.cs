@@ -74,7 +74,7 @@ public class GooglePlacesClient(HttpClient httpClient) : IGooglePlacesClient
         object? payload = null
     )
     {
-        var request = new HttpRequestMessage(method, path);
+        var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
         request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", fieldMask);
         if (payload is not null)
         {

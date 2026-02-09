@@ -73,7 +73,7 @@ public class GoogleRoutesClient(HttpClient httpClient) : IGoogleRoutesClient
 
     private static HttpRequestMessage CreateRequest(string path, string fieldMask, object requestDto)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, path)
+        var request = new HttpRequestMessage(HttpMethod.Post, new Uri(path, UriKind.Relative))
         {
             Content = JsonContent.Create(requestDto),
         };
