@@ -36,5 +36,5 @@
 - Include screenshots/GIFs for UI changes (store references in `output/` when useful).
 
 ## Security & Configuration Tips
-- Never commit secrets. Use env vars/secrets for `Mapbox:AccessToken`, `GoogleMaps:ApiKey`, and Redis credentials.
+- Never commit secrets. Use env vars/secrets for `GoogleMaps:ApiKey` and Redis credentials.
 - Prefer local `.env`/secret manager wiring over hardcoded tokens and keys.

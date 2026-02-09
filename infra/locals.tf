@@ -147,7 +147,7 @@ locals {
     env => "${local.redis_app_host_by_env[env]}:${local.redis_port_by_env[env]}"
   }
 
-  ghcr_credentials_provided       = var.ghcr_username != "" && var.ghcr_token != ""
+  ghcr_credentials_provided        = var.ghcr_username != "" && var.ghcr_token != ""
   effective_image_pull_secret_name = var.image_pull_secret_name != "" ? var.image_pull_secret_name : (local.ghcr_credentials_provided ? "ghcr" : "")
-  mapbox_token_provided            = var.mapbox_access_token != ""
+  google_maps_api_key_provided     = var.google_maps_api_key != ""
 }

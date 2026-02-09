@@ -23,13 +23,6 @@ locals {
     }
   }
 
-  mapbox_secret_entries = {
-    for env in local.environments :
-    env => var.mapbox_access_token_secret != ""
-      ? { "Mapbox__AccessTokenSecret" = var.mapbox_access_token_secret }
-      : {}
-  }
-
   backend_redis_config_entries = {
     for env in local.environments :
     env => {
@@ -46,25 +39,19 @@ locals {
     }
   }
 
-  backend_secret_enabled = !var.secret_manager_enabled && local.mapbox_token_provided
+  backend_secret_enabled = !var.secret_manager_enabled && local.google_maps_api_key_provided
   worker_secret_enabled  = false
 
   backend_config = {
     for env in local.environments : env => merge(
       {
-        "Mapbox__ApiUrl"                      = var.mapbox_api_url
-        "Mapbox__TileStyleId"                = var.mapbox_tile_style_id
-        "Mapbox__TileResolution"             = var.mapbox_tile_resolution
-        "Mapbox__TileSize"                   = tostring(var.mapbox_tile_size)
-        "Mapbox__GeocodeCacheMinutes"        = tostring(var.mapbox_geocode_cache_minutes)
-        "Mapbox__GeocodeFailureCacheMinutes" = tostring(var.mapbox_geocode_failure_cache_minutes)
-        "Mapbox__DirectionsProfile"          = var.mapbox_directions_profile
-        "Mapbox__MatrixProfile"              = var.mapbox_matrix_profile
-        "ASPNETCORE_ENVIRONMENT"             = local.aspnetcore_environment[env]
-        "ASPNETCORE_URLS"                    = "http://0.0.0.0:${var.backend_container_port}"
+        "GoogleMaps__ApiUrl"         = var.google_maps_api_url
+        "GoogleMaps__TileSize"       = tostring(var.google_maps_tile_size)
+        "GoogleMaps__TileMapType"    = var.google_maps_tile_map_type
+        "ASPNETCORE_ENVIRONMENT"     = local.aspnetcore_environment[env]
+        "ASPNETCORE_URLS"            = "http://0.0.0.0:${var.backend_container_port}"
       },
       local.cors_origin_entries[env],
-      local.mapbox_secret_entries[env],
       local.backend_redis_config_entries[env]
     )
   }
@@ -81,9 +68,9 @@ locals {
   helm_sensitive_values_by_env = {
     for env in local.environments :
     env => concat(
-      local.mapbox_token_provided && !var.secret_manager_enabled ? [{
-        name  = "backend.secret.data.Mapbox__AccessToken"
-        value = var.mapbox_access_token
+      local.google_maps_api_key_provided && !var.secret_manager_enabled ? [{
+        name  = "backend.secret.data.GoogleMaps__ApiKey"
+        value = var.google_maps_api_key
       }] : [],
       local.ghcr_credentials_provided ? [{
         name  = "imagePullSecret.password"

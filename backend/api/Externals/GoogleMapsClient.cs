@@ -1,11 +1,12 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using api.Configuration;
 using api.Externals.DTOs;
 
 namespace api.Externals;
 
-public class GoogleMapsClient(HttpClient httpClient) : IGoogleMapsClient
+public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IGoogleMapsClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -13,6 +14,7 @@ public class GoogleMapsClient(HttpClient httpClient) : IGoogleMapsClient
     };
 
     private readonly HttpClient _httpClient = httpClient;
+    private readonly AppOptions _appOptions = appOptions;
 
     private const string PlacesAutocompleteFieldMask =
         "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text";
@@ -180,6 +182,62 @@ public class GoogleMapsClient(HttpClient httpClient) : IGoogleMapsClient
         var mode = string.IsNullOrWhiteSpace(travelMode) ? "driving" : travelMode;
         var url = $"directions/json?origin={Uri.EscapeDataString(origin)}&destination={Uri.EscapeDataString(destination)}&mode={Uri.EscapeDataString(mode)}";
         return await _httpClient.GetFromJsonAsync<GoogleDirectionsResponse>(url, JsonOptions);
+    }
+
+    public async Task<GoogleMapsTile?> GetTileAsync(int tileSize, int z, int x, int y, string mapType)
+    {
+        if (z < 0 || x < 0 || y < 0)
+        {
+            return null;
+        }
+
+        var n = Math.Pow(2, z);
+        if (x >= n || y >= n)
+        {
+            return null;
+        }
+
+        var normalizedTileSize = Math.Clamp(tileSize, 64, 640);
+        var normalizedMapType = string.IsNullOrWhiteSpace(mapType)
+            ? "roadmap"
+            : mapType.Trim().ToLowerInvariant();
+        var apiKey = _appOptions.GoogleMaps?.ApiKey?.Trim();
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            throw new InvalidOperationException("Google Maps API key is missing.");
+        }
+
+        var center = GetTileCenter(z, x, y);
+        var url =
+            $"staticmap?center={center.Latitude},{center.Longitude}&zoom={z}&size={normalizedTileSize}x{normalizedTileSize}&maptype={Uri.EscapeDataString(normalizedMapType)}&format=png&scale=1&key={Uri.EscapeDataString(apiKey)}";
+        using var response = await _httpClient.GetAsync(url);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        var data = await response.Content.ReadAsByteArrayAsync();
+        if (data.Length == 0)
+        {
+            return null;
+        }
+
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/png";
+        return new GoogleMapsTile(data, contentType);
+    }
+
+    private static (string Latitude, string Longitude) GetTileCenter(int z, int x, int y)
+    {
+        var n = Math.Pow(2, z);
+        var centerX = x + 0.5;
+        var centerY = y + 0.5;
+        var longitude = (centerX / n) * 360.0 - 180.0;
+        var latitudeRadians = Math.Atan(Math.Sinh(Math.PI * (1.0 - (2.0 * centerY / n))));
+        var latitude = latitudeRadians * (180.0 / Math.PI);
+        return (
+            latitude.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        );
     }
 
     private class PlacesAutocompleteRequest
