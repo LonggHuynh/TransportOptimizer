@@ -5,6 +5,8 @@ namespace api.Externals.DTOs;
 public class GoogleDistanceMatrixResponse
 {
     public string? Status { get; set; }
+    [JsonPropertyName("error_message")]
+    public string? ErrorMessage { get; set; }
     public List<GoogleDistanceMatrixRow>? Rows { get; set; }
 }
 

@@ -12,18 +12,16 @@ public class GoogleMapsErrorHandler : DelegatingHandler
     )
     {
         var response = await base.SendAsync(request, cancellationToken);
-
         var payload = response.Content is null
             ? null
             : await response.Content.ReadAsByteArrayAsync(cancellationToken);
         var body = payload is { Length: > 0 } ? Encoding.UTF8.GetString(payload) : null;
         RestoreContent(response, payload);
-
         var (googleStatus, googleErrorMessage) = ParseGoogleStatusAndErrorMessage(body);
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException(
-                googleErrorMessage ?? $"Google Maps request failed with HTTP {(int)response.StatusCode}.",
+                BuildHttpFailureMessage((int)response.StatusCode, googleErrorMessage),
                 null,
                 response.StatusCode
             );
@@ -44,11 +42,7 @@ public class GoogleMapsErrorHandler : DelegatingHandler
             _ => HttpStatusCode.BadGateway,
         };
 
-        throw new HttpRequestException(
-            googleErrorMessage ?? $"Google Maps request failed with status: {googleStatus}.",
-            null,
-            statusCode
-        );
+        throw new HttpRequestException(BuildStatusFailureMessage(googleStatus, googleErrorMessage), null, statusCode);
     }
 
     private static void RestoreContent(HttpResponseMessage response, byte[]? payload)
@@ -66,6 +60,7 @@ public class GoogleMapsErrorHandler : DelegatingHandler
 
         response.Content = restoredContent;
     }
+
 
     private static (string? Status, string? ErrorMessage) ParseGoogleStatusAndErrorMessage(string? body)
     {
@@ -102,5 +97,33 @@ public class GoogleMapsErrorHandler : DelegatingHandler
         {
             return (null, null);
         }
+    }
+
+    private static string BuildHttpFailureMessage(int statusCode, string? googleErrorMessage)
+    {
+        if (!string.IsNullOrWhiteSpace(googleErrorMessage))
+        {
+            return googleErrorMessage;
+        }
+
+        return $"Google Maps request failed with HTTP {statusCode}.";
+    }
+
+    private static string BuildStatusFailureMessage(string googleStatus, string? googleErrorMessage)
+    {
+        if (!string.IsNullOrWhiteSpace(googleErrorMessage))
+        {
+            return googleErrorMessage;
+        }
+
+        return googleStatus.ToUpperInvariant() switch
+        {
+            "REQUEST_DENIED" => "Google Maps denied the request.",
+            "OVER_QUERY_LIMIT" => "Google Maps quota limit exceeded.",
+            "OVER_DAILY_LIMIT" => "Google Maps daily quota exceeded.",
+            "INVALID_REQUEST" => "Google Maps received an invalid request.",
+            "UNKNOWN_ERROR" => "Google Maps returned an unknown error.",
+            _ => $"Google Maps request failed with status: {googleStatus}.",
+        };
     }
 }

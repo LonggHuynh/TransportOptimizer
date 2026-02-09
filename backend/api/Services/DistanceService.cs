@@ -1,3 +1,4 @@
+using System.Net;
 using System.Globalization;
 using api.Externals;
 using api.Externals.DTOs;
@@ -9,6 +10,8 @@ namespace api.Services
         IGoogleMapsClient googleMapsClient
     ) : IDistanceService
     {
+        private const int GoogleMatrixMaxElements = 100;
+        private const int GoogleMaxSquareMatrixLocations = 10;
         private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
 
         public async Task<int[][]> GetDistanceMatrixAsync(Coordinate[] places, DateTimeOffset? startTimeUtc, string? travelMode)
@@ -23,13 +26,19 @@ namespace api.Services
                 Latitude = place.Latitude,
                 Longitude = place.Longitude,
             }).ToList();
+            EnsureCoordinateValidity(coordinates);
+            EnsureMatrixElementLimit(coordinates.Count);
 
             var normalizedTravelMode = NormalizeTravelMode(travelMode);
             var googleCoordinateString = string.Join("|", coordinates.Select(coord =>
             {
                 if (!coord.Longitude.HasValue || !coord.Latitude.HasValue)
                 {
-                    throw new Exception("Coordinate is missing latitude or longitude.");
+                    throw new HttpRequestException(
+                        "One or more locations are missing coordinates. Please reselect the locations and try again.",
+                        null,
+                        HttpStatusCode.BadRequest
+                    );
                 }
 
                 return $"{coord.Latitude.Value.ToString(CultureInfo.InvariantCulture)},{coord.Longitude.Value.ToString(CultureInfo.InvariantCulture)}";
@@ -43,7 +52,11 @@ namespace api.Services
             );
             if (googleResponse is null)
             {
-                throw new HttpRequestException("Google Maps Distance Matrix request failed.");
+                throw new HttpRequestException(
+                    "Google Distance Matrix did not return a response.",
+                    null,
+                    HttpStatusCode.BadGateway
+                );
             }
 
             var shouldUseTrafficDuration = normalizedTravelMode == "driving" && startTimeUtc.HasValue;
@@ -58,14 +71,21 @@ namespace api.Services
         {
             if (!string.Equals(response.Status, "OK", StringComparison.OrdinalIgnoreCase))
             {
+                var status = response.Status?.Trim().ToUpperInvariant() ?? "UNKNOWN_ERROR";
                 throw new HttpRequestException(
-                    $"Google distance matrix request failed with status: {response.Status ?? "UNKNOWN_ERROR"}"
+                    BuildGoogleMatrixErrorMessage(status, response.ErrorMessage, expectedLocationCount),
+                    null,
+                    MapGoogleStatusToHttpStatus(status)
                 );
             }
 
             if (response.Rows == null || response.Rows.Count != expectedLocationCount)
             {
-                throw new Exception("Google distance matrix response has invalid row count.");
+                throw new HttpRequestException(
+                    "Google Distance Matrix returned an invalid response (row count mismatch).",
+                    null,
+                    HttpStatusCode.BadGateway
+                );
             }
 
             var matrix = new int[expectedLocationCount][];
@@ -74,7 +94,11 @@ namespace api.Services
                 var row = response.Rows[rowIndex];
                 if (row.Elements == null || row.Elements.Count != expectedLocationCount)
                 {
-                    throw new Exception("Google distance matrix response has invalid element count.");
+                    throw new HttpRequestException(
+                        "Google Distance Matrix returned an invalid response (element count mismatch).",
+                        null,
+                        HttpStatusCode.BadGateway
+                    );
                 }
 
                 matrix[rowIndex] = row.Elements
@@ -120,6 +144,93 @@ namespace api.Services
                 "cycling" => "bicycling",
                 "transit" => "transit",
                 _ => "driving",
+            };
+        }
+
+        private static void EnsureCoordinateValidity(IReadOnlyList<GeoCode> coordinates)
+        {
+            for (var index = 0; index < coordinates.Count; index += 1)
+            {
+                var coordinate = coordinates[index];
+                if (coordinate.Latitude is not double latitude || coordinate.Longitude is not double longitude)
+                {
+                    throw new HttpRequestException(
+                        $"Location {index + 1} is missing coordinates. Please select locations from suggestions.",
+                        null,
+                        HttpStatusCode.BadRequest
+                    );
+                }
+
+                if (double.IsNaN(latitude)
+                    || double.IsInfinity(latitude)
+                    || latitude < -90
+                    || latitude > 90
+                    || double.IsNaN(longitude)
+                    || double.IsInfinity(longitude)
+                    || longitude < -180
+                    || longitude > 180)
+                {
+                    throw new HttpRequestException(
+                        $"Location {index + 1} has invalid coordinates.",
+                        null,
+                        HttpStatusCode.BadRequest
+                    );
+                }
+            }
+        }
+
+        private static void EnsureMatrixElementLimit(int locationCount)
+        {
+            var matrixElements = locationCount * locationCount;
+            if (matrixElements <= GoogleMatrixMaxElements)
+            {
+                return;
+            }
+
+            throw new HttpRequestException(
+                $"Too many locations for one optimization request ({locationCount}). Google Distance Matrix allows up to {GoogleMatrixMaxElements} matrix elements for this endpoint (about {GoogleMaxSquareMatrixLocations} locations for a full matrix).",
+                null,
+                HttpStatusCode.BadRequest
+            );
+        }
+
+        private static string BuildGoogleMatrixErrorMessage(
+            string status,
+            string? googleErrorMessage,
+            int locationCount
+        )
+        {
+            var details = string.IsNullOrWhiteSpace(googleErrorMessage)
+                ? string.Empty
+                : $" Details: {googleErrorMessage.Trim()}";
+
+            return status switch
+            {
+                "INVALID_REQUEST" when locationCount > GoogleMaxSquareMatrixLocations =>
+                    $"Google Distance Matrix rejected the request because the matrix is too large.{details}",
+                "INVALID_REQUEST" =>
+                    $"Google Distance Matrix rejected the request as invalid.{details}",
+                "REQUEST_DENIED" =>
+                    $"Google Distance Matrix request was denied. Check API key and enabled services.{details}",
+                "OVER_QUERY_LIMIT" or "OVER_DAILY_LIMIT" =>
+                    $"Google Distance Matrix quota was exceeded.{details}",
+                "MAX_ELEMENTS_EXCEEDED" =>
+                    $"Google Distance Matrix element limit exceeded for this request.{details}",
+                _ =>
+                    $"Google Distance Matrix failed with status '{status}'.{details}",
+            };
+        }
+
+        private static HttpStatusCode MapGoogleStatusToHttpStatus(string status)
+        {
+            return status switch
+            {
+                "INVALID_REQUEST" => HttpStatusCode.BadRequest,
+                "REQUEST_DENIED" => HttpStatusCode.Forbidden,
+                "OVER_QUERY_LIMIT" => HttpStatusCode.TooManyRequests,
+                "OVER_DAILY_LIMIT" => HttpStatusCode.TooManyRequests,
+                "MAX_ELEMENTS_EXCEEDED" => HttpStatusCode.BadRequest,
+                _ => HttpStatusCode.BadGateway,
             };
         }
     }
