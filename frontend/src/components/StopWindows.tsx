@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import './StopWindows.scss';
-import { toast } from 'react-toastify';
 import { useIntermediateListStore } from '../hooks/store/useIntermediateListStore';
 import { useStopWindowsStore } from '../hooks/store/useStopWindowsStore';
 import StopWindowTag from './StopWindowTag';
+import { notify } from '../utils/notify';
 
 const DEFAULT_START_TIME = '09:00';
 const DEFAULT_END_TIME = '17:00';
@@ -65,19 +65,19 @@ const StopWindows = () => {
 
     const handleSetWindow = () => {
         if (intermediateList.length === 0) {
-            toast('Add at least 1 job stop to set a time window.');
+            notify.info('Add at least 1 job stop to set a time window.');
             return;
         }
 
         const startMinutes = parseTimeToMinutes(windowStart);
         const endMinutes = parseTimeToMinutes(windowEnd);
         if (startMinutes === null || endMinutes === null) {
-            toast('Please provide valid start and end times.');
+            notify.warning('Please provide valid start and end times.');
             return;
         }
 
         if (startMinutes >= endMinutes) {
-            toast('Window start must be earlier than window end.');
+            notify.warning('Window start must be earlier than window end.');
             return;
         }
 

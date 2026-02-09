@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
+import { Id } from 'react-toastify';
 import { StopWindow } from '../../models/stopWindow';
 import { useRouteComputationStore } from '../store/useRouteComputationStore';
 import {
@@ -8,6 +8,7 @@ import {
     fetchRouteStatus,
     toBestRoutes,
 } from './routeJobApi';
+import { notify } from '../../utils/notify';
 
 const buildRemainingPlaces = (
     bestRoutes: [string, string][],
@@ -78,10 +79,14 @@ export const useRecalculateRoute = () => {
     const [recalculationJobId, setRecalculationJobId] = useState<string | null>(null);
     const [recalculationPlaces, setRecalculationPlaces] = useState<string[]>([]);
     const [handledCompletedJobId, setHandledCompletedJobId] = useState<string | null>(null);
+    const [recalculationToastId, setRecalculationToastId] = useState<Id | null>(null);
 
     const enqueueRecalculationMutation = useMutation({
         mutationFn: enqueueComputeRoute,
         onSuccess: (response, payload) => {
+            if (recalculationToastId) {
+                notify.dismiss(recalculationToastId);
+            }
             setRecalculationJobId(response.jobId);
             setRecalculationPlaces(payload.places);
             setHandledCompletedJobId(null);
@@ -91,10 +96,11 @@ export const useRecalculateRoute = () => {
                 bestRoutes: routes,
                 totalTime: estimatedTime,
             });
-            toast.success('Marked done. Recalculating route...');
+            const toastId = notify.loading('Recalculating remaining route...');
+            setRecalculationToastId(toastId);
         },
         onError: () => {
-            toast.error('Failed to start recalculation.');
+            notify.error('Failed to start recalculation.');
         },
     });
 
@@ -134,7 +140,12 @@ export const useRecalculateRoute = () => {
                 totalTime: estimatedTime,
             });
             setHandledCompletedJobId(recalculationJobId);
-            toast.error(queryData.error ?? 'Recalculation failed.');
+            if (recalculationToastId) {
+                notify.resolve(recalculationToastId, queryData.error ?? 'Recalculation failed.', 'error');
+                setRecalculationToastId(null);
+            } else {
+                notify.error(queryData.error ?? 'Recalculation failed.');
+            }
             return;
         }
 
@@ -153,12 +164,18 @@ export const useRecalculateRoute = () => {
             totalTime: queryData.result.totalTime ?? null,
         });
         setHandledCompletedJobId(recalculationJobId);
-        toast.success('Route recalculated.');
+        if (recalculationToastId) {
+            notify.resolve(recalculationToastId, 'Route recalculated.');
+            setRecalculationToastId(null);
+        } else {
+            notify.success('Route recalculated.');
+        }
     }, [
         estimatedTime,
         handledCompletedJobId,
         recalculationJobId,
         recalculationPlaces,
+        recalculationToastId,
         recalculationStatusQuery.data,
         routes,
         setComputedRouteResult,
@@ -172,13 +189,13 @@ export const useRecalculateRoute = () => {
 
     const handleDoneAndRecalculate = useCallback(async (completedLegIndex: number) => {
         if (!lastRequest) {
-            toast.error('Route request context is missing. Calculate route again first.');
+            notify.error('Route request context is missing. Calculate route again first.');
             return;
         }
 
         const remainingPlaces = buildRemainingPlaces(routes, completedLegIndex);
         if (remainingPlaces.length < 2) {
-            toast.info('All route legs are complete. Nothing to recalculate.');
+            notify.info('All route legs are complete. Nothing to recalculate.');
             return;
         }
 

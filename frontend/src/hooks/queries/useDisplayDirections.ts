@@ -1,9 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
 import { useDirectionsStore } from '../store/useDirectionsStore';
-import { toast } from 'react-toastify';
 import { AxiosError } from 'axios';
 import { apiInstance } from '../../api';
 import { RouteLine } from '../../models/map';
+import { notify } from '../../utils/notify';
 
 interface DirectionsResponse {
     distanceMeters?: number;
@@ -41,7 +41,7 @@ export const useDisplayDirections = () => {
             setDirectionsResponse(data);
         },
         onError: (error: AxiosError) => {
-            toast(`Failed to fetch directions: ${error.message}`);
+            notify.error(`Failed to fetch directions: ${error.message}`);
         },
     });
 };

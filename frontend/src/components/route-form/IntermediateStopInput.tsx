@@ -35,6 +35,22 @@ const IntermediateStopInput = ({
     const debouncedValue = useDebouncedValue(value, 300);
     const { suggestions, loading } = useMapboxSuggestions(debouncedValue);
 
+    const renderSuggestionOption = (
+        props: React.HTMLAttributes<HTMLLIElement>,
+        option: MapboxSuggestion,
+    ) => {
+        const { key: _key, ...optionProps } = props as React.HTMLAttributes<HTMLLIElement> & {
+            key?: React.Key;
+        };
+        const optionKey = option.coordinateKey ?? option.label;
+
+        return (
+            <li key={optionKey} {...optionProps}>
+                {option.label}
+            </li>
+        );
+    };
+
     return (
         <div className="inputLine stopLine">
             <div className="stopLineTop">
@@ -55,6 +71,7 @@ const IntermediateStopInput = ({
                         }
                     }}
                     loading={loading}
+                    renderOption={renderSuggestionOption}
                     renderInput={(params) => (
                         <TextField
                             {...params}

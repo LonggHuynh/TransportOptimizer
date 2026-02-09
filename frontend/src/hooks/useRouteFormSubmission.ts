@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
-import { UseFormClearErrors, UseFormSetError } from 'react-hook-form';
-import { toast } from 'react-toastify';
+import { UseFormClearErrors } from 'react-hook-form';
 import { RouteFormValues } from '../components/route-form/types';
 import {
     buildPlacesPayload,
@@ -11,6 +10,7 @@ import {
 } from '../components/route-form/utils';
 import { TravelMode } from '../models/routeOptions';
 import { StopWindow } from '../models/stopWindow';
+import { notify } from '../utils/notify';
 
 interface RouteMutationPayload {
     places: string[];
@@ -25,45 +25,39 @@ interface RouteSubmissionMutation {
 
 interface UseRouteFormSubmissionOptions {
     clearErrors: UseFormClearErrors<RouteFormValues>;
-    setError: UseFormSetError<RouteFormValues>;
     enqueueMutation: RouteSubmissionMutation;
 }
 
 export const useRouteFormSubmission = ({
     clearErrors,
-    setError,
     enqueueMutation,
 }: UseRouteFormSubmissionOptions) =>
     useCallback(async (values: RouteFormValues): Promise<boolean> => {
         clearErrors();
         const validationMessages: string[] = [];
-        const addValidationError = (
-            path: Parameters<typeof setError>[0],
-            message: string,
-        ) => {
-            setError(path, { type: 'manual', message });
+        const addValidationError = (message: string) => {
             validationMessages.push(message);
         };
 
         const originLabel = values.origin.value.trim();
         if (!originLabel) {
-            addValidationError('origin.value', 'Start location is required');
+            addValidationError('Start location is required');
         } else if (!values.origin.coordinateKey) {
-            addValidationError('origin.value', 'Start location must be selected from suggestions');
+            addValidationError('Start location must be selected from suggestions');
         }
 
         const destinationValue = values.sameDestination ? values.origin : values.destination;
         const destinationLabel = destinationValue.value.trim();
 
         if (!destinationLabel) {
-            addValidationError('destination.value', 'End location is required');
+            addValidationError('End location is required');
         } else if (!destinationValue.coordinateKey) {
-            addValidationError('destination.value', 'End location must be selected from suggestions');
+            addValidationError('End location must be selected from suggestions');
         }
 
         const routeStartLocal = toLocalDateTimeFromTime(values.departTimeLocal);
         if (!routeStartLocal) {
-            addValidationError('departTimeLocal', 'Depart time is invalid');
+            addValidationError('Depart time is invalid');
         }
 
         values.stops.forEach((stop, index) => {
@@ -72,10 +66,7 @@ export const useRouteFormSubmission = ({
             }
 
             if (!stop.coordinateKey) {
-                addValidationError(
-                    `stops.${index}.value`,
-                    `Job stop ${index + 1} must be selected from suggestions`,
-                );
+                addValidationError(`Job stop ${index + 1} must be selected from suggestions`);
             }
         });
 
@@ -89,30 +80,27 @@ export const useRouteFormSubmission = ({
         );
         if (!places) {
             if (missingStopNumber !== null) {
-                addValidationError(
-                    `stops.${missingStopNumber - 1}.value`,
-                    `Job stop ${missingStopNumber} must be selected from suggestions`,
-                );
+                addValidationError(`Job stop ${missingStopNumber} must be selected from suggestions`);
             } else {
-                addValidationError('origin.value', 'Route places are invalid');
+                addValidationError('Route places are invalid');
             }
         }
 
         const startTimeUtc = toUtcIsoFromLocalTime(values.departTimeLocal);
         if (!startTimeUtc) {
-            addValidationError('departTimeLocal', 'Depart time is invalid');
+            addValidationError('Depart time is invalid');
         }
 
         if (validationMessages.length > 0) {
-            toast.error(validationMessages[0]);
+            notify.error(validationMessages[0]);
             return false;
         }
         if (!places || !startTimeUtc) {
-            toast.error('Route request is invalid');
+            notify.error('Route request is invalid');
             return false;
         }
 
-        toast('Calculating');
+        const submitToastId = notify.loading('Optimizing route...');
         try {
             await enqueueMutation.mutateAsync({
                 places,
@@ -120,9 +108,10 @@ export const useRouteFormSubmission = ({
                 startTimeUtc,
                 travelMode: values.travelMode,
             });
+            notify.resolve(submitToastId, 'Optimization started.');
             return true;
         } catch {
-            toast.error('Failed to calculate route');
+            notify.resolve(submitToastId, 'Failed to calculate route.', 'error');
             return false;
         }
-    }, [clearErrors, enqueueMutation, setError]);
+    }, [clearErrors, enqueueMutation]);

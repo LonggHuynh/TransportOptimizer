@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import Draggable from 'react-draggable';
 import RouteDetails from './RouteDetails';
 import { useRouteComputationStore } from '../hooks/store/useRouteComputationStore';
@@ -26,6 +26,7 @@ const Result = () => {
         routeLegCount,
     });
     const { isRecalculating, handleDoneAndRecalculate } = useRecalculateRoute();
+    const resultPanelRef = useRef<HTMLDivElement>(null);
 
     if (!shouldShowResultPanel) {
         return null;
@@ -33,11 +34,15 @@ const Result = () => {
 
     return (
         <Draggable
+            nodeRef={resultPanelRef}
             handle=".panel-handle"
             cancel="input,textarea,button,select,option,.MuiSwitch-root,.MuiAutocomplete-root,.MuiAutocomplete-popper,.MuiAutocomplete-option"
             bounds="parent"
         >
-            <div className="draggable-panel dragPanel dragPanel--result">
+            <div
+                ref={resultPanelRef}
+                className="draggable-panel dragPanel dragPanel--result"
+            >
                 <div className="result">
                     <div className="panel-handle panel-handle--compact">
                         <span className="panel-handle__label">

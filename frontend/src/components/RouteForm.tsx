@@ -7,7 +7,6 @@ import {
     TextField,
 } from '@mui/material';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'react-toastify';
 import './RouteForm.scss';
 import { DEMO_SCENARIO, DEFAULT_STOP } from './route-form/constants';
 import IntermediateStopInput from './route-form/IntermediateStopInput';
@@ -58,7 +57,6 @@ const RouteForm = () => {
         clearErrors,
         getValues,
         handleSubmit,
-        setError,
         setValue,
     } = useForm<RouteFormValues>({
         defaultValues: {
@@ -73,7 +71,6 @@ const RouteForm = () => {
 
     const submitRouteRequest = useRouteFormSubmission({
         clearErrors,
-        setError,
         enqueueMutation,
     });
 
@@ -222,6 +219,22 @@ const RouteForm = () => {
         }));
     };
 
+    const renderSuggestionOption = (
+        props: React.HTMLAttributes<HTMLLIElement>,
+        option: MapboxSuggestion,
+    ) => {
+        const { key: _key, ...optionProps } = props as React.HTMLAttributes<HTMLLIElement> & {
+            key?: React.Key;
+        };
+        const optionKey = option.coordinateKey ?? option.label;
+
+        return (
+            <li key={optionKey} {...optionProps}>
+                {option.label}
+            </li>
+        );
+    };
+
     return (
         <div className="routePanel">
             <form
@@ -268,6 +281,7 @@ const RouteForm = () => {
                             }
                         }}
                         loading={originLoading}
+                        renderOption={renderSuggestionOption}
                         renderInput={(params) => (
                             <TextField
                                 {...params}
@@ -335,6 +349,7 @@ const RouteForm = () => {
                                 }
                             }}
                             loading={destinationLoading}
+                            renderOption={renderSuggestionOption}
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
