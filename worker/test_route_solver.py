@@ -1,6 +1,25 @@
 import unittest
+import time
 
 from route_solver import compute_route
+from route_solver_legacy import (
+    _build_stop_constraints,
+    _solve_exact_tsp_with_time_windows,
+    _solve_simulated_annealing_tsp,
+)
+
+
+def _build_dense_distance_matrix(node_count: int) -> list[list[int]]:
+    dist: list[list[int]] = []
+    for i in range(node_count):
+        row: list[int] = []
+        for j in range(node_count):
+            if i == j:
+                row.append(0)
+                continue
+            row.append(45 + ((i * 17 + j * 31) % 40) + abs(i - j) * 3)
+        dist.append(row)
+    return dist
 
 
 class RouteSolverTests(unittest.TestCase):
@@ -96,6 +115,37 @@ class RouteSolverTests(unittest.TestCase):
 
         self.assertEqual(result.order, [])
         self.assertIsNone(result.total_time)
+
+    def test_large_base_case_returns_valid_route(self) -> None:
+        node_count = 24
+        dist = _build_dense_distance_matrix(node_count)
+
+        result = compute_route(dist, [])
+
+        self.assertEqual(len(result.order), node_count)
+        self.assertEqual(result.order[0], 0)
+        self.assertEqual(result.order[-1], node_count - 1)
+        self.assertEqual(sorted(result.order), list(range(node_count)))
+        self.assertIsNotNone(result.total_time)
+
+    def test_simulated_annealing_is_faster_than_exact_on_larger_case(self) -> None:
+        node_count = 19
+        dist = _build_dense_distance_matrix(node_count)
+        constraints = _build_stop_constraints([], node_count)
+
+        exact_start = time.perf_counter()
+        exact_order, exact_total = _solve_exact_tsp_with_time_windows(dist, constraints)
+        exact_elapsed = time.perf_counter() - exact_start
+
+        sa_start = time.perf_counter()
+        sa_order, sa_total = _solve_simulated_annealing_tsp(dist, constraints)
+        sa_elapsed = time.perf_counter() - sa_start
+
+        self.assertEqual(len(exact_order), node_count)
+        self.assertEqual(len(sa_order), node_count)
+        self.assertIsNotNone(exact_total)
+        self.assertIsNotNone(sa_total)
+        self.assertLess(sa_elapsed, exact_elapsed)
 
 
 if __name__ == "__main__":

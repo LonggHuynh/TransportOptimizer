@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
+import random
 from typing import Sequence
 
 from models import StopWindow, RouteResult
@@ -9,6 +11,13 @@ SECONDS_PER_MINUTE = 60
 MAX_WINDOW_MINUTES = 24 * 60 - 1
 MAX_WINDOW_SECONDS = MAX_WINDOW_MINUTES * SECONDS_PER_MINUTE
 EXACT_SOLVER_MAX_INTERMEDIATE_STOPS = 14
+SIMULATED_ANNEALING_MIN_INTERMEDIATE_STOPS = 20
+SA_BASE_ITERATIONS = 300
+SA_ITERATIONS_PER_STOP = 20
+SA_COOLING_RATE = 0.994
+SA_INITIAL_TEMPERATURE_RATIO = 0.08
+SA_MIN_TEMPERATURE = 0.05
+SA_RANDOM_SEED = 17
 
 
 @dataclass(frozen=True)
@@ -101,6 +110,16 @@ def _start_departure_seconds(constraints: Sequence[StopConstraint]) -> int | Non
     if not constraints:
         return 0
     return _departure_after_service(0, constraints[0])
+
+
+def _has_hard_time_windows(constraints: Sequence[StopConstraint]) -> bool:
+    for constraint in constraints:
+        if (
+            constraint.window_start_seconds > 0
+            or constraint.window_end_seconds < MAX_WINDOW_SECONDS
+        ):
+            return True
+    return False
 
 
 def _compute_total_time_seconds(
@@ -296,6 +315,81 @@ def _solve_greedy_tsp_with_time_windows(
     return order, total_time_seconds
 
 
+def _solve_simulated_annealing_tsp(
+    dist: Sequence[Sequence[int]],
+    constraints: Sequence[StopConstraint],
+) -> tuple[list[int], int | None]:
+    node_count = len(dist)
+    if node_count <= 2:
+        return _solve_greedy_tsp_with_time_windows(dist, constraints)
+
+    start_departure_seconds = _start_departure_seconds(constraints)
+    if start_departure_seconds is None:
+        return [], None
+
+    seed_order, seed_total_time = _solve_greedy_tsp_with_time_windows(dist, constraints)
+    if not seed_order or seed_total_time is None:
+        return [], None
+
+    rng = random.Random(SA_RANDOM_SEED + node_count)
+    current_order = seed_order[:]
+    current_total = seed_total_time
+    best_order = seed_order[:]
+    best_total = seed_total_time
+
+    intermediate_count = max(0, node_count - 2)
+    max_iterations = SA_BASE_ITERATIONS + SA_ITERATIONS_PER_STOP * intermediate_count
+    temperature = max(
+        1.0,
+        float(seed_total_time) * SA_INITIAL_TEMPERATURE_RATIO,
+    )
+
+    for _ in range(max_iterations):
+        left = rng.randint(1, node_count - 2)
+        right = rng.randint(1, node_count - 2)
+        if left == right:
+            continue
+
+        if left > right:
+            left, right = right, left
+
+        candidate_order = current_order[:]
+        if rng.random() < 0.55:
+            candidate_order[left : right + 1] = reversed(candidate_order[left : right + 1])
+        else:
+            candidate_order[left], candidate_order[right] = (
+                candidate_order[right],
+                candidate_order[left],
+            )
+
+        candidate_total = _compute_total_time_seconds(
+            dist,
+            candidate_order,
+            constraints,
+            start_departure_seconds,
+        )
+        if candidate_total is None:
+            continue
+
+        delta = candidate_total - current_total
+        should_accept = delta <= 0
+        if not should_accept:
+            probability = math.exp(-delta / max(temperature, SA_MIN_TEMPERATURE))
+            should_accept = rng.random() < probability
+
+        if should_accept:
+            current_order = candidate_order
+            current_total = candidate_total
+
+            if candidate_total < best_total:
+                best_total = candidate_total
+                best_order = candidate_order[:]
+
+        temperature = max(SA_MIN_TEMPERATURE, temperature * SA_COOLING_RATE)
+
+    return best_order, best_total
+
+
 def compute_route(dist: Sequence[Sequence[int]], stop_windows: Sequence[StopWindow]) -> RouteResult:
     node_count = len(dist)
     if node_count == 0:
@@ -311,6 +405,11 @@ def compute_route(dist: Sequence[Sequence[int]], stop_windows: Sequence[StopWind
     intermediate_count = max(0, node_count - 2)
     if intermediate_count <= EXACT_SOLVER_MAX_INTERMEDIATE_STOPS:
         order, total_time = _solve_exact_tsp_with_time_windows(dist, constraints)
+    elif (
+        intermediate_count > SIMULATED_ANNEALING_MIN_INTERMEDIATE_STOPS
+        and not _has_hard_time_windows(constraints)
+    ):
+        order, total_time = _solve_simulated_annealing_tsp(dist, constraints)
     else:
         order, total_time = _solve_greedy_tsp_with_time_windows(dist, constraints)
 
