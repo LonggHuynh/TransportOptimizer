@@ -22,7 +22,7 @@ public class GoogleMapsErrorHandler : DelegatingHandler
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException(
-                BuildHttpFailureMessage((int)response.StatusCode, googleErrorMessage),
+                BuildHttpFailureMessage((int)response.StatusCode, googleStatus, googleErrorMessage, body),
                 null,
                 response.StatusCode
             );
@@ -114,14 +114,51 @@ public class GoogleMapsErrorHandler : DelegatingHandler
         }
     }
 
-    private static string BuildHttpFailureMessage(int statusCode, string? googleErrorMessage)
+    private static string BuildHttpFailureMessage(
+        int statusCode,
+        string? googleStatus,
+        string? googleErrorMessage,
+        string? responseBody
+    )
     {
         if (!string.IsNullOrWhiteSpace(googleErrorMessage))
         {
             return googleErrorMessage;
         }
 
+        if (!string.IsNullOrWhiteSpace(googleStatus))
+        {
+            return $"Upstream map service failed with status: {googleStatus}.";
+        }
+
+        var bodySnippet = BuildBodySnippet(responseBody);
+        if (!string.IsNullOrWhiteSpace(bodySnippet))
+        {
+            return $"Upstream map service request failed with HTTP {statusCode}: {bodySnippet}";
+        }
+
         return $"Upstream map service request failed with HTTP {statusCode}.";
+    }
+
+    private static string? BuildBodySnippet(string? responseBody)
+    {
+        if (string.IsNullOrWhiteSpace(responseBody))
+        {
+            return null;
+        }
+
+        var normalized = string.Join(
+            " ",
+            responseBody.Split(new[] { '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => part.Trim())
+                .Where(part => part.Length > 0)
+        );
+        if (normalized.Length == 0 || normalized.StartsWith('<'))
+        {
+            return null;
+        }
+
+        return normalized.Length > 280 ? $"{normalized[..280]}..." : normalized;
     }
 
     private static string BuildStatusFailureMessage(string googleStatus, string? googleErrorMessage)
