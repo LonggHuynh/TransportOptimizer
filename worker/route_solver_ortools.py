@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -97,8 +98,11 @@ def compute_route_ortools(
     time_limit_seconds: int = DEFAULT_SOLVER_TIME_LIMIT_SECONDS,
 ) -> RouteResult | None:
     try:
-        from ortools.constraint_solver import pywrapcp, routing_enums_pb2
-    except ImportError:
+        pywrapcp = importlib.import_module("ortools.constraint_solver.pywrapcp")
+        routing_enums_pb2 = importlib.import_module(
+            "ortools.constraint_solver.routing_enums_pb2",
+        )
+    except ModuleNotFoundError:
         return None
 
     node_count = len(dist)
