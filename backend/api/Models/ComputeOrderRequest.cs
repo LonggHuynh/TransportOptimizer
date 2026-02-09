@@ -13,6 +13,8 @@ public class ComputeOrderRequest
 
     public string[] Places { get; init; } = Array.Empty<string>();
     public List<StopWindow> StopWindows { get; init; } = new();
+    public DateTimeOffset? StartTimeUtc { get; init; }
+    public string? TravelMode { get; init; }
 
     public string ComputeJobId()
     {
@@ -20,6 +22,8 @@ public class ComputeOrderRequest
         {
             places = Places ?? Array.Empty<string>(),
             stopWindows = StopWindows ?? new List<StopWindow>(),
+            startTimeUtc = StartTimeUtc,
+            travelMode = TravelMode,
         };
         var json = JsonSerializer.Serialize(payload, JsonOptions);
         using var sha = SHA256.Create();

@@ -3,6 +3,7 @@ namespace api.Configuration
     public class AppOptions
     {
         public MapboxOptions? Mapbox { get; set; }
+        public GoogleMapsOptions? GoogleMaps { get; set; }
         public CorsSettingsOptions? CorsSettings { get; set; }
         public RedisOptions? Redis { get; set; }
         public CeleryOptions? Celery { get; set; }
@@ -21,6 +22,12 @@ namespace api.Configuration
         public int GeocodeSuggestCacheMinutes { get; set; } = 60;
         public string? DirectionsProfile { get; set; } = "driving";
         public string? MatrixProfile { get; set; } = "driving";
+    }
+
+    public class GoogleMapsOptions
+    {
+        public string? ApiKey { get; set; }
+        public string ApiUrl { get; set; } = "https://maps.googleapis.com/maps/api";
     }
 
     public class CorsSettingsOptions

@@ -46,6 +46,18 @@ builder.Services.AddHttpClient<IMapboxClient, MapboxClient>(client =>
 })
 .AddHttpMessageHandler<MapboxAccessTokenHandler>();
 
+builder.Services.AddHttpClient<IGoogleMapsClient, GoogleMapsClient>(client =>
+{
+    var apiUrl = appOptions.GoogleMaps?.ApiUrl;
+    if (string.IsNullOrWhiteSpace(apiUrl))
+    {
+        apiUrl = "https://maps.googleapis.com/maps/api";
+    }
+
+    client.BaseAddress = new Uri(apiUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
 var allowedOrigins = appOptions.CorsSettings?.AllowedOrigins ?? [];
 builder.Services.AddCors(options =>
 {

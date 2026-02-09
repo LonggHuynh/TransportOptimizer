@@ -2,7 +2,7 @@
 
 ## Description
 
-TransportOptimizer assists users in efficiently planning their travel route by sequencing their desired destinations. Leveraging the modified Traveling Salesman Problem (TSP) algorithm, it lets users apply optional constraints, such as mandating the sequence of specific locations. We harness the power of the Mapbox APIs (via a backend proxy) to determine travel times and map visuals.
+TransportOptimizer assists users in efficiently planning their travel route by sequencing their desired destinations. Leveraging the modified Traveling Salesman Problem (TSP) algorithm, it lets users apply optional constraints, such as mandating the sequence of specific locations. We use Mapbox APIs for geocoding and map visuals, and can use Google Distance Matrix API for time-aware matrix optimization.
 
 ## Tech stack
 
@@ -40,6 +40,8 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 | `Mapbox:GeocodeFailureCacheMinutes` | Cache duration for failed geocodes (minutes).                           |
 | `Mapbox:DirectionsProfile`    | Profile for directions requests (e.g. `driving`).                             |
 | `Mapbox:MatrixProfile`        | Profile for matrix requests (e.g. `driving`).                                 |
+| `GoogleMaps:ApiUrl`           | Google Maps API base URL (default: `https://maps.googleapis.com/maps/api`).   |
+| `GoogleMaps:ApiKey`           | Google Distance Matrix API key (enables start-time + mode-aware optimization). |
 
 ## Running the application
 

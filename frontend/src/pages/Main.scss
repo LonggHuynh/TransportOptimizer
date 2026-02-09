@@ -18,29 +18,29 @@
 .dragPanel {
     position: absolute;
     pointer-events: auto;
-}
 
-.dragPanel--planner {
-    top: var(--space-32);
-    left: var(--space-32);
-}
+    &--planner {
+        top: var(--space-32);
+        left: var(--space-32);
+        pointer-events: auto;
+    }
 
-.dragPanel--result {
-    top: var(--space-32);
-    right: var(--space-32);
-}
+    &--result {
+        top: var(--space-32);
+        right: var(--space-32);
+    }
 
-.dragPanel .panel-handle {
-    cursor: grab;
-}
+    .panel-handle {
+        cursor: grab;
 
-.dragPanel.react-draggable-dragging .panel-handle,
-.dragPanel .panel-handle:active {
-    cursor: grabbing;
-}
+        &:active {
+            cursor: grabbing;
+        }
+    }
 
-.dragPanel--planner {
-    pointer-events: auto;
+    &.react-draggable-dragging .panel-handle {
+        cursor: grabbing;
+    }
 }
 
 .calculateRouteButton,
@@ -57,11 +57,10 @@
     margin-top: var(--space-4);
     box-shadow: var(--shadow-sm);
     width: 100%;
-}
-
-.calculateRouteButton:hover {
-    transform: translateY(var(--lift-hover));
-    box-shadow: var(--shadow-md);
+    &:hover {
+        transform: translateY(var(--lift-hover));
+        box-shadow: var(--shadow-md);
+    }
 }
 
 .title {
@@ -95,14 +94,16 @@
 }
 
 @media (max-width: 900px) {
-    .dragPanel--planner {
-        top: var(--space-20);
-        left: var(--space-20);
-    }
+    .dragPanel {
+        &--planner {
+            top: var(--space-20);
+            left: var(--space-20);
+        }
 
-    .dragPanel--result {
-        top: auto;
-        bottom: var(--space-20);
-        right: var(--space-20);
+        &--result {
+            top: auto;
+            bottom: var(--space-20);
+            right: var(--space-20);
+        }
     }
 }

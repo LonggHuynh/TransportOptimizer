@@ -21,7 +21,7 @@ namespace api.Controllers
         public async Task<ActionResult<ComputeOrderQueuedResponseDto>> ComputeOrder(ComputeOrderRequestDto request)
         {
             var model = _mapper.Map<ComputeOrderRequest>(request);
-            var dist = await _distanceService.GetDistanceMatrixAsync(model.Places);
+            var dist = await _distanceService.GetDistanceMatrixAsync(model.Places, model.StartTimeUtc, model.TravelMode);
             var jobId = await _jobQueue.EnqueueAsync(model, dist);
             var response = new ComputeOrderQueuedResponseDto
             {

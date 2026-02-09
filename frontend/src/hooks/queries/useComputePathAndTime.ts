@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiInstance } from '../../api';
-import { useStopWindowsStore } from '../store/useStopWindowsStore';
 import { StopWindow } from '../../models/stopWindow';
+import { TravelMode } from '../../models/routeOptions';
 
 interface ComputeRouteResponse {
     order: number[];
@@ -29,10 +29,27 @@ interface RouteComputationResult {
     totalTime: number | null;
 }
 
-const enqueueComputeRoute = async (places: string[], stopWindows: StopWindow[]): Promise<ComputeRouteQueuedResponse> => {
+interface ComputeOrderInput {
+    places: string[];
+    stopWindows: StopWindow[];
+    startTimeUtc: string | null;
+    travelMode: TravelMode;
+}
+
+const enqueueComputeRoute = async ({
+    places,
+    stopWindows,
+    startTimeUtc,
+    travelMode,
+}: ComputeOrderInput): Promise<ComputeRouteQueuedResponse> => {
     const response = await apiInstance.post<ComputeRouteQueuedResponse>(
         'Route/ComputeOrder',
-        { places, stopWindows }
+        {
+            places,
+            stopWindows,
+            startTimeUtc,
+            travelMode,
+        }
     );
     return response.data;
 };
@@ -43,7 +60,6 @@ const fetchRouteStatus = async (jobId: string): Promise<RouteJobStatusResponse> 
 };
 
 export const useComputePathAndTime = () => {
-    const stopWindows = useStopWindowsStore((state) => state.stopWindows);
     const [jobId, setJobId] = useState<string | null>(null);
     const [jobPlaces, setJobPlaces] = useState<string[]>([]);
 
@@ -65,7 +81,22 @@ export const useComputePathAndTime = () => {
 
     const enqueueMutation = useMutation(
         {
-            mutationFn: async ({ places }: { places: string[] }) => enqueueComputeRoute(places, stopWindows),
+            mutationFn: async ({
+                places,
+                stopWindows,
+                startTimeUtc,
+                travelMode,
+            }: {
+                places: string[];
+                stopWindows: StopWindow[];
+                startTimeUtc: string | null;
+                travelMode: TravelMode;
+            }) => enqueueComputeRoute({
+                places,
+                stopWindows,
+                startTimeUtc,
+                travelMode,
+            }),
             onSuccess: (data, variables) => {
                 setJobId(data.jobId);
                 setJobPlaces(variables.places);
