@@ -31,6 +31,20 @@ namespace api.Services
                 return null;
             }
 
+            if (AreSamePoint(origin, destination))
+            {
+                return new DirectionsResult
+                {
+                    Coordinates =
+                    [
+                        new GeoCode { Latitude = origin.Latitude, Longitude = origin.Longitude },
+                        new GeoCode { Latitude = destination.Latitude, Longitude = destination.Longitude },
+                    ],
+                    DistanceMeters = 0,
+                    DurationSeconds = 0,
+                };
+            }
+
             var response = await _googleRoutesClient.ComputeRoutesAsync(new RoutesComputeRoutesRequest
             {
                 Origin = ToWaypoint(origin),
@@ -111,18 +125,51 @@ namespace api.Services
                 return false;
             }
 
-            if (!double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var latitude)
-                || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var longitude))
+            if (!double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var firstValue)
+                || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var secondValue))
+            {
+                return false;
+            }
+
+            if (IsValidLongitude(firstValue) && IsValidLatitude(secondValue))
+            {
+                coordinate = new GeoCode
+                {
+                    Latitude = secondValue,
+                    Longitude = firstValue,
+                };
+                return true;
+            }
+
+            if (!IsValidLatitude(firstValue) || !IsValidLongitude(secondValue))
             {
                 return false;
             }
 
             coordinate = new GeoCode
             {
-                Latitude = latitude,
-                Longitude = longitude,
+                Latitude = firstValue,
+                Longitude = secondValue,
             };
             return true;
+        }
+
+        private static bool IsValidLatitude(double value) => value is >= -90 and <= 90;
+
+        private static bool IsValidLongitude(double value) => value is >= -180 and <= 180;
+
+        private static bool AreSamePoint(GeoCode a, GeoCode b)
+        {
+            if (a.Latitude is not double aLat
+                || a.Longitude is not double aLng
+                || b.Latitude is not double bLat
+                || b.Longitude is not double bLng)
+            {
+                return false;
+            }
+
+            const double epsilon = 1e-6;
+            return Math.Abs(aLat - bLat) < epsilon && Math.Abs(aLng - bLng) < epsilon;
         }
 
         private static List<GeoCode> DecodePolyline(string encodedPath)
