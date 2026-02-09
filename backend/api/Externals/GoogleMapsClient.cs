@@ -132,7 +132,7 @@ public class GoogleMapsClient(HttpClient httpClient) : IGoogleMapsClient
             Content = JsonContent.Create(new PlacesAutocompleteRequest
             {
                 Input = query,
-                IncludeQueryPredictions = false,
+                IncludeQueryPredictions = true,
             }),
         };
         request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", PlacesAutocompleteFieldMask);
