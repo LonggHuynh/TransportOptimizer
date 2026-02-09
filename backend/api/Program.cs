@@ -1,6 +1,7 @@
 using api.Configuration;
 using api.Externals;
 using api.Externals.Handlers;
+using api.Middlewares;
 using api.Services;
 using Google.Cloud.SecretManager.V1;
 
@@ -33,7 +34,6 @@ builder.Services.AddSingleton<IConnectionMultiplexerFactory, RedisConnectionFact
 builder.Services.AddSingleton<IRouteJobQueue, RouteJobQueue>();
 
 builder.Services.AddTransient<MapboxAccessTokenHandler>();
-builder.Services.AddTransient<GoogleMapsApiKeyHandler>();
 builder.Services.AddHttpClient<IMapboxClient, MapboxClient>(client =>
 {
     var apiUrl = appOptions.Mapbox?.ApiUrl;
@@ -58,8 +58,14 @@ builder.Services.AddHttpClient<IGoogleMapsClient, GoogleMapsClient>(client =>
     var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
     client.BaseAddress = new Uri(normalizedApiUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-})
-.AddHttpMessageHandler<GoogleMapsApiKeyHandler>();
+
+    var googleMapsApiKey = appOptions.GoogleMaps?.ApiKey;
+    if (!string.IsNullOrWhiteSpace(googleMapsApiKey))
+    {
+        client.DefaultRequestHeaders.Remove("X-Goog-Api-Key");
+        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Goog-Api-Key", googleMapsApiKey);
+    }
+});
 
 var allowedOrigins = appOptions.CorsSettings?.AllowedOrigins ?? [];
 builder.Services.AddCors(options =>
@@ -74,6 +80,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<GoogleMapsErrorMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

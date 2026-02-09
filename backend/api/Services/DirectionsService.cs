@@ -1,5 +1,6 @@
 using System.Globalization;
 using api.Externals;
+using api.Middlewares;
 using api.Models;
 
 namespace api.Services
@@ -38,7 +39,17 @@ namespace api.Services
                 destinationLocation,
                 "driving"
             );
-            if (!IsGoogleOkStatus(response?.Status))
+            if (response is null)
+            {
+                throw new GoogleMapsApiException("Google directions request failed.");
+            }
+
+            if (IsGoogleDeniedStatus(response.Status))
+            {
+                throw new GoogleMapsApiException($"Google directions request denied: {response.Status}");
+            }
+
+            if (!IsGoogleOkStatus(response.Status))
             {
                 return null;
             }
@@ -69,6 +80,10 @@ namespace api.Services
 
         private static bool IsGoogleOkStatus(string? status) =>
             string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase);
+        private static bool IsGoogleDeniedStatus(string? status) =>
+            string.Equals(status, "REQUEST_DENIED", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "OVER_DAILY_LIMIT", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "OVER_QUERY_LIMIT", StringComparison.OrdinalIgnoreCase);
 
         private static bool TryParseCoordinate(string value, out GeoCode coordinate)
         {

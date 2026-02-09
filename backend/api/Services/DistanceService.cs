@@ -1,6 +1,7 @@
 using System.Globalization;
 using api.Externals;
 using api.Externals.DTOs;
+using api.Middlewares;
 using api.Models;
 
 namespace api.Services
@@ -43,7 +44,7 @@ namespace api.Services
             );
             if (googleResponse is null)
             {
-                throw new Exception("Google Maps Distance Matrix API key is missing or invalid.");
+                throw new GoogleMapsApiException("Google Maps Distance Matrix API key is missing or invalid.");
             }
 
             var shouldUseTrafficDuration = normalizedTravelMode == "driving" && startTimeUtc.HasValue;
@@ -58,7 +59,9 @@ namespace api.Services
         {
             if (!string.Equals(response.Status, "OK", StringComparison.OrdinalIgnoreCase))
             {
-                throw new Exception($"Google distance matrix request failed with status: {response.Status ?? "UNKNOWN_ERROR"}");
+                throw new GoogleMapsApiException(
+                    $"Google distance matrix request failed with status: {response.Status ?? "UNKNOWN_ERROR"}"
+                );
             }
 
             if (response.Rows == null || response.Rows.Count != expectedLocationCount)
