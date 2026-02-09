@@ -13,16 +13,17 @@ public interface IConnectionMultiplexerFactory
 public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsyncDisposable
 {
     private static readonly TimeSpan IamRefreshInterval = TimeSpan.FromMinutes(45);
-    private const string IamScope = "https://www.googleapis.com/auth/cloud-platform";
 
     private readonly RedisOptions _options;
+    private readonly GoogleCredential _googleCredential;
     private readonly SemaphoreSlim _mutex = new(1, 1);
     private IConnectionMultiplexer? _cached;
     private DateTimeOffset _refreshAfter = DateTimeOffset.MinValue;
 
-    public RedisConnectionFactory(AppOptions appOptions)
+    public RedisConnectionFactory(AppOptions appOptions, GoogleCredential googleCredential)
     {
         _options = appOptions.Redis ?? throw new ArgumentException("Redis settings are missing.");
+        _googleCredential = googleCredential;
     }
 
     public Task<IConnectionMultiplexer> GetAsync() => GetOrCreateAsync();
@@ -85,29 +86,13 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
 
     private async Task<string> GetAccessTokenAsync()
     {
-        try
+        var token = await _googleCredential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: default);
+        if (string.IsNullOrWhiteSpace(token))
         {
-            var credential = await GoogleCredential.GetApplicationDefaultAsync();
-            if (credential.IsCreateScopedRequired)
-            {
-                credential = credential.CreateScoped(IamScope);
-            }
-
-            var token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: default);
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                throw new InvalidOperationException("Google access token is missing.");
-            }
-
-            return token;
+            throw new InvalidOperationException("Google access token is missing.");
         }
-        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
-        {
-            throw new InvalidOperationException(
-                "Failed to load Google credentials via ADC. Configure GOOGLE_APPLICATION_CREDENTIALS or workload identity.",
-                ex
-            );
-        }
+
+        return token;
     }
 
     public async ValueTask DisposeAsync()

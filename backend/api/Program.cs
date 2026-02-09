@@ -3,12 +3,52 @@ using api.Externals;
 using api.Externals.Handlers;
 using api.Middlewares;
 using api.Services;
+using Google.Apis.Auth.OAuth2;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var appOptions = new AppOptions();
 builder.Configuration.Bind(appOptions);
 builder.Services.AddSingleton(appOptions);
+builder.Services.AddSingleton<GoogleCredential>(_ =>
+{
+    try
+    {
+        const string defaultScope = "https://www.googleapis.com/auth/cloud-platform";
+        var scopes = appOptions.GoogleMaps?.ServiceAccountScopes?
+            .Select(scope => scope?.Trim())
+            .Where(scope => !string.IsNullOrWhiteSpace(scope))
+            .Select(scope => scope!)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (scopes is not { Length: > 0 })
+        {
+            scopes = [defaultScope];
+        }
+
+        var credential = GoogleCredential.GetApplicationDefault();
+        if (credential.IsCreateScopedRequired)
+        {
+            credential = credential.CreateScoped(scopes);
+        }
+
+        var quotaProject = appOptions.GoogleMaps?.QuotaProject?.Trim();
+        if (!string.IsNullOrWhiteSpace(quotaProject))
+        {
+            credential = credential.CreateWithQuotaProject(quotaProject);
+        }
+
+        return credential;
+    }
+    catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+    {
+        throw new InvalidOperationException(
+            "Failed to load Google credentials via ADC. Configure GOOGLE_APPLICATION_CREDENTIALS or workload identity.",
+            ex
+        );
+    }
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
