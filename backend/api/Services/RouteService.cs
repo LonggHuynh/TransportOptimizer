@@ -1,10 +1,12 @@
+using api.Models;
+
 namespace api.Services;
 
 public class RouteService : IRouteService
 {
-    public List<string[]> BuildBestRoutes(List<int> order, string[] places)
+    public List<Coordinate[]> BuildBestRoutes(List<int> order, Coordinate[] places)
     {
-        var routes = new List<string[]>();
+        var routes = new List<Coordinate[]>();
         for (var i = 0; i < order.Count - 1; i++)
         {
             var fromIndex = order[i];

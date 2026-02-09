@@ -1,9 +1,10 @@
 using System.Threading.Tasks;
+using api.Models;
 
 namespace api.Services
 {
     public interface IDistanceService
     {
-        Task<int[][]> GetDistanceMatrixAsync(string[] places, DateTimeOffset? startTimeUtc, string? travelMode);
+        Task<int[][]> GetDistanceMatrixAsync(Coordinate[] places, DateTimeOffset? startTimeUtc, string? travelMode);
     }
 }

@@ -8,6 +8,8 @@ public class MappingProfile : Profile
     {
         CreateMap<StopWindow, StopWindowDto>();
         CreateMap<StopWindowDto, StopWindow>();
+        CreateMap<Coordinate, CoordinateDto>();
+        CreateMap<CoordinateDto, Coordinate>();
         CreateMap<ComputeOrderRequest, ComputeOrderRequestDto>();
         CreateMap<ComputeOrderRequestDto, ComputeOrderRequest>();
 

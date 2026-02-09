@@ -9,57 +9,25 @@ namespace api.Services
     public class DistanceService(
         IMapboxClient mapboxClient,
         IGoogleMapsClient googleMapsClient,
-        IGeocodeService geocodeService,
         AppOptions appOptions
     ) : IDistanceService
     {
         private readonly IMapboxClient _mapboxClient = mapboxClient;
         private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
-        private readonly IGeocodeService _geocodeService = geocodeService;
         private readonly AppOptions _appOptions = appOptions;
 
-        public async Task<int[][]> GetDistanceMatrixAsync(string[] places, DateTimeOffset? startTimeUtc, string? travelMode)
+        public async Task<int[][]> GetDistanceMatrixAsync(Coordinate[] places, DateTimeOffset? startTimeUtc, string? travelMode)
         {
             if (places.Length == 0)
             {
                 return [];
             }
 
-            var geocodeTasks = new Dictionary<string, Task<GeoCode?>>();
-            foreach (var place in places)
+            var coordinates = places.Select(place => new GeoCode
             {
-                if (TryParseCoordinate(place, out _))
-                {
-                    continue;
-                }
-
-                var normalized = NormalizeAddress(place);
-                if (!geocodeTasks.ContainsKey(normalized))
-                {
-                    geocodeTasks[normalized] = _geocodeService.GetGeocode(place);
-                }
-            }
-
-            await Task.WhenAll(geocodeTasks.Values);
-
-            var coordinates = new List<GeoCode>();
-            foreach (var place in places)
-            {
-                if (TryParseCoordinate(place, out var parsedCoordinate))
-                {
-                    coordinates.Add(parsedCoordinate);
-                    continue;
-                }
-
-                var normalized = NormalizeAddress(place);
-                var geocode = await geocodeTasks[normalized];
-                if (geocode?.Latitude == null || geocode.Longitude == null)
-                {
-                    throw new Exception($"Failed to geocode address: {place}");
-                }
-
-                coordinates.Add(geocode);
-            }
+                Latitude = place.Latitude,
+                Longitude = place.Longitude,
+            }).ToList();
 
             var normalizedTravelMode = NormalizeTravelMode(travelMode);
             var googleCoordinateString = string.Join("|", coordinates.Select(coord =>
@@ -193,41 +161,6 @@ namespace api.Services
                 "transit" => "transit",
                 _ => "driving",
             };
-        }
-
-        private static string NormalizeAddress(string address)
-        {
-            return string.Join(" ", address.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-                .Trim()
-                .ToLowerInvariant();
-        }
-
-        private static bool TryParseCoordinate(string value, out GeoCode coordinate)
-        {
-            coordinate = new GeoCode();
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return false;
-            }
-
-            var parts = value.Split(',', StringSplitOptions.TrimEntries);
-            if (parts.Length != 2)
-            {
-                return false;
-            }
-
-            if (!double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var longitude)
-                || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var latitude))
-            {
-                return false;
-            }
-
-            coordinate = new GeoCode
-            {
-                Longitude = longitude,
-                Latitude = latitude,
-            };
-            return true;
         }
     }
 }

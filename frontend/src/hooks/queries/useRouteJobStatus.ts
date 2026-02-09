@@ -1,11 +1,12 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { apiInstance } from '../../api';
+import { Coordinate } from '../../models/coordinate';
 
 interface ComputeRouteResponse {
     order: number[];
     totalTime: number | null;
-    bestRoutes?: [string, string][];
+    bestRoutes?: [Coordinate, Coordinate][];
 }
 
 export interface RouteJobStatusResponse {

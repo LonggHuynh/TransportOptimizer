@@ -13,7 +13,6 @@ import { Coordinate } from '../../../models/coordinate';
 import { TravelMode } from '../../../models/routeOptions';
 import { StopWindow } from '../../../models/stopWindow';
 import { notify } from '../../../utils/notify';
-import { parseCoordinateKey } from '../../../utils/coordinates';
 import { useComputePathAndTime } from '../../../hooks/queries/useComputePathAndTime';
 import { useRouteJobStatus } from '../../../hooks/queries/useRouteJobStatus';
 import { useRouteComputationStore } from '../../../hooks/store/useRouteComputationStore';
@@ -34,7 +33,7 @@ const ROUTE_STATUS_POLL_INTERVAL_MS = 1000;
 interface ComputeRouteResult {
     order: number[];
     totalTime: number | null;
-    bestRoutes?: [string, string][];
+    bestRoutes?: [Coordinate, Coordinate][];
 }
 
 const toBestRoutes = (
@@ -42,19 +41,7 @@ const toBestRoutes = (
     places: Coordinate[],
 ): [Coordinate, Coordinate][] => {
     if (result.bestRoutes && result.bestRoutes.length > 0) {
-        const parsedBestRoutes = result.bestRoutes.flatMap(([from, to]) => {
-            const parsedFrom = parseCoordinateKey(from);
-            const parsedTo = parseCoordinateKey(to);
-            if (!parsedFrom || !parsedTo) {
-                return [];
-            }
-
-            return [[parsedFrom, parsedTo] as [Coordinate, Coordinate]];
-        });
-
-        if (parsedBestRoutes.length > 0) {
-            return parsedBestRoutes;
-        }
+        return result.bestRoutes;
     }
 
     return result.order.slice(0, -1).flatMap((_, index) => {

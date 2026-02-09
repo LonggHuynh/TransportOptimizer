@@ -4,7 +4,6 @@ import { apiInstance } from '../../api';
 import { Coordinate } from '../../models/coordinate';
 import { TravelMode } from '../../models/routeOptions';
 import { StopWindow } from '../../models/stopWindow';
-import { toCoordinateKey } from '../../utils/coordinates';
 import { useRouteComputationStore } from '../store/useRouteComputationStore';
 
 export interface ComputeRouteQueuedResponse {
@@ -25,11 +24,10 @@ const enqueueComputeRoute = async ({
     startTimeUtc,
     travelMode,
 }: ComputeOrderInput): Promise<ComputeRouteQueuedResponse> => {
-    const serializedPlaces = places.map((place) => toCoordinateKey(place));
     const response = await apiInstance.post<ComputeRouteQueuedResponse>(
         'Route/ComputeOrder',
         {
-            places: serializedPlaces,
+            places,
             stopWindows,
             startTimeUtc,
             travelMode,

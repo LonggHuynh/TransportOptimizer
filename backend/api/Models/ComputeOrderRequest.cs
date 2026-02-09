@@ -11,7 +11,7 @@ public class ComputeOrderRequest
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public string[] Places { get; init; } = Array.Empty<string>();
+    public Coordinate[] Places { get; init; } = Array.Empty<Coordinate>();
     public List<StopWindow> StopWindows { get; init; } = new();
     public DateTimeOffset? StartTimeUtc { get; init; }
     public string? TravelMode { get; init; }
@@ -20,7 +20,7 @@ public class ComputeOrderRequest
     {
         var payload = new
         {
-            places = Places ?? Array.Empty<string>(),
+            places = Places ?? Array.Empty<Coordinate>(),
             stopWindows = StopWindows ?? new List<StopWindow>(),
             startTimeUtc = StartTimeUtc,
             travelMode = TravelMode,
