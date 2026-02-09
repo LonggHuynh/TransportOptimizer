@@ -1,5 +1,5 @@
-using System.Net;
 using System.Globalization;
+using System.Net;
 using api.Externals;
 using api.Externals.DTOs;
 using api.Models;
@@ -13,154 +13,149 @@ namespace api.Services
         private const int GoogleMatrixMaxElements = 100;
         private readonly IGoogleRoutesClient _googleRoutesClient = googleRoutesClient;
 
-        public async Task<int[][]> GetDistanceMatrixAsync(Coordinate[] places, DateTimeOffset? startTimeUtc, string? travelMode)
+        public async Task<int[][]> GetDistanceMatrixAsync(
+            Coordinate[] places,
+            DateTimeOffset? startTimeUtc,
+            string? travelMode
+        )
         {
+            _ = startTimeUtc;
+
             if (places.Length == 0)
             {
                 return [];
             }
 
-            var coordinates = places.Select(place => new GeoCode
-            {
-                Latitude = place.Latitude,
-                Longitude = place.Longitude,
-            }).ToList();
-            EnsureCoordinateValidity(coordinates);
-            EnsureMatrixElementLimit(coordinates.Count);
+            EnsureCoordinateValidity(places);
+            EnsureMatrixElementLimit(places.Length);
 
-            var normalizedTravelMode = NormalizeTravelMode(travelMode);
-            var googleCoordinateString = string.Join("|", coordinates.Select(coord =>
+            var waypoints = places.Select(ToWaypoint).ToList();
+            var request = new RoutesComputeRouteMatrixRequest
             {
-                if (!coord.Longitude.HasValue || !coord.Latitude.HasValue)
+                Origins = waypoints.Select(waypoint => new RoutesMatrixOrigin
                 {
-                    throw new HttpRequestException(
-                        "One or more locations are missing coordinates. Please reselect the locations and try again.",
-                        null,
-                        HttpStatusCode.BadRequest
-                    );
-                }
+                    Waypoint = waypoint,
+                }).ToList(),
+                Destinations = waypoints.Select(waypoint => new RoutesMatrixDestination
+                {
+                    Waypoint = waypoint,
+                }).ToList(),
+                TravelMode = ToRoutesTravelMode(travelMode),
+                RoutingPreference = null,
+                DepartureTime = null,
+            };
 
-                return $"{coord.Latitude.Value.ToString(CultureInfo.InvariantCulture)},{coord.Longitude.Value.ToString(CultureInfo.InvariantCulture)}";
-            }));
-
-            var googleResponse = await _googleRoutesClient.GetDistanceMatrixAsync(
-                googleCoordinateString,
-                googleCoordinateString,
-                normalizedTravelMode,
-                startTimeUtc
-            );
-            if (googleResponse is null)
-            {
-                throw new HttpRequestException(
-                    "Upstream map service did not return a response.",
-                    null,
-                    HttpStatusCode.BadGateway
-                );
-            }
-
-            var shouldUseTrafficDuration = normalizedTravelMode == "driving" && startTimeUtc.HasValue;
-            return ToGoogleDurationMatrix(googleResponse, coordinates.Count, shouldUseTrafficDuration);
+            var elements = await _googleRoutesClient.ComputeRouteMatrixAsync(request);
+            return ToDurationMatrix(elements, places.Length);
         }
 
-        private static int[][] ToGoogleDurationMatrix(
-            GoogleDistanceMatrixResponse response,
-            int expectedLocationCount,
-            bool shouldUseTrafficDuration
+        private static int[][] ToDurationMatrix(
+            IReadOnlyList<RoutesComputeRouteMatrixElement> elements,
+            int locationCount
         )
         {
-            if (!string.Equals(response.Status, "OK", StringComparison.OrdinalIgnoreCase))
+            if (elements.Count == 0)
             {
                 throw new HttpRequestException(
-                    string.IsNullOrWhiteSpace(response.ErrorMessage)
-                        ? "Upstream map service request failed."
-                        : response.ErrorMessage.Trim(),
+                    "Upstream map service returned an empty distance matrix.",
                     null,
                     HttpStatusCode.BadGateway
                 );
             }
 
-            if (response.Rows == null || response.Rows.Count != expectedLocationCount)
-            {
-                throw new HttpRequestException(
-                    "Upstream map service returned an invalid response.",
-                    null,
-                    HttpStatusCode.BadGateway
-                );
-            }
+            var matrix = Enumerable.Range(0, locationCount)
+                .Select(_ => new int[locationCount])
+                .ToArray();
 
-            var matrix = new int[expectedLocationCount][];
-            for (var rowIndex = 0; rowIndex < expectedLocationCount; rowIndex += 1)
+            foreach (var element in elements)
             {
-                var row = response.Rows[rowIndex];
-                if (row.Elements == null || row.Elements.Count != expectedLocationCount)
+                if (element.OriginIndex is not int originIndex
+                    || element.DestinationIndex is not int destinationIndex
+                    || originIndex < 0
+                    || destinationIndex < 0
+                    || originIndex >= locationCount
+                    || destinationIndex >= locationCount)
                 {
-                    throw new HttpRequestException(
-                        "Upstream map service returned an invalid response.",
-                        null,
-                        HttpStatusCode.BadGateway
-                    );
+                    continue;
                 }
 
-                matrix[rowIndex] = row.Elements
-                    .Select(element => GetElementDurationSeconds(element, shouldUseTrafficDuration))
-                    .ToArray();
+                if (!string.IsNullOrWhiteSpace(element.Status)
+                    && !string.Equals(element.Status, "OK", StringComparison.OrdinalIgnoreCase))
+                {
+                    matrix[originIndex][destinationIndex] = 0;
+                    continue;
+                }
+
+                if (!string.Equals(element.Condition, "ROUTE_EXISTS", StringComparison.OrdinalIgnoreCase))
+                {
+                    matrix[originIndex][destinationIndex] = 0;
+                    continue;
+                }
+
+                var seconds = ParseDurationSeconds(element.StaticDuration)
+                    ?? ParseDurationSeconds(element.Duration)
+                    ?? 0;
+                matrix[originIndex][destinationIndex] = seconds;
             }
 
             return matrix;
         }
 
-        private static int GetElementDurationSeconds(
-            GoogleDistanceMatrixElement element,
-            bool shouldUseTrafficDuration
-        )
+        private static RoutesWaypoint ToWaypoint(Coordinate coordinate)
         {
-            if (!string.Equals(element.Status, "OK", StringComparison.OrdinalIgnoreCase))
+            return new RoutesWaypoint
             {
-                return 0;
-            }
-
-            if (shouldUseTrafficDuration && element.DurationInTraffic?.Value is int durationInTraffic)
-            {
-                return durationInTraffic;
-            }
-
-            return element.Duration?.Value
-                ?? element.DurationInTraffic?.Value
-                ?? 0;
-        }
-
-        private static string NormalizeTravelMode(string? travelMode)
-        {
-            if (string.IsNullOrWhiteSpace(travelMode))
-            {
-                return "driving";
-            }
-
-            return travelMode.Trim().ToLowerInvariant() switch
-            {
-                "driving" => "driving",
-                "walking" => "walking",
-                "bicycling" => "bicycling",
-                "cycling" => "bicycling",
-                "transit" => "transit",
-                _ => "driving",
+                Location = new RoutesLocation
+                {
+                    LatLng = new RoutesLatLng
+                    {
+                        Latitude = coordinate.Latitude,
+                        Longitude = coordinate.Longitude,
+                    },
+                },
             };
         }
 
-        private static void EnsureCoordinateValidity(IReadOnlyList<GeoCode> coordinates)
+        private static int? ParseDurationSeconds(string? durationText)
+        {
+            if (string.IsNullOrWhiteSpace(durationText))
+            {
+                return null;
+            }
+
+            var trimmed = durationText.Trim();
+            if (!trimmed.EndsWith('s'))
+            {
+                return null;
+            }
+
+            var numericPart = trimmed[..^1];
+            if (!double.TryParse(numericPart, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds))
+            {
+                return null;
+            }
+
+            return (int)Math.Round(seconds, MidpointRounding.AwayFromZero);
+        }
+
+        private static string ToRoutesTravelMode(string? travelMode)
+        {
+            return travelMode?.Trim().ToLowerInvariant() switch
+            {
+                "walking" => "WALK",
+                "bicycling" => "BICYCLE",
+                "cycling" => "BICYCLE",
+                "transit" => "TRANSIT",
+                _ => "DRIVE",
+            };
+        }
+
+        private static void EnsureCoordinateValidity(IReadOnlyList<Coordinate> coordinates)
         {
             for (var index = 0; index < coordinates.Count; index += 1)
             {
-                var coordinate = coordinates[index];
-                if (coordinate.Latitude is not double latitude || coordinate.Longitude is not double longitude)
-                {
-                    throw new HttpRequestException(
-                        $"Location {index + 1} is missing coordinates. Please select locations from suggestions.",
-                        null,
-                        HttpStatusCode.BadRequest
-                    );
-                }
-
+                var latitude = coordinates[index].Latitude;
+                var longitude = coordinates[index].Longitude;
                 if (double.IsNaN(latitude)
                     || double.IsInfinity(latitude)
                     || latitude < -90

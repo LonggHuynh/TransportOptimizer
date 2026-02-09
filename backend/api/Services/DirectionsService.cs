@@ -1,5 +1,6 @@
 using System.Globalization;
 using api.Externals;
+using api.Externals.DTOs;
 using api.Models;
 
 namespace api.Services
@@ -22,29 +23,24 @@ namespace api.Services
                 ? parsedDestination
                 : await _geocodeService.GetGeocode(to, null);
 
-            if (origin?.Latitude == null || origin.Longitude == null ||
-                destination?.Latitude == null || destination.Longitude == null)
+            if (origin?.Latitude == null
+                || origin.Longitude == null
+                || destination?.Latitude == null
+                || destination.Longitude == null)
             {
                 return null;
             }
 
-            var originLocation =
-                $"{origin.Latitude.Value.ToString(CultureInfo.InvariantCulture)},{origin.Longitude.Value.ToString(CultureInfo.InvariantCulture)}";
-            var destinationLocation =
-                $"{destination.Latitude.Value.ToString(CultureInfo.InvariantCulture)},{destination.Longitude.Value.ToString(CultureInfo.InvariantCulture)}";
-
-            var response = await _googleRoutesClient.GetDirectionsAsync(
-                originLocation,
-                destinationLocation,
-                "driving"
-            );
-            if (!IsGoogleOkStatus(response?.Status))
+            var response = await _googleRoutesClient.ComputeRoutesAsync(new RoutesComputeRoutesRequest
             {
-                return null;
-            }
+                Origin = ToWaypoint(origin),
+                Destination = ToWaypoint(destination),
+                TravelMode = "DRIVE",
+                RoutingPreference = "TRAFFIC_AWARE",
+            });
 
             var route = response?.Routes?.FirstOrDefault();
-            var encodedPath = route?.OverviewPolyline?.Points;
+            var encodedPath = route?.Polyline?.EncodedPolyline;
             if (string.IsNullOrWhiteSpace(encodedPath))
             {
                 return null;
@@ -56,19 +52,50 @@ namespace api.Services
                 return null;
             }
 
-            var distanceMeters = route?.Legs?.Sum(leg => leg.Distance?.Value ?? 0) ?? 0;
-            var durationSeconds = route?.Legs?.Sum(leg => leg.Duration?.Value ?? 0) ?? 0;
-
             return new DirectionsResult
             {
                 Coordinates = points,
-                DistanceMeters = distanceMeters,
-                DurationSeconds = durationSeconds,
+                DistanceMeters = route?.DistanceMeters ?? 0,
+                DurationSeconds = ParseDurationSeconds(route?.Duration) ?? 0,
             };
         }
 
-        private static bool IsGoogleOkStatus(string? status) =>
-            string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase);
+        private static RoutesWaypoint ToWaypoint(GeoCode point)
+        {
+            return new RoutesWaypoint
+            {
+                Location = new RoutesLocation
+                {
+                    LatLng = new RoutesLatLng
+                    {
+                        Latitude = point.Latitude!.Value,
+                        Longitude = point.Longitude!.Value,
+                    },
+                },
+            };
+        }
+
+        private static int? ParseDurationSeconds(string? durationText)
+        {
+            if (string.IsNullOrWhiteSpace(durationText))
+            {
+                return null;
+            }
+
+            var trimmed = durationText.Trim();
+            if (!trimmed.EndsWith('s'))
+            {
+                return null;
+            }
+
+            var numericPart = trimmed[..^1];
+            if (!double.TryParse(numericPart, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds))
+            {
+                return null;
+            }
+
+            return (int)Math.Round(seconds, MidpointRounding.AwayFromZero);
+        }
 
         private static bool TryParseCoordinate(string value, out GeoCode coordinate)
         {
@@ -84,16 +111,16 @@ namespace api.Services
                 return false;
             }
 
-            if (!double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var longitude)
-                || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var latitude))
+            if (!double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var latitude)
+                || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var longitude))
             {
                 return false;
             }
 
             coordinate = new GeoCode
             {
-                Longitude = longitude,
                 Latitude = latitude,
+                Longitude = longitude,
             };
             return true;
         }

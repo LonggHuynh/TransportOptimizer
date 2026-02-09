@@ -103,6 +103,9 @@ public class RoutesComputeRouteMatrixElement
     [JsonPropertyName("destinationIndex")]
     public int? DestinationIndex { get; set; }
 
+    [JsonPropertyName("status")]
+    public string? Status { get; set; }
+
     [JsonPropertyName("condition")]
     public string? Condition { get; set; }
 

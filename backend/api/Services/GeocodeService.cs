@@ -1,6 +1,5 @@
-using System.Linq;
-using System.Threading.Tasks;
 using api.Externals;
+using api.Externals.DTOs;
 using api.Models;
 
 namespace api.Services
@@ -8,6 +7,10 @@ namespace api.Services
     public class GeocodeService(IGooglePlacesClient googlePlacesClient) : IGeocodeService
     {
         private readonly IGooglePlacesClient _googlePlacesClient = googlePlacesClient;
+
+        private const int MinSuggestionQueryLength = 3;
+        private const int MaxSuggestionLimit = 10;
+        private const double AutocompleteBiasRadiusMeters = 50_000;
 
         public async Task<GeoCode?> GetGeocode(string? address, string? placeId = null)
         {
@@ -18,23 +21,26 @@ namespace api.Services
                 return null;
             }
 
-            var res = !string.IsNullOrWhiteSpace(normalizedPlaceId)
-                ? await _googlePlacesClient.ForwardGeocodeByPlaceIdAsync(normalizedPlaceId)
-                : await _googlePlacesClient.ForwardGeocodeAsync(normalizedAddress!);
-            var location = res?.Results?.FirstOrDefault()?.Geometry?.Location;
-            if (!IsGoogleOkStatus(res?.Status) || location == null)
+            if (!string.IsNullOrWhiteSpace(normalizedPlaceId))
             {
-                return null;
+                var place = await _googlePlacesClient.GetPlaceDetailsAsync(normalizedPlaceId);
+                return ToGeoCode(place);
             }
 
-            return new GeoCode
+            var searchResponse = await _googlePlacesClient.SearchTextAsync(new PlacesSearchTextRequest
             {
-                Longitude = location.Longitude,
-                Latitude = location.Latitude,
-            };
+                TextQuery = normalizedAddress!,
+                MaxResultCount = 1,
+            });
+            var firstPlace = searchResponse?.Places?.FirstOrDefault();
+            return ToGeoCode(firstPlace);
         }
 
-        public async Task<IReadOnlyList<GeocodeSuggestion>> GetSuggestions(string query, int limit, GeoCode? biasCenter = null)
+        public async Task<IReadOnlyList<GeocodeSuggestion>> GetSuggestions(
+            string query,
+            int limit,
+            GeoCode? biasCenter = null
+        )
         {
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -42,20 +48,29 @@ namespace api.Services
             }
 
             var trimmed = query.Trim();
-            if (trimmed.Length < 3)
+            if (trimmed.Length < MinSuggestionQueryLength)
             {
-                return Array.Empty<GeocodeSuggestion>();
+                return [];
             }
 
-            var clampedLimit = Math.Max(1, Math.Min(limit, 10));
-            var res = await _googlePlacesClient.ForwardGeocodeAutocompleteAsync(trimmed, biasCenter);
+            var clampedLimit = Math.Max(1, Math.Min(limit, MaxSuggestionLimit));
+            var response = await _googlePlacesClient.AutocompleteAsync(new PlacesAutocompleteRequest
+            {
+                Input = trimmed,
+                IncludeQueryPredictions = true,
+                LocationBias = ToLocationBias(biasCenter),
+            });
+
             var suggestions = new List<GeocodeSuggestion>();
             var dedupe = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-
-            foreach (var prediction in res?.Predictions ?? [])
+            foreach (var prediction in response?.Suggestions?.Select(x => x.PlacePrediction) ?? [])
             {
-                var label = prediction.Description?.Trim();
+                if (prediction is null)
+                {
+                    continue;
+                }
+
+                var label = prediction.Text?.Text?.Trim();
                 if (string.IsNullOrWhiteSpace(label))
                 {
                     continue;
@@ -85,10 +100,40 @@ namespace api.Services
             return suggestions;
         }
 
-        private static bool IsGoogleOkStatus(string? status)
+        private static GeoCode? ToGeoCode(PlaceDetailsResponse? place)
         {
-            return string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase);
+            var location = place?.Location;
+            if (location is null)
+            {
+                return null;
+            }
+
+            return new GeoCode
+            {
+                Latitude = location.Latitude,
+                Longitude = location.Longitude,
+            };
+        }
+
+        private static PlacesLocationBias? ToLocationBias(GeoCode? biasCenter)
+        {
+            if (biasCenter?.Latitude is not double latitude || biasCenter.Longitude is not double longitude)
+            {
+                return null;
+            }
+
+            return new PlacesLocationBias
+            {
+                Circle = new PlacesLocationBiasCircle
+                {
+                    Center = new PlacesCenterPoint
+                    {
+                        Latitude = latitude,
+                        Longitude = longitude,
+                    },
+                    Radius = AutocompleteBiasRadiusMeters,
+                },
+            };
         }
     }
-
 }
