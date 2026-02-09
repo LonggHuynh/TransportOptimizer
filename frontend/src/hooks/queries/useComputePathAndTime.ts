@@ -1,27 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiInstance } from '../../api';
+import { useRouteComputationStore } from '../store/useRouteComputationStore';
 import { StopWindow } from '../../models/stopWindow';
 import { TravelMode } from '../../models/routeOptions';
-import { useRouteComputationStore } from '../store/useRouteComputationStore';
-
-interface ComputeRouteResponse {
-    order: number[];
-    totalTime: number | null;
-    bestRoutes?: [string, string][];
-}
-
-interface ComputeRouteQueuedResponse {
-    jobId: string;
-    status: string;
-}
-
-interface RouteJobStatusResponse {
-    jobId: string;
-    status: string;
-    result?: ComputeRouteResponse;
-    error?: string;
-}
+import {
+    enqueueComputeRoute,
+    fetchRouteStatus,
+} from './routeJobApi';
 
 interface RouteComputationResult {
     status?: string;
@@ -29,36 +14,6 @@ interface RouteComputationResult {
     bestRoutes: [string, string][];
     totalTime: number | null;
 }
-
-interface ComputeOrderInput {
-    places: string[];
-    stopWindows: StopWindow[];
-    startTimeUtc: string | null;
-    travelMode: TravelMode;
-}
-
-const enqueueComputeRoute = async ({
-    places,
-    stopWindows,
-    startTimeUtc,
-    travelMode,
-}: ComputeOrderInput): Promise<ComputeRouteQueuedResponse> => {
-    const response = await apiInstance.post<ComputeRouteQueuedResponse>(
-        'Route/ComputeOrder',
-        {
-            places,
-            stopWindows,
-            startTimeUtc,
-            travelMode,
-        }
-    );
-    return response.data;
-};
-
-const fetchRouteStatus = async (jobId: string): Promise<RouteJobStatusResponse> => {
-    const response = await apiInstance.get<RouteJobStatusResponse>(`Route/ComputeOrder/${jobId}`);
-    return response.data;
-};
 
 export const useComputePathAndTime = () => {
     const [jobId, setJobId] = useState<string | null>(null);
