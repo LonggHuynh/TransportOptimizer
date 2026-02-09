@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useDirectionsStore } from '../store/useDirectionsStore';
 import { AxiosError } from 'axios';
@@ -53,16 +54,23 @@ export const useDisplayDirections = (
         (state) => state.setDirectionsResponse,
     );
 
-    return useMutation({
+    const onSuccess = useCallback((
+        data: RouteLine | null,
+        variables: DisplayDirectionsVariables,
+    ) => {
+        setDirectionsResponse(data);
+        onSuccessOption?.(data, variables);
+    }, [onSuccessOption, setDirectionsResponse]);
+
+    const onError = useCallback((error: AxiosError, variables: DisplayDirectionsVariables) => {
+        notify.error(`Failed to fetch directions: ${error.message}`);
+        onErrorOption?.(error, variables);
+    }, [onErrorOption]);
+
+    return useMutation<RouteLine | null, AxiosError, DisplayDirectionsVariables>({
         mutationFn: async ({ from, to }: DisplayDirectionsVariables) =>
             fetchDirections(from, to),
-        onSuccess: (data, variables) => {
-            setDirectionsResponse(data);
-            onSuccessOption?.(data, variables);
-        },
-        onError: (error: AxiosError, variables) => {
-            notify.error(`Failed to fetch directions: ${error.message}`);
-            onErrorOption?.(error, variables);
-        },
+        onSuccess,
+        onError,
     });
 };
