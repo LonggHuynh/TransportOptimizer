@@ -42,7 +42,7 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             queryParts.Add($"departure_time={departureTimeUtc.Value.ToUnixTimeSeconds()}");
         }
 
-        var url = AppendLegacyApiKey($"distancematrix/json?{string.Join("&", queryParts)}");
+        var url = $"distancematrix/json?{string.Join("&", queryParts)}";
         return await _httpClient.GetFromJsonAsync<GoogleDistanceMatrixResponse>(url, JsonOptions);
     }
 
@@ -53,7 +53,7 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             return null;
         }
 
-        var url = AppendLegacyApiKey($"geocode/json?address={Uri.EscapeDataString(address)}");
+        var url = $"geocode/json?address={Uri.EscapeDataString(address)}";
         return await _httpClient.GetFromJsonAsync<GoogleGeocodeResponse>(url, JsonOptions);
     }
 
@@ -178,9 +178,8 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
     )
     {
         var mode = string.IsNullOrWhiteSpace(travelMode) ? "driving" : travelMode;
-        var url = AppendLegacyApiKey(
-            $"directions/json?origin={Uri.EscapeDataString(origin)}&destination={Uri.EscapeDataString(destination)}&mode={Uri.EscapeDataString(mode)}"
-        );
+        var url =
+            $"directions/json?origin={Uri.EscapeDataString(origin)}&destination={Uri.EscapeDataString(destination)}&mode={Uri.EscapeDataString(mode)}";
         return await _httpClient.GetFromJsonAsync<GoogleDirectionsResponse>(url, JsonOptions);
     }
 
@@ -240,26 +239,23 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
         );
     }
 
-    private string AppendLegacyApiKey(string url)
-    {
-        var apiKey = _appOptions.GoogleMaps?.ApiKey?.Trim();
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            return url;
-        }
-
-        var separator = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
-        return $"{url}{separator}key={Uri.EscapeDataString(apiKey)}";
-    }
-
-    private static HttpRequestMessage CreatePlacesRequest(
+    private HttpRequestMessage CreatePlacesRequest(
         HttpMethod method,
         string path,
         string fieldMask,
         object? payload = null
     )
     {
-        var request = new HttpRequestMessage(method, $"https://places.googleapis.com/v1/{path}");
+        var placesApiBaseUrl = _appOptions.GoogleMaps?.PlacesApiUrl;
+        if (string.IsNullOrWhiteSpace(placesApiBaseUrl))
+        {
+            placesApiBaseUrl = "https://places.googleapis.com/v1";
+        }
+
+        var normalizedPlacesApiBaseUrl = placesApiBaseUrl.EndsWith('/')
+            ? placesApiBaseUrl
+            : $"{placesApiBaseUrl}/";
+        var request = new HttpRequestMessage(method, $"{normalizedPlacesApiBaseUrl}{path}");
         request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", fieldMask);
         if (payload is not null)
         {

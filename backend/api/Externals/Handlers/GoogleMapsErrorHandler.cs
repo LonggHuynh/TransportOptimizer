@@ -1,16 +1,21 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using api.Configuration;
 
 namespace api.Externals.Handlers;
 
-public class GoogleMapsErrorHandler : DelegatingHandler
+public class GoogleMapsErrorHandler(AppOptions appOptions) : DelegatingHandler
 {
+    private readonly string _googleMapsApiKey = appOptions.GoogleMaps?.ApiKey?.Trim() ?? string.Empty;
+
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken
     )
     {
+        TryAppendLegacyApiKey(request);
+
         var response = await base.SendAsync(request, cancellationToken);
         var payload = response.Content is null
             ? null
@@ -136,5 +141,34 @@ public class GoogleMapsErrorHandler : DelegatingHandler
             "UNKNOWN_ERROR" => HttpStatusCode.BadGateway,
             _ => HttpStatusCode.BadGateway,
         };
+    }
+
+    private void TryAppendLegacyApiKey(HttpRequestMessage request)
+    {
+        if (string.IsNullOrWhiteSpace(_googleMapsApiKey) || request.RequestUri is null)
+        {
+            return;
+        }
+
+        var uriText = request.RequestUri.ToString();
+        if (string.IsNullOrWhiteSpace(uriText)
+            || uriText.Contains("key=", StringComparison.OrdinalIgnoreCase)
+            || !IsLegacyMapsApiRequest(uriText))
+        {
+            return;
+        }
+
+        var separator = uriText.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        request.RequestUri = new Uri(
+            $"{uriText}{separator}key={Uri.EscapeDataString(_googleMapsApiKey)}",
+            request.RequestUri.IsAbsoluteUri ? UriKind.Absolute : UriKind.Relative
+        );
+    }
+
+    private static bool IsLegacyMapsApiRequest(string uriText)
+    {
+        return uriText.Contains("distancematrix/json", StringComparison.OrdinalIgnoreCase)
+            || uriText.Contains("geocode/json", StringComparison.OrdinalIgnoreCase)
+            || uriText.Contains("directions/json", StringComparison.OrdinalIgnoreCase);
     }
 }
