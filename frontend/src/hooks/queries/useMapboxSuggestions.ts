@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiInstance } from '../../api';
 import { AxiosError } from 'axios';
 import { toCoordinateKey } from '../../utils/coordinates';
@@ -15,11 +15,6 @@ export interface MapboxSuggestion {
 const MIN_QUERY_LENGTH = 3;
 const SUGGESTION_LIMIT = 6;
 const SUGGESTION_DEBOUNCE_MS = 200;
-
-interface SuggestionVariables {
-    query: string;
-    signal: AbortSignal;
-}
 
 interface SuggestionRecord extends Record<string, unknown> {
     id?: unknown;
@@ -90,7 +85,26 @@ const parseSuggestion = (input: unknown, index: number): MapboxSuggestion | null
     };
 };
 
-const fetchSuggestions = async ({ query, signal }: SuggestionVariables) => {
+const parseSuggestions = (data: unknown): MapboxSuggestion[] => {
+    const payload = Array.isArray(data) ? data : [];
+    const dedupe = new Map<string, MapboxSuggestion>();
+
+    payload.forEach((item, index) => {
+        const parsed = parseSuggestion(item, index);
+        if (!parsed) {
+            return;
+        }
+
+        const dedupeKey = parsed.coordinateKey ?? parsed.label.toLowerCase();
+        if (!dedupe.has(dedupeKey)) {
+            dedupe.set(dedupeKey, parsed);
+        }
+    });
+
+    return Array.from(dedupe.values());
+};
+
+const fetchSuggestions = async ({ query, signal }: { query: string; signal: AbortSignal }) => {
     const response = await apiInstance.get<unknown>('geocode/suggest', {
         params: { query, limit: SUGGESTION_LIMIT },
         signal,
@@ -99,83 +113,71 @@ const fetchSuggestions = async ({ query, signal }: SuggestionVariables) => {
 };
 
 export const useMapboxSuggestions = (query: string) => {
+    const [debouncedQuery, setDebouncedQuery] = useState('');
     const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const abortRef = useRef<AbortController | null>(null);
-    const debounceRef = useRef<number | null>(null);
-    const requestIdRef = useRef(0);
 
-    const { mutateAsync, isPending, reset } = useMutation({
-        mutationFn: (variables: SuggestionVariables) => fetchSuggestions(variables),
-    });
+    const trimmedQuery = query.trim();
+    const canSearch = trimmedQuery.length >= MIN_QUERY_LENGTH;
+
+    const onSuccess = useCallback((data: unknown) => {
+        setSuggestions(parseSuggestions(data));
+        setError(null);
+    }, []);
+
+    const onError = useCallback((err: AxiosError) => {
+        if (err.code === 'ERR_CANCELED') {
+            return;
+        }
+
+        setError('Failed to load suggestions');
+        setSuggestions([]);
+    }, []);
 
     useEffect(() => {
-        const trimmed = query.trim();
-        if (trimmed.length < MIN_QUERY_LENGTH) {
-            abortRef.current?.abort();
-            abortRef.current = null;
-            if (debounceRef.current !== null) {
-                window.clearTimeout(debounceRef.current);
-                debounceRef.current = null;
-            }
-            reset();
+        if (!canSearch) {
+            setDebouncedQuery('');
             setSuggestions([]);
             setError(null);
             return;
         }
 
-        if (debounceRef.current !== null) {
-            window.clearTimeout(debounceRef.current);
-        }
-
-        const controller = new AbortController();
-        abortRef.current?.abort();
-        abortRef.current = controller;
-
-        const currentRequestId = ++requestIdRef.current;
-        debounceRef.current = window.setTimeout(() => {
-            debounceRef.current = null;
-            mutateAsync({ query: trimmed, signal: controller.signal })
-                .then((data) => {
-                    if (requestIdRef.current !== currentRequestId) {
-                        return;
-                    }
-                    const payload = Array.isArray(data) ? data : [];
-                    const dedupe = new Map<string, MapboxSuggestion>();
-                    payload.forEach((item, index) => {
-                        const parsed = parseSuggestion(item, index);
-                        if (!parsed) {
-                            return;
-                        }
-                        const dedupeKey = parsed.coordinateKey ?? parsed.label.toLowerCase();
-                        if (!dedupe.has(dedupeKey)) {
-                            dedupe.set(dedupeKey, parsed);
-                        }
-                    });
-                    const next = Array.from(dedupe.values());
-                    setSuggestions(next);
-                    setError(null);
-                })
-                .catch((err: AxiosError) => {
-                    if (requestIdRef.current !== currentRequestId) {
-                        return;
-                    }
-                    if (err.code === 'ERR_CANCELED') {
-                        return;
-                    }
-                    setError('Failed to load suggestions');
-                    setSuggestions([]);
-                });
+        const timeoutId = window.setTimeout(() => {
+            setDebouncedQuery(trimmedQuery);
         }, SUGGESTION_DEBOUNCE_MS);
 
         return () => {
-            if (debounceRef.current !== null) {
-                window.clearTimeout(debounceRef.current);
-                debounceRef.current = null;
-            }
-            controller.abort();
+            window.clearTimeout(timeoutId);
         };
-    }, [query, mutateAsync, reset]);
+    }, [canSearch, trimmedQuery]);
 
-    return { suggestions, loading: isPending, error };
+    const suggestionQuery = useQuery<unknown, AxiosError>({
+        queryKey: ['mapboxSuggestions', debouncedQuery],
+        queryFn: ({ signal }) => fetchSuggestions({ query: debouncedQuery, signal }),
+        enabled: debouncedQuery.length >= MIN_QUERY_LENGTH,
+        refetchOnWindowFocus: false,
+        retry: false,
+    });
+
+    useEffect(() => {
+        if (!suggestionQuery.isSuccess) {
+            return;
+        }
+
+        onSuccess(suggestionQuery.data);
+    }, [onSuccess, suggestionQuery.data, suggestionQuery.isSuccess]);
+
+    useEffect(() => {
+        if (!suggestionQuery.isError) {
+            return;
+        }
+
+        onError(suggestionQuery.error);
+    }, [onError, suggestionQuery.error, suggestionQuery.isError]);
+
+    return {
+        suggestions,
+        loading: debouncedQuery.length >= MIN_QUERY_LENGTH && suggestionQuery.isFetching,
+        error,
+    };
 };
