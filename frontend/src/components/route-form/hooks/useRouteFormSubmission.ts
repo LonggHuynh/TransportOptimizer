@@ -8,6 +8,7 @@ import {
     toStopWindows,
     toUtcIsoFromLocalTime,
 } from '../utils';
+import { useComputePathAndTime } from '../../../hooks/queries/useComputePathAndTime';
 import { TravelMode } from '../../../models/routeOptions';
 import { StopWindow } from '../../../models/stopWindow';
 import { notify } from '../../../utils/notify';
@@ -19,20 +20,16 @@ interface RouteMutationPayload {
     travelMode: TravelMode;
 }
 
-interface RouteSubmissionMutation {
-    mutateAsync: (payload: RouteMutationPayload) => Promise<unknown>;
-}
-
 interface UseRouteFormSubmissionOptions {
     clearErrors: UseFormClearErrors<RouteFormValues>;
-    enqueueMutation: RouteSubmissionMutation;
 }
 
 export const useRouteFormSubmission = ({
     clearErrors,
-    enqueueMutation,
-}: UseRouteFormSubmissionOptions) =>
-    useCallback(async (values: RouteFormValues): Promise<boolean> => {
+}: UseRouteFormSubmissionOptions) => {
+    const { enqueueMutation } = useComputePathAndTime();
+
+    return useCallback(async (values: RouteFormValues): Promise<boolean> => {
         clearErrors();
         const validationMessages: string[] = [];
         const addValidationError = (message: string) => {
@@ -112,3 +109,4 @@ export const useRouteFormSubmission = ({
             return false;
         }
     }, [clearErrors, enqueueMutation]);
+};

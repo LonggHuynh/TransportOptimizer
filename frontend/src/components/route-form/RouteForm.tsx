@@ -22,7 +22,6 @@ import {
     toStopWindows,
     toTimeLocalValue,
 } from './utils';
-import { useComputePathAndTime } from '../../hooks/queries/useComputePathAndTime';
 import {
     MapboxSuggestion,
     useMapboxSuggestions,
@@ -37,8 +36,6 @@ import { TRAVEL_MODES, TravelMode } from '../../models/routeOptions';
 import { parseCoordinateKey } from '../../utils/coordinates';
 
 const RouteForm = () => {
-    const { enqueueMutation } = useComputePathAndTime();
-
     const setIntermediateList = useIntermediateListStore(
         (state) => state.setIntermediateList,
     );
@@ -67,7 +64,6 @@ const RouteForm = () => {
 
     const submitRouteRequest = useRouteFormSubmission({
         clearErrors,
-        enqueueMutation,
     });
 
     const {
