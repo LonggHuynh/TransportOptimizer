@@ -1,6 +1,5 @@
 using System.Threading;
 using api.Configuration;
-using Google.Apis.Auth.OAuth2;
 using StackExchange.Redis;
 
 namespace api.Services;
@@ -13,17 +12,18 @@ public interface IConnectionMultiplexerFactory
 public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsyncDisposable
 {
     private static readonly TimeSpan IamRefreshInterval = TimeSpan.FromMinutes(45);
+    private static readonly string[] IamScopes = ["https://www.googleapis.com/auth/cloud-platform"];
 
     private readonly RedisOptions _options;
-    private readonly GoogleCredential _googleCredential;
+    private readonly IGoogleCredentialFactory _googleCredentialFactory;
     private readonly SemaphoreSlim _mutex = new(1, 1);
     private IConnectionMultiplexer? _cached;
     private DateTimeOffset _refreshAfter = DateTimeOffset.MinValue;
 
-    public RedisConnectionFactory(AppOptions appOptions, GoogleCredential googleCredential)
+    public RedisConnectionFactory(AppOptions appOptions, IGoogleCredentialFactory googleCredentialFactory)
     {
         _options = appOptions.Redis ?? throw new ArgumentException("Redis settings are missing.");
-        _googleCredential = googleCredential;
+        _googleCredentialFactory = googleCredentialFactory;
     }
 
     public Task<IConnectionMultiplexer> GetAsync() => GetOrCreateAsync();
@@ -86,7 +86,8 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
 
     private async Task<string> GetAccessTokenAsync()
     {
-        var token = await _googleCredential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: default);
+        var credential = _googleCredentialFactory.GetCredential(IamScopes);
+        var token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: default);
         if (string.IsNullOrWhiteSpace(token))
         {
             throw new InvalidOperationException("Google access token is missing.");

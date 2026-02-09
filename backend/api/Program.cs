@@ -14,32 +14,7 @@ builder.Services.AddSingleton<GoogleCredential>(_ =>
 {
     try
     {
-        const string defaultScope = "https://www.googleapis.com/auth/cloud-platform";
-        var scopes = appOptions.GoogleMaps?.ServiceAccountScopes?
-            .Select(scope => scope?.Trim())
-            .Where(scope => !string.IsNullOrWhiteSpace(scope))
-            .Select(scope => scope!)
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-
-        if (scopes is not { Length: > 0 })
-        {
-            scopes = [defaultScope];
-        }
-
-        var credential = GoogleCredential.GetApplicationDefault();
-        if (credential.IsCreateScopedRequired)
-        {
-            credential = credential.CreateScoped(scopes);
-        }
-
-        var quotaProject = appOptions.GoogleMaps?.QuotaProject?.Trim();
-        if (!string.IsNullOrWhiteSpace(quotaProject))
-        {
-            credential = credential.CreateWithQuotaProject(quotaProject);
-        }
-
-        return credential;
+        return GoogleCredential.GetApplicationDefault();
     }
     catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
     {
@@ -62,6 +37,7 @@ builder.Services.AddScoped<IGeocodeService, GeocodeService>();
 builder.Services.AddScoped<IDirectionsService, DirectionsService>();
 builder.Services.AddScoped<ITileService, TileService>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddSingleton<IGoogleCredentialFactory, GoogleCredentialFactory>();
 builder.Services.AddSingleton<IConnectionMultiplexerFactory, RedisConnectionFactory>();
 builder.Services.AddSingleton<IRouteJobQueue, RouteJobQueue>();
 
