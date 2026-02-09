@@ -1,5 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { UseFormClearErrors } from 'react-hook-form';
+import { Id } from 'react-toastify';
 import { RouteFormValues } from '../types';
 import {
     buildPlacesPayload,
@@ -8,10 +9,13 @@ import {
     toStopWindows,
     toUtcIsoFromLocalTime,
 } from '../utils';
-import { useComputePathAndTime } from '../../../hooks/queries/useComputePathAndTime';
 import { TravelMode } from '../../../models/routeOptions';
 import { StopWindow } from '../../../models/stopWindow';
 import { notify } from '../../../utils/notify';
+import { useComputePathAndTime } from '../../../hooks/queries/useComputePathAndTime';
+import { useRouteJobStatus } from '../../../hooks/queries/useRouteJobStatus';
+import { toBestRoutes } from '../../../hooks/queries/routeJobApi';
+import { useRouteComputationStore } from '../../../hooks/store/useRouteComputationStore';
 
 interface RouteMutationPayload {
     places: string[];
@@ -24,10 +28,124 @@ interface UseRouteFormSubmissionOptions {
     clearErrors: UseFormClearErrors<RouteFormValues>;
 }
 
+const ROUTE_STATUS_POLL_INTERVAL_MS = 1000;
+
 export const useRouteFormSubmission = ({
     clearErrors,
 }: UseRouteFormSubmissionOptions) => {
-    const { enqueueMutation } = useComputePathAndTime();
+    const setComputedRouteResult = useRouteComputationStore(
+        (state) => state.setComputedRouteResult,
+    );
+    const [activeJobId, setActiveJobId] = useState<string | null>(null);
+    const [activeJobPlaces, setActiveJobPlaces] = useState<string[]>([]);
+    const submitToastIdRef = useRef<Id | null>(null);
+
+    const resolveSubmitToast = useCallback((
+        message: string,
+        tone: 'success' | 'error' = 'success',
+    ) => {
+        if (submitToastIdRef.current) {
+            notify.resolve(submitToastIdRef.current, message, tone);
+            submitToastIdRef.current = null;
+            return;
+        }
+
+        if (tone === 'error') {
+            notify.error(message);
+            return;
+        }
+
+        notify.success(message);
+    }, []);
+
+    const { enqueueMutation } = useComputePathAndTime({
+        onSuccess: (data, variables) => {
+            setActiveJobId(data.jobId);
+            setActiveJobPlaces(variables.places);
+            resolveSubmitToast('Optimization started.');
+        },
+        onError: () => {
+            resolveSubmitToast('Failed to calculate route.', 'error');
+            setActiveJobId(null);
+            setActiveJobPlaces([]);
+        },
+    });
+
+    const routeStatusQuery = useRouteJobStatus(activeJobId, {
+        refetchOnWindowFocus: false,
+        refetchInterval: (query) => {
+            const status = query.state.data?.status;
+            if (status === 'completed' || status === 'failed') {
+                return false;
+            }
+            return ROUTE_STATUS_POLL_INTERVAL_MS;
+        },
+    });
+
+    useEffect(() => {
+        if (!activeJobId || !routeStatusQuery.data) {
+            return;
+        }
+
+        const statusResponse = routeStatusQuery.data;
+        if (statusResponse.status === 'completed' && statusResponse.result) {
+            setComputedRouteResult({
+                status: statusResponse.status,
+                error: statusResponse.error,
+                bestRoutes: toBestRoutes(statusResponse.result, activeJobPlaces),
+                totalTime: statusResponse.result.totalTime ?? null,
+            });
+            resolveSubmitToast('Route optimized.');
+            setActiveJobId(null);
+            return;
+        }
+
+        if (statusResponse.status === 'failed') {
+            setComputedRouteResult({
+                status: statusResponse.status,
+                error: statusResponse.error ?? 'Failed to calculate route.',
+                bestRoutes: [],
+                totalTime: null,
+            });
+            resolveSubmitToast(statusResponse.error ?? 'Failed to calculate route.', 'error');
+            setActiveJobId(null);
+            return;
+        }
+
+        setComputedRouteResult({
+            status: statusResponse.status,
+            error: statusResponse.error,
+            bestRoutes: [],
+            totalTime: null,
+        });
+    }, [
+        activeJobId,
+        activeJobPlaces,
+        resolveSubmitToast,
+        routeStatusQuery.data,
+        setComputedRouteResult,
+    ]);
+
+    useEffect(() => {
+        if (!activeJobId || !routeStatusQuery.isError) {
+            return;
+        }
+
+        setComputedRouteResult({
+            status: 'failed',
+            error: routeStatusQuery.error.message || 'Failed to check route status.',
+            bestRoutes: [],
+            totalTime: null,
+        });
+        resolveSubmitToast('Failed to calculate route.', 'error');
+        setActiveJobId(null);
+    }, [
+        activeJobId,
+        resolveSubmitToast,
+        routeStatusQuery.error,
+        routeStatusQuery.isError,
+        setComputedRouteResult,
+    ]);
 
     return useCallback(async (values: RouteFormValues): Promise<boolean> => {
         clearErrors();
@@ -97,16 +215,21 @@ export const useRouteFormSubmission = ({
             return false;
         }
 
+        if (submitToastIdRef.current) {
+            notify.dismiss(submitToastIdRef.current);
+        }
+        submitToastIdRef.current = notify.loading('Optimizing route...');
+
         try {
             await enqueueMutation.mutateAsync({
                 places,
                 stopWindows: stopWindowsForRequest,
                 startTimeUtc,
                 travelMode: values.travelMode,
-            });
+            } as RouteMutationPayload);
             return true;
         } catch {
             return false;
         }
-    }, [clearErrors, enqueueMutation]);
+    }, [clearErrors, enqueueMutation, resolveSubmitToast]);
 };

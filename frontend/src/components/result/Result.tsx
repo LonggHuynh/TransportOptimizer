@@ -2,8 +2,8 @@ import React, { useRef } from 'react';
 import Draggable from 'react-draggable';
 import RouteDetails from './RouteDetails';
 import { useRouteComputationStore } from '../../hooks/store/useRouteComputationStore';
-import { useRecalculateRoute } from '../../hooks/queries/useRecalculateRoute';
 import { useResultPanelState } from './hooks/useResultPanelState';
+import { useRouteRecalculation } from './hooks/useRouteRecalculation';
 
 import './Result.scss';
 
@@ -25,7 +25,7 @@ const Result = () => {
         estimatedTime,
         routeLegCount,
     });
-    const { isRecalculating, handleDoneAndRecalculate } = useRecalculateRoute();
+    const { isRecalculating, handleDoneAndRecalculate } = useRouteRecalculation();
     const resultPanelRef = useRef<HTMLDivElement>(null);
 
     if (!shouldShowResultPanel) {

@@ -1,5 +1,4 @@
-import { useCallback } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, UseMutationOptions } from '@tanstack/react-query';
 import { useDirectionsStore } from '../store/useDirectionsStore';
 import { AxiosError } from 'axios';
 import { apiInstance } from '../../api';
@@ -17,16 +16,10 @@ interface DisplayDirectionsVariables {
     to: string;
 }
 
-export interface UseDisplayDirectionsOptions {
-    onSuccess?: (
-        data: RouteLine | null,
-        variables: DisplayDirectionsVariables,
-    ) => void;
-    onError?: (
-        error: AxiosError,
-        variables: DisplayDirectionsVariables,
-    ) => void;
-}
+type DisplayDirectionsMutationOptions = Omit<
+    UseMutationOptions<RouteLine | null, AxiosError, DisplayDirectionsVariables>,
+    'mutationFn'
+>;
 
 const fetchDirections = async (
     from: string,
@@ -47,30 +40,24 @@ const fetchDirections = async (
 };
 
 export const useDisplayDirections = (
-    options: UseDisplayDirectionsOptions = {},
+    options: DisplayDirectionsMutationOptions = {},
 ) => {
-    const { onSuccess: onSuccessOption, onError: onErrorOption } = options;
+    const { onSuccess, onError, ...mutationOptions } = options;
     const setDirectionsResponse = useDirectionsStore(
         (state) => state.setDirectionsResponse,
     );
 
-    const onSuccess = useCallback((
-        data: RouteLine | null,
-        variables: DisplayDirectionsVariables,
-    ) => {
-        setDirectionsResponse(data);
-        onSuccessOption?.(data, variables);
-    }, [onSuccessOption, setDirectionsResponse]);
-
-    const onError = useCallback((error: AxiosError, variables: DisplayDirectionsVariables) => {
-        notify.error(`Failed to fetch directions: ${error.message}`);
-        onErrorOption?.(error, variables);
-    }, [onErrorOption]);
-
     return useMutation<RouteLine | null, AxiosError, DisplayDirectionsVariables>({
         mutationFn: async ({ from, to }: DisplayDirectionsVariables) =>
             fetchDirections(from, to),
-        onSuccess,
-        onError,
+        ...mutationOptions,
+        onSuccess: (data, variables, context) => {
+            setDirectionsResponse(data);
+            onSuccess?.(data, variables, context);
+        },
+        onError: (error, variables, context) => {
+            notify.error(`Failed to fetch directions: ${error.message}`);
+            onError?.(error, variables, context);
+        },
     });
 };

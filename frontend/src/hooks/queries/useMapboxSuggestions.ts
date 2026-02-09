@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { apiInstance } from '../../api';
 import { AxiosError } from 'axios';
 import { toCoordinateKey } from '../../utils/coordinates';
@@ -14,10 +14,10 @@ export interface MapboxSuggestion {
 const MIN_QUERY_LENGTH = 3;
 const SUGGESTION_LIMIT = 6;
 
-export interface UseMapboxSuggestionsOptions {
-    onSuccess?: (suggestions: MapboxSuggestion[], rawData: unknown) => void;
-    onError?: (error: AxiosError) => void;
-}
+type MapboxSuggestionsQueryOptions = Omit<
+    UseQueryOptions<MapboxSuggestion[], AxiosError, MapboxSuggestion[], [string, string]>,
+    'queryKey' | 'queryFn' | 'enabled'
+>;
 
 interface SuggestionRecord extends Record<string, unknown> {
     id?: unknown;
@@ -117,31 +117,24 @@ const fetchSuggestions = async ({ query, signal }: { query: string; signal: Abor
 
 export const useMapboxSuggestions = (
     query: string,
-    options: UseMapboxSuggestionsOptions = {},
+    options: MapboxSuggestionsQueryOptions = {},
 ) => {
-    const { onSuccess: onSuccessOption, onError: onErrorOption } = options;
     const trimmedQuery = query.trim();
     const canSearch = trimmedQuery.length >= MIN_QUERY_LENGTH;
 
-    const suggestionQuery = useQuery<MapboxSuggestion[], AxiosError>({
+    const suggestionQuery = useQuery<
+        MapboxSuggestion[],
+        AxiosError,
+        MapboxSuggestion[],
+        [string, string]
+    >({
         queryKey: ['mapboxSuggestions', trimmedQuery],
-        queryFn: async ({ signal }) => {
-            try {
-                const data = await fetchSuggestions({ query: trimmedQuery, signal });
-                const nextSuggestions = parseSuggestions(data);
-                onSuccessOption?.(nextSuggestions, data);
-                return nextSuggestions;
-            } catch (error) {
-                const axiosError = error as AxiosError;
-                if (axiosError.code !== 'ERR_CANCELED') {
-                    onErrorOption?.(axiosError);
-                }
-                throw axiosError;
-            }
-        },
+        queryFn: async ({ signal }) =>
+            parseSuggestions(await fetchSuggestions({ query: trimmedQuery, signal })),
         enabled: canSearch,
         refetchOnWindowFocus: false,
         retry: false,
+        ...options,
     });
 
     return {
