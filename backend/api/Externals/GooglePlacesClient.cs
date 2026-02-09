@@ -74,7 +74,7 @@ public class GooglePlacesClient(HttpClient httpClient) : IGooglePlacesClient
         object? payload = null
     )
     {
-        var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
+        var request = new HttpRequestMessage(method, new Uri(ToRelativePath(path), UriKind.Relative));
         request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", fieldMask);
         if (payload is not null)
         {
@@ -82,5 +82,15 @@ public class GooglePlacesClient(HttpClient httpClient) : IGooglePlacesClient
         }
 
         return request;
+    }
+
+    private static string ToRelativePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return "./";
+        }
+
+        return path.StartsWith("./", StringComparison.Ordinal) ? path : $"./{path}";
     }
 }

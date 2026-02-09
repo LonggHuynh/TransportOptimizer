@@ -73,11 +73,21 @@ public class GoogleRoutesClient(HttpClient httpClient) : IGoogleRoutesClient
 
     private static HttpRequestMessage CreateRequest(string path, string fieldMask, object requestDto)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, new Uri(path, UriKind.Relative))
+        var request = new HttpRequestMessage(HttpMethod.Post, new Uri(ToRelativePath(path), UriKind.Relative))
         {
             Content = JsonContent.Create(requestDto),
         };
         request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", fieldMask);
         return request;
+    }
+
+    private static string ToRelativePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return "./";
+        }
+
+        return path.StartsWith("./", StringComparison.Ordinal) ? path : $"./{path}";
     }
 }
