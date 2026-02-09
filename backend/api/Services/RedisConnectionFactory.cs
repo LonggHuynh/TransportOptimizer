@@ -16,7 +16,6 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
     private const string IamScope = "https://www.googleapis.com/auth/cloud-platform";
 
     private readonly RedisOptions _options;
-    private readonly SemaphoreSlim _credentialLock = new(1, 1);
     private readonly SemaphoreSlim _mutex = new(1, 1);
     private GoogleCredential? _credential;
     private IConnectionMultiplexer? _cached;
@@ -99,19 +98,13 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
 
     private async Task<GoogleCredential> GetCredentialAsync()
     {
-        if (_credential is not null)
+        if (_credential is GoogleCredential existingCredential)
         {
-            return _credential;
+            return existingCredential;
         }
 
-        await _credentialLock.WaitAsync();
         try
         {
-            if (_credential is not null)
-            {
-                return _credential;
-            }
-
             var credential = await GoogleCredential.GetApplicationDefaultAsync();
             if (credential.IsCreateScopedRequired)
             {
@@ -127,10 +120,6 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
                 "Failed to load Google credentials via ADC. Configure GOOGLE_APPLICATION_CREDENTIALS or workload identity.",
                 ex
             );
-        }
-        finally
-        {
-            _credentialLock.Release();
         }
     }
 

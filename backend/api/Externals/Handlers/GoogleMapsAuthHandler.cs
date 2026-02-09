@@ -7,7 +7,6 @@ namespace api.Externals.Handlers;
 public sealed class GoogleMapsAuthHandler(AppOptions appOptions) : DelegatingHandler
 {
     private readonly AppOptions _appOptions = appOptions;
-    private readonly SemaphoreSlim _credentialLock = new(1, 1);
     private GoogleCredential? _credential;
     private const string DefaultScope = "https://www.googleapis.com/auth/cloud-platform";
 
@@ -56,19 +55,13 @@ public sealed class GoogleMapsAuthHandler(AppOptions appOptions) : DelegatingHan
         CancellationToken cancellationToken
     )
     {
-        if (_credential is not null)
+        if (_credential is GoogleCredential existingCredential)
         {
-            return _credential;
+            return existingCredential;
         }
 
-        await _credentialLock.WaitAsync(cancellationToken);
         try
         {
-            if (_credential is not null)
-            {
-                return _credential;
-            }
-
             var scopes = NormalizeScopes(configuredScopes);
             var credential = await GoogleCredential.GetApplicationDefaultAsync(cancellationToken);
             if (credential.IsCreateScopedRequired)
@@ -91,10 +84,6 @@ public sealed class GoogleMapsAuthHandler(AppOptions appOptions) : DelegatingHan
                 "Failed to load Google credentials via ADC. Configure GOOGLE_APPLICATION_CREDENTIALS or workload identity.",
                 ex
             );
-        }
-        finally
-        {
-            _credentialLock.Release();
         }
     }
 
