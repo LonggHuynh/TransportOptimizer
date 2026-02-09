@@ -109,7 +109,6 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
 
     public async Task<GooglePlacesAutocompleteResponse?> ForwardGeocodeAutocompleteAsync(
         string query,
-        int limit,
         GeoCode? biasCenter = null
     )
     {
@@ -118,12 +117,9 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             return null;
         }
 
-        var clampedLimit = Math.Max(1, Math.Min(limit, 10));
         PlacesLocationBias? locationBias = null;
-        if (IsValidBiasCenter(biasCenter))
+        if (biasCenter?.Latitude is double latitude && biasCenter.Longitude is double longitude)
         {
-            var latitude = biasCenter?.Latitude ?? 0;
-            var longitude = biasCenter?.Longitude ?? 0;
             locationBias = new PlacesLocationBias
             {
                 Circle = new PlacesLocationBiasCircle
@@ -165,7 +161,6 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
                 !string.IsNullOrWhiteSpace(prediction.PlaceId)
                 && !string.IsNullOrWhiteSpace(prediction.Description)
             )
-            .Take(clampedLimit)
             .ToList()
             ?? [];
 
@@ -174,19 +169,6 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             Status = "OK",
             Predictions = predictions,
         };
-    }
-
-    private static bool IsValidBiasCenter(GeoCode? center)
-    {
-        if (center?.Latitude is not double latitude || center.Longitude is not double longitude)
-        {
-            return false;
-        }
-
-        return latitude >= -90
-            && latitude <= 90
-            && longitude >= -180
-            && longitude <= 180;
     }
 
     public async Task<GoogleDirectionsResponse?> GetDirectionsAsync(

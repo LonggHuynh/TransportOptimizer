@@ -16,7 +16,7 @@ public interface IGoogleMapsClient
 
     Task<GoogleGeocodeResponse?> ForwardGeocodeAsync(string address);
     Task<GoogleGeocodeResponse?> ForwardGeocodeByPlaceIdAsync(string placeId);
-    Task<GooglePlacesAutocompleteResponse?> ForwardGeocodeAutocompleteAsync(string query, int limit, GeoCode? biasCenter = null);
+    Task<GooglePlacesAutocompleteResponse?> ForwardGeocodeAutocompleteAsync(string query, GeoCode? biasCenter = null);
     Task<GoogleDirectionsResponse?> GetDirectionsAsync(string origin, string destination, string travelMode);
     Task<GoogleMapsTile?> GetTileAsync(int tileSize, int z, int x, int y, string mapType);
 }
