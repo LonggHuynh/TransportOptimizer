@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using api.Configuration;
 using api.Externals.DTOs;
 using api.Models;
@@ -219,108 +218,5 @@ public class GooglePlacesClient(HttpClient httpClient, AppOptions appOptions) : 
     private static string EnsureTrailingSlash(string value)
     {
         return value.EndsWith('/') ? value : $"{value}/";
-    }
-
-    private class PlacesAutocompleteRequest
-    {
-        [JsonPropertyName("input")]
-        public string Input { get; set; } = string.Empty;
-
-        [JsonPropertyName("includeQueryPredictions")]
-        public bool IncludeQueryPredictions { get; set; }
-
-        [JsonPropertyName("locationBias")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public PlacesLocationBias? LocationBias { get; set; }
-    }
-
-    private class PlacesSearchTextRequest
-    {
-        [JsonPropertyName("textQuery")]
-        public string TextQuery { get; set; } = string.Empty;
-
-        [JsonPropertyName("maxResultCount")]
-        public int MaxResultCount { get; set; }
-    }
-
-    private class PlacesLocationBias
-    {
-        [JsonPropertyName("circle")]
-        public PlacesLocationBiasCircle? Circle { get; set; }
-    }
-
-    private class PlacesLocationBiasCircle
-    {
-        [JsonPropertyName("center")]
-        public PlacesCenterPoint? Center { get; set; }
-
-        [JsonPropertyName("radius")]
-        public double Radius { get; set; }
-    }
-
-    private class PlacesCenterPoint
-    {
-        [JsonPropertyName("latitude")]
-        public double Latitude { get; set; }
-
-        [JsonPropertyName("longitude")]
-        public double Longitude { get; set; }
-    }
-
-    private class PlacesAutocompleteResponse
-    {
-        [JsonPropertyName("suggestions")]
-        public List<PlacesAutocompleteSuggestion>? Suggestions { get; set; }
-    }
-
-    private class PlacesAutocompleteSuggestion
-    {
-        [JsonPropertyName("placePrediction")]
-        public PlacesPlacePrediction? PlacePrediction { get; set; }
-    }
-
-    private class PlacesPlacePrediction
-    {
-        [JsonPropertyName("placeId")]
-        public string? PlaceId { get; set; }
-
-        [JsonPropertyName("text")]
-        public PlacesTextValue? Text { get; set; }
-    }
-
-    private class PlacesTextValue
-    {
-        [JsonPropertyName("text")]
-        public string? Text { get; set; }
-    }
-
-    private class PlacesSearchTextResponse
-    {
-        [JsonPropertyName("places")]
-        public List<PlaceDetailsResponse>? Places { get; set; }
-    }
-
-    private class PlaceDetailsResponse
-    {
-        [JsonPropertyName("id")]
-        public string? Id { get; set; }
-
-        [JsonPropertyName("displayName")]
-        public PlacesTextValue? DisplayName { get; set; }
-
-        [JsonPropertyName("formattedAddress")]
-        public string? FormattedAddress { get; set; }
-
-        [JsonPropertyName("location")]
-        public PlacesLocation? Location { get; set; }
-    }
-
-    private class PlacesLocation
-    {
-        [JsonPropertyName("latitude")]
-        public double Latitude { get; set; }
-
-        [JsonPropertyName("longitude")]
-        public double Longitude { get; set; }
     }
 }

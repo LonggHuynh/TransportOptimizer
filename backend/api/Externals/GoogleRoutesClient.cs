@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using api.Configuration;
 using api.Externals.DTOs;
 
@@ -353,116 +352,5 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
         {
             return [];
         }
-    }
-
-    private class RoutesComputeRoutesRequest
-    {
-        [JsonPropertyName("origin")]
-        public RoutesWaypoint? Origin { get; set; }
-
-        [JsonPropertyName("destination")]
-        public RoutesWaypoint? Destination { get; set; }
-
-        [JsonPropertyName("travelMode")]
-        public string TravelMode { get; set; } = "DRIVE";
-
-        [JsonPropertyName("routingPreference")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? RoutingPreference { get; set; }
-    }
-
-    private class RoutesComputeRoutesResponse
-    {
-        [JsonPropertyName("routes")]
-        public List<RoutesComputeRoute>? Routes { get; set; }
-    }
-
-    private class RoutesComputeRoute
-    {
-        [JsonPropertyName("duration")]
-        public string? Duration { get; set; }
-
-        [JsonPropertyName("distanceMeters")]
-        public int? DistanceMeters { get; set; }
-
-        [JsonPropertyName("polyline")]
-        public RoutesPolyline? Polyline { get; set; }
-    }
-
-    private class RoutesPolyline
-    {
-        [JsonPropertyName("encodedPolyline")]
-        public string? EncodedPolyline { get; set; }
-    }
-
-    private class RoutesComputeRouteMatrixRequest
-    {
-        [JsonPropertyName("origins")]
-        public List<RoutesMatrixOrigin> Origins { get; set; } = [];
-
-        [JsonPropertyName("destinations")]
-        public List<RoutesMatrixDestination> Destinations { get; set; } = [];
-
-        [JsonPropertyName("travelMode")]
-        public string TravelMode { get; set; } = "DRIVE";
-
-        [JsonPropertyName("routingPreference")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? RoutingPreference { get; set; }
-
-        [JsonPropertyName("departureTime")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? DepartureTime { get; set; }
-    }
-
-    private class RoutesMatrixOrigin
-    {
-        [JsonPropertyName("waypoint")]
-        public RoutesWaypoint? Waypoint { get; set; }
-    }
-
-    private class RoutesMatrixDestination
-    {
-        [JsonPropertyName("waypoint")]
-        public RoutesWaypoint? Waypoint { get; set; }
-    }
-
-    private class RoutesWaypoint
-    {
-        [JsonPropertyName("location")]
-        public RoutesLocation? Location { get; set; }
-    }
-
-    private class RoutesLocation
-    {
-        [JsonPropertyName("latLng")]
-        public RoutesLatLng? LatLng { get; set; }
-    }
-
-    private class RoutesLatLng
-    {
-        [JsonPropertyName("latitude")]
-        public double Latitude { get; set; }
-
-        [JsonPropertyName("longitude")]
-        public double Longitude { get; set; }
-    }
-
-    private class RoutesComputeRouteMatrixElement
-    {
-        [JsonPropertyName("originIndex")]
-        public int? OriginIndex { get; set; }
-
-        [JsonPropertyName("destinationIndex")]
-        public int? DestinationIndex { get; set; }
-
-        [JsonPropertyName("condition")]
-        public string? Condition { get; set; }
-
-        [JsonPropertyName("duration")]
-        public string? Duration { get; set; }
-
-        [JsonPropertyName("staticDuration")]
-        public string? StaticDuration { get; set; }
     }
 }
