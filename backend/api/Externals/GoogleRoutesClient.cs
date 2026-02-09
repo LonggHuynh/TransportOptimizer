@@ -2,12 +2,11 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using api.Configuration;
 using api.Externals.DTOs;
 
 namespace api.Externals;
 
-public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : IGoogleRoutesClient
+public class GoogleRoutesClient(HttpClient httpClient) : IGoogleRoutesClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -15,7 +14,6 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
     };
 
     private readonly HttpClient _httpClient = httpClient;
-    private readonly AppOptions _appOptions = appOptions;
 
     private const string RoutesComputeRoutesFieldMask =
         "routes.polyline.encodedPolyline,routes.distanceMeters,routes.duration";
@@ -37,7 +35,6 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
         var originPoints = ParseCoordinateList(origins);
         var destinationPoints = ParseCoordinateList(destinations);
         var normalizedTravelMode = ToRoutesTravelMode(travelMode);
-        var matrixDepartureTimeUtc = ToValidDrivingDepartureTimeUtc(normalizedTravelMode, departureTimeUtc);
 
         using var request = CreateRoutesRequest(
             "distanceMatrix/v2:computeRouteMatrix",
@@ -47,10 +44,8 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
                 Origins = originPoints.Select(ToMatrixOrigin).ToList(),
                 Destinations = destinationPoints.Select(ToMatrixDestination).ToList(),
                 TravelMode = normalizedTravelMode,
-                RoutingPreference = matrixDepartureTimeUtc.HasValue
-                    ? "TRAFFIC_AWARE"
-                    : null,
-                DepartureTime = matrixDepartureTimeUtc?.UtcDateTime.ToString("O"),
+                RoutingPreference = null,
+                DepartureTime = null,
             }
         );
 
@@ -128,32 +123,18 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
         };
     }
 
-    private HttpRequestMessage CreateRoutesRequest(
+    private static HttpRequestMessage CreateRoutesRequest(
         string path,
         string fieldMask,
         object payload
     )
     {
-        var routesApiBaseUrl = _appOptions.GoogleMaps?.RoutesApiUrl;
-        if (string.IsNullOrWhiteSpace(routesApiBaseUrl))
-        {
-            routesApiBaseUrl = "https://routes.googleapis.com";
-        }
-
-        var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{EnsureTrailingSlash(routesApiBaseUrl)}{path}"
-        )
+        var request = new HttpRequestMessage(HttpMethod.Post, path)
         {
             Content = JsonContent.Create(payload),
         };
         request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", fieldMask);
         return request;
-    }
-
-    private static string EnsureTrailingSlash(string value)
-    {
-        return value.EndsWith('/') ? value : $"{value}/";
     }
 
     private static string ToRoutesTravelMode(string? travelMode)
@@ -166,24 +147,6 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
             "transit" => "TRANSIT",
             _ => "DRIVE",
         };
-    }
-
-    private static DateTimeOffset? ToValidDrivingDepartureTimeUtc(
-        string normalizedTravelMode,
-        DateTimeOffset? departureTimeUtc
-    )
-    {
-        if (normalizedTravelMode != "DRIVE" || !departureTimeUtc.HasValue)
-        {
-            return null;
-        }
-
-        var normalizedDeparture = departureTimeUtc.Value.ToUniversalTime();
-        // Routes Matrix rejects past/near-past driving departure times.
-        var minimumAcceptedDeparture = DateTimeOffset.UtcNow.AddMinutes(1);
-        return normalizedDeparture > minimumAcceptedDeparture
-            ? normalizedDeparture
-            : null;
     }
 
     private static (double Latitude, double Longitude) ParseCoordinate(string value)
@@ -326,44 +289,28 @@ public class GoogleRoutesClient(HttpClient httpClient, AppOptions appOptions) : 
 
     private static List<RoutesComputeRouteMatrixElement> ParseRouteMatrixElements(string payload)
     {
-        var elements = new List<RoutesComputeRouteMatrixElement>();
         if (string.IsNullOrWhiteSpace(payload))
         {
-            return elements;
-        }
-
-        var lines = payload.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        foreach (var rawLine in lines)
-        {
-            var line = rawLine.Trim().TrimEnd(',');
-            if (line.Length == 0 || line == "[" || line == "]" || !line.StartsWith('{'))
-            {
-                continue;
-            }
-
-            try
-            {
-                var parsedLine = JsonSerializer.Deserialize<RoutesComputeRouteMatrixElement>(line, JsonOptions);
-                if (parsedLine is not null)
-                {
-                    elements.Add(parsedLine);
-                }
-            }
-            catch (JsonException)
-            {
-                // Ignore malformed lines and keep best-effort parsing.
-            }
-        }
-
-        if (elements.Count > 0)
-        {
-            return elements;
+            return [];
         }
 
         try
         {
             var parsedArray = JsonSerializer.Deserialize<List<RoutesComputeRouteMatrixElement>>(payload, JsonOptions);
-            return parsedArray ?? [];
+            if (parsedArray is { Count: > 0 })
+            {
+                return parsedArray;
+            }
+        }
+        catch (JsonException)
+        {
+            // Continue with single-element parsing fallback.
+        }
+
+        try
+        {
+            var singleElement = JsonSerializer.Deserialize<RoutesComputeRouteMatrixElement>(payload, JsonOptions);
+            return singleElement is null ? [] : [singleElement];
         }
         catch (JsonException)
         {
