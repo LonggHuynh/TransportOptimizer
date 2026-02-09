@@ -4,10 +4,34 @@ import { StopWindow } from '../../../models/stopWindow';
 import { notify } from '../../../utils/notify';
 import { useRouteJobStatus } from '../../../hooks/queries/useRouteJobStatus';
 import { useRecalculateRoute } from '../../../hooks/queries/useRecalculateRoute';
-import { toBestRoutes } from '../../../hooks/queries/routeJobApi';
 import { useRouteComputationStore } from '../../../hooks/store/useRouteComputationStore';
 
 const RECALCULATION_STATUS_POLL_INTERVAL_MS = 1000;
+
+interface ComputeRouteResult {
+    order: number[];
+    totalTime: number | null;
+    bestRoutes?: [string, string][];
+}
+
+const toBestRoutes = (
+    result: ComputeRouteResult,
+    places: string[],
+): [string, string][] => {
+    if (result.bestRoutes && result.bestRoutes.length > 0) {
+        return result.bestRoutes;
+    }
+
+    return result.order.slice(0, -1).flatMap((_, index) => {
+        const from = places[result.order[index]];
+        const to = places[result.order[index + 1]];
+        if (!from || !to) {
+            return [];
+        }
+
+        return [[from, to] as [string, string]];
+    });
+};
 
 const buildRemainingPlaces = (
     bestRoutes: [string, string][],

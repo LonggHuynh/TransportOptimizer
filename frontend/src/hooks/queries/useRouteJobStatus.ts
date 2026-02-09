@@ -1,6 +1,28 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
-import { fetchRouteStatus, RouteJobStatusResponse } from './routeJobApi';
+import { apiInstance } from '../../api';
+
+interface ComputeRouteResponse {
+    order: number[];
+    totalTime: number | null;
+    bestRoutes?: [string, string][];
+}
+
+export interface RouteJobStatusResponse {
+    jobId: string;
+    status: string;
+    result?: ComputeRouteResponse;
+    error?: string;
+}
+
+const fetchRouteStatus = async (
+    jobId: string,
+): Promise<RouteJobStatusResponse> => {
+    const response = await apiInstance.get<RouteJobStatusResponse>(
+        `Route/ComputeOrder/${jobId}`,
+    );
+    return response.data;
+};
 
 type RouteJobStatusQueryOptions = Omit<
     UseQueryOptions<RouteJobStatusResponse, AxiosError, RouteJobStatusResponse, [string, string | null]>,

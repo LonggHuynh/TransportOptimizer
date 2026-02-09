@@ -1,12 +1,40 @@
 import { useMutation, UseMutationOptions } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
+import { apiInstance } from '../../api';
+import { TravelMode } from '../../models/routeOptions';
+import { StopWindow } from '../../models/stopWindow';
 import { notify } from '../../utils/notify';
 import { useRouteComputationStore } from '../store/useRouteComputationStore';
-import {
-    ComputeOrderInput,
-    ComputeRouteQueuedResponse,
-    enqueueComputeRoute,
-} from './routeJobApi';
+
+interface ComputeRouteQueuedResponse {
+    jobId: string;
+    status: string;
+}
+
+interface ComputeOrderInput {
+    places: string[];
+    stopWindows: StopWindow[];
+    startTimeUtc: string | null;
+    travelMode: TravelMode;
+}
+
+const enqueueComputeRoute = async ({
+    places,
+    stopWindows,
+    startTimeUtc,
+    travelMode,
+}: ComputeOrderInput): Promise<ComputeRouteQueuedResponse> => {
+    const response = await apiInstance.post<ComputeRouteQueuedResponse>(
+        'Route/ComputeOrder',
+        {
+            places,
+            stopWindows,
+            startTimeUtc,
+            travelMode,
+        },
+    );
+    return response.data;
+};
 
 type RecalculateRouteMutationOptions = Omit<
     UseMutationOptions<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput>,
