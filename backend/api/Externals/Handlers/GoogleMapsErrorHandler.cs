@@ -18,11 +18,10 @@ public class GoogleMapsErrorHandler : DelegatingHandler
         var body = payload is { Length: > 0 } ? Encoding.UTF8.GetString(payload) : null;
         RestoreContent(response, payload);
         var (googleStatus, googleErrorMessage) = ParseGoogleStatusAndErrorMessage(body);
-        var endpoint = request.RequestUri?.AbsolutePath ?? string.Empty;
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException(
-                BuildHttpFailureMessage((int)response.StatusCode, googleErrorMessage, endpoint),
+                BuildHttpFailureMessage((int)response.StatusCode, googleErrorMessage),
                 null,
                 response.StatusCode
             );
@@ -36,7 +35,7 @@ public class GoogleMapsErrorHandler : DelegatingHandler
         var normalizedStatus = googleStatus.ToUpperInvariant();
         var statusCode = MapGoogleStatusToHttpStatus(normalizedStatus);
         throw new HttpRequestException(
-            BuildStatusFailureMessage(normalizedStatus, googleErrorMessage, endpoint),
+            BuildStatusFailureMessage(normalizedStatus, googleErrorMessage),
             null,
             statusCode
         );
@@ -96,55 +95,32 @@ public class GoogleMapsErrorHandler : DelegatingHandler
         }
     }
 
-    private static string BuildHttpFailureMessage(int statusCode, string? googleErrorMessage, string endpoint)
+    private static string BuildHttpFailureMessage(int statusCode, string? googleErrorMessage)
     {
         if (!string.IsNullOrWhiteSpace(googleErrorMessage))
         {
             return googleErrorMessage;
         }
 
-        if (IsDistanceMatrixEndpoint(endpoint))
-        {
-            return $"Google Distance Matrix request failed with HTTP {statusCode}.";
-        }
-
-        return $"Google Maps request failed with HTTP {statusCode}.";
+        return $"Upstream map service request failed with HTTP {statusCode}.";
     }
 
-    private static string BuildStatusFailureMessage(
-        string googleStatus,
-        string? googleErrorMessage,
-        string endpoint
-    )
+    private static string BuildStatusFailureMessage(string googleStatus, string? googleErrorMessage)
     {
         if (!string.IsNullOrWhiteSpace(googleErrorMessage))
         {
             return googleErrorMessage;
         }
 
-        if (IsDistanceMatrixEndpoint(endpoint))
+        return googleStatus switch
         {
-            return googleStatus switch
-            {
-                "REQUEST_DENIED" => "Google Distance Matrix denied the request. Check API key and enabled services.",
-                "OVER_QUERY_LIMIT" => "Google Distance Matrix quota limit exceeded.",
-                "OVER_DAILY_LIMIT" => "Google Distance Matrix daily quota exceeded.",
-                "INVALID_REQUEST" => "Google Distance Matrix received an invalid request. Check coordinates and location count limits.",
-                "MAX_ELEMENTS_EXCEEDED" => "Google Distance Matrix element limit exceeded. Reduce stop count and try again.",
-                "UNKNOWN_ERROR" => "Google Distance Matrix returned an unknown error.",
-                _ => $"Google Distance Matrix failed with status: {googleStatus}.",
-            };
-        }
-
-        return googleStatus.ToUpperInvariant() switch
-        {
-            "REQUEST_DENIED" => "Google Maps denied the request.",
-            "OVER_QUERY_LIMIT" => "Google Maps quota limit exceeded.",
-            "OVER_DAILY_LIMIT" => "Google Maps daily quota exceeded.",
-            "INVALID_REQUEST" => "Google Maps received an invalid request.",
-            "MAX_ELEMENTS_EXCEEDED" => "Google Maps element limit exceeded.",
-            "UNKNOWN_ERROR" => "Google Maps returned an unknown error.",
-            _ => $"Google Maps request failed with status: {googleStatus}.",
+            "REQUEST_DENIED" => "Upstream map service denied the request.",
+            "OVER_QUERY_LIMIT" => "Upstream map service quota limit exceeded.",
+            "OVER_DAILY_LIMIT" => "Upstream map service daily quota exceeded.",
+            "INVALID_REQUEST" => "Upstream map service received an invalid request.",
+            "MAX_ELEMENTS_EXCEEDED" => "Upstream map service request exceeds allowed size.",
+            "UNKNOWN_ERROR" => "Upstream map service returned an unknown error.",
+            _ => $"Upstream map service failed with status: {googleStatus}.",
         };
     }
 
@@ -160,10 +136,5 @@ public class GoogleMapsErrorHandler : DelegatingHandler
             "UNKNOWN_ERROR" => HttpStatusCode.BadGateway,
             _ => HttpStatusCode.BadGateway,
         };
-    }
-
-    private static bool IsDistanceMatrixEndpoint(string endpoint)
-    {
-        return endpoint.Contains("/distancematrix/", StringComparison.OrdinalIgnoreCase);
     }
 }

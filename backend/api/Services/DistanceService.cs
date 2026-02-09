@@ -11,7 +11,6 @@ namespace api.Services
     ) : IDistanceService
     {
         private const int GoogleMatrixMaxElements = 100;
-        private const int GoogleMaxSquareMatrixLocations = 10;
         private readonly IGoogleMapsClient _googleMapsClient = googleMapsClient;
 
         public async Task<int[][]> GetDistanceMatrixAsync(Coordinate[] places, DateTimeOffset? startTimeUtc, string? travelMode)
@@ -53,7 +52,7 @@ namespace api.Services
             if (googleResponse is null)
             {
                 throw new HttpRequestException(
-                    "Google Distance Matrix did not return a response.",
+                    "Upstream map service did not return a response.",
                     null,
                     HttpStatusCode.BadGateway
                 );
@@ -73,7 +72,7 @@ namespace api.Services
             {
                 throw new HttpRequestException(
                     string.IsNullOrWhiteSpace(response.ErrorMessage)
-                        ? "Google Distance Matrix request failed."
+                        ? "Upstream map service request failed."
                         : response.ErrorMessage.Trim(),
                     null,
                     HttpStatusCode.BadGateway
@@ -83,7 +82,7 @@ namespace api.Services
             if (response.Rows == null || response.Rows.Count != expectedLocationCount)
             {
                 throw new HttpRequestException(
-                    "Google Distance Matrix returned an invalid response (row count mismatch).",
+                    "Upstream map service returned an invalid response.",
                     null,
                     HttpStatusCode.BadGateway
                 );
@@ -96,7 +95,7 @@ namespace api.Services
                 if (row.Elements == null || row.Elements.Count != expectedLocationCount)
                 {
                     throw new HttpRequestException(
-                        "Google Distance Matrix returned an invalid response (element count mismatch).",
+                        "Upstream map service returned an invalid response.",
                         null,
                         HttpStatusCode.BadGateway
                     );
@@ -189,7 +188,7 @@ namespace api.Services
             }
 
             throw new HttpRequestException(
-                $"Too many locations for one optimization request ({locationCount}). Google Distance Matrix allows up to {GoogleMatrixMaxElements} matrix elements for this endpoint (about {GoogleMaxSquareMatrixLocations} locations for a full matrix).",
+                $"Too many locations for one optimization request ({locationCount}). Reduce the number of locations and try again.",
                 null,
                 HttpStatusCode.BadRequest
             );
