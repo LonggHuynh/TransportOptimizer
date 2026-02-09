@@ -20,6 +20,14 @@ def _selected_engine() -> str:
     return SOLVER_ENGINE_AUTO
 
 
+def _has_feasible_result(result: RouteResult | None, node_count: int) -> bool:
+    if result is None:
+        return False
+    if node_count == 0:
+        return result.order == [] and result.total_time == 0
+    return bool(result.order) and result.total_time is not None
+
+
 def compute_route(dist: Sequence[Sequence[int]], stop_windows: Sequence[StopWindow]) -> RouteResult:
     node_count = len(dist)
     engine = _selected_engine()
@@ -29,7 +37,7 @@ def compute_route(dist: Sequence[Sequence[int]], stop_windows: Sequence[StopWind
 
     if engine == SOLVER_ENGINE_ORTOOLS:
         ortools_result = compute_route_ortools(dist, stop_windows)
-        if ortools_result is not None:
+        if _has_feasible_result(ortools_result, node_count):
             return ortools_result
         return compute_route_legacy(dist, stop_windows)
 
@@ -38,7 +46,7 @@ def compute_route(dist: Sequence[Sequence[int]], stop_windows: Sequence[StopWind
     # - If OR-Tools is unavailable, keep deterministic local behavior via legacy solver.
     if node_count >= LARGE_ROUTE_THRESHOLD:
         ortools_result = compute_route_ortools(dist, stop_windows)
-        if ortools_result is not None:
+        if _has_feasible_result(ortools_result, node_count):
             return ortools_result
 
     return compute_route_legacy(dist, stop_windows)
