@@ -28,22 +28,15 @@ builder.Services.AddSingleton<IRouteJobQueue, RouteJobQueue>();
 builder.Services.AddTransient<GoogleMapsErrorHandler>();
 builder.Services.AddHttpClient<IGoogleTilesClient, GoogleTilesClient>(client =>
 {
-    var apiUrl = appOptions.GoogleMaps?.ApiUrl;
+    var apiUrl = appOptions.GoogleMaps?.TilesApiUrl;
     if (string.IsNullOrWhiteSpace(apiUrl))
     {
-        apiUrl = "https://maps.googleapis.com/maps/api";
+        apiUrl = "https://tile.googleapis.com/v1";
     }
 
     var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
     client.BaseAddress = new Uri(normalizedApiUrl);
     client.DefaultRequestHeaders.Add("Accept", "*/*");
-
-    var googleMapsApiKey = appOptions.GoogleMaps?.ApiKey;
-    if (!string.IsNullOrWhiteSpace(googleMapsApiKey))
-    {
-        client.DefaultRequestHeaders.Remove("X-Goog-Api-Key");
-        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Goog-Api-Key", googleMapsApiKey);
-    }
 })
 .AddHttpMessageHandler<GoogleMapsErrorHandler>();
 

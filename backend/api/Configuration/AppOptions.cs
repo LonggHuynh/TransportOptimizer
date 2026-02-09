@@ -11,11 +11,13 @@ namespace api.Configuration
     public class GoogleMapsOptions
     {
         public string? ApiKey { get; set; }
-        public string ApiUrl { get; set; } = "https://maps.googleapis.com/maps/api";
+        public string TilesApiUrl { get; set; } = "https://tile.googleapis.com/v1";
         public string PlacesApiUrl { get; set; } = "https://places.googleapis.com/v1";
         public string RoutesApiUrl { get; set; } = "https://routes.googleapis.com";
         public int TileSize { get; set; } = 256;
         public string TileMapType { get; set; } = "roadmap";
+        public string TileLanguage { get; set; } = "en-US";
+        public string TileRegion { get; set; } = "US";
     }
 
     public class CorsSettingsOptions
