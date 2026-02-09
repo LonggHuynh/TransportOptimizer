@@ -104,7 +104,7 @@ public class RoutesComputeRouteMatrixElement
     public int? DestinationIndex { get; set; }
 
     [JsonPropertyName("status")]
-    public string? Status { get; set; }
+    public RoutesComputeRouteMatrixStatus? Status { get; set; }
 
     [JsonPropertyName("condition")]
     public string? Condition { get; set; }
@@ -114,4 +114,13 @@ public class RoutesComputeRouteMatrixElement
 
     [JsonPropertyName("staticDuration")]
     public string? StaticDuration { get; set; }
+}
+
+public class RoutesComputeRouteMatrixStatus
+{
+    [JsonPropertyName("code")]
+    public int? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
 }

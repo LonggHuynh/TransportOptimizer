@@ -79,8 +79,7 @@ namespace api.Services
                     continue;
                 }
 
-                if (!string.IsNullOrWhiteSpace(element.Status)
-                    && !string.Equals(element.Status, "OK", StringComparison.OrdinalIgnoreCase))
+                if (element.Status?.Code is int statusCode && statusCode != 0)
                 {
                     matrix[originIndex][destinationIndex] = 0;
                     continue;
