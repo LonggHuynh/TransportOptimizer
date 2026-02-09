@@ -8,8 +8,17 @@ import { parseCoordinateKey } from '../utils/coordinates';
 interface RouteDetailsProps {
     route: string[];
     index: number;
+    canMarkDone: boolean;
+    onMarkDone: () => void;
+    isRecalculating: boolean;
 }
-const RouteDetails = ({ route, index }: RouteDetailsProps) => {
+const RouteDetails = ({
+    route,
+    index,
+    canMarkDone,
+    onMarkDone,
+    isRecalculating,
+}: RouteDetailsProps) => {
     const [from, to] = route;
     const fromLabel = useLocationLabelsStore((state) => state.labelsByCoordinate[from]);
     const toLabel = useLocationLabelsStore((state) => state.labelsByCoordinate[to]);
@@ -27,14 +36,26 @@ const RouteDetails = ({ route, index }: RouteDetailsProps) => {
                 <ArrowForwardIcon fontSize="small" />
                 <span className="route-details__point">{displayTo}</span>
             </div>
-            <button
-                type="button"
-                className="display-route"
-                disabled={isPending}
-                onClick={() => displayRoute({ from, to })}
-            >
-                {isPending ? 'Loading...' : 'Show on map'}
-            </button>
+            <div className="route-details__actions">
+                <button
+                    type="button"
+                    className="display-route"
+                    disabled={isPending || isRecalculating}
+                    onClick={() => displayRoute({ from, to })}
+                >
+                    {isPending ? 'Loading...' : 'Show on map'}
+                </button>
+                {canMarkDone && (
+                    <button
+                        type="button"
+                        className="mark-done"
+                        disabled={isPending || isRecalculating}
+                        onClick={onMarkDone}
+                    >
+                        {isRecalculating ? 'Recalculating...' : 'Done & recalc'}
+                    </button>
+                )}
+            </div>
         </div>
     );
 };

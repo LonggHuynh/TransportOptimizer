@@ -136,6 +136,17 @@
     min-height: 0;
 }
 
+.result__routes-hint {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-ink-muted);
+
+    strong {
+        font-weight: 700;
+        color: var(--color-ink);
+    }
+}
+
 .result__routes-head {
     display: flex;
     align-items: center;

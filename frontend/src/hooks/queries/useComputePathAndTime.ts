@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiInstance } from '../../api';
 import { StopWindow } from '../../models/stopWindow';
 import { TravelMode } from '../../models/routeOptions';
+import { useRouteComputationStore } from '../store/useRouteComputationStore';
 
 interface ComputeRouteResponse {
     order: number[];
@@ -62,6 +63,7 @@ const fetchRouteStatus = async (jobId: string): Promise<RouteJobStatusResponse> 
 export const useComputePathAndTime = () => {
     const [jobId, setJobId] = useState<string | null>(null);
     const [jobPlaces, setJobPlaces] = useState<string[]>([]);
+    const setLastRequest = useRouteComputationStore((state) => state.setLastRequest);
 
     const jobQuery = useQuery(
         {
@@ -100,6 +102,12 @@ export const useComputePathAndTime = () => {
             onSuccess: (data, variables) => {
                 setJobId(data.jobId);
                 setJobPlaces(variables.places);
+                setLastRequest({
+                    places: variables.places,
+                    stopWindows: variables.stopWindows,
+                    startTimeUtc: variables.startTimeUtc,
+                    travelMode: variables.travelMode,
+                });
             },
         }
     );
