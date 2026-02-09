@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet';
 import './Map.scss';
 import { useDirectionsStore } from '../../hooks/store/useDirectionsStore';
 import { useCenterStore } from '../../hooks/store/useCenterStore';
-import { getGoogleMaps, useGoogleMapsApi } from '../../hooks/useGoogleMapsApi';
+import { RouteLine } from '../../models/map';
 
 const DEFAULT_ZOOM = 13;
 
@@ -23,14 +24,35 @@ const readCssNumberToken = (tokenName: string, fallback: number) => {
     return value;
 };
 
+const MapViewUpdater = ({
+    center,
+    route,
+    fitPadding,
+}: {
+    center: { lat: number; lng: number };
+    route: RouteLine | null;
+    fitPadding: number;
+}) => {
+    const map = useMap();
+
+    useEffect(() => {
+        if (route && route.length > 1) {
+            const bounds = route.map((point) => [point.lat, point.lng] as [number, number]);
+            map.fitBounds(bounds, { padding: [fitPadding, fitPadding] });
+            return;
+        }
+
+        map.setView([center.lat, center.lng], DEFAULT_ZOOM);
+    }, [center, fitPadding, map, route]);
+
+    return null;
+};
+
 const Map = () => {
     const center = useCenterStore((state) => state.center);
     const directionsResponse = useDirectionsStore((state) => state.directionsResponse);
-    const { isLoaded, error } = useGoogleMapsApi();
-    const mapElementRef = useRef<HTMLDivElement | null>(null);
-    const mapRef = useRef<any>(null);
-    const centerMarkerRef = useRef<any>(null);
-    const routeLineRef = useRef<any>(null);
+    const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+    const tileUrl = import.meta.env.VITE_TILE_URL || `${apiBaseUrl}/tiles/{z}/{x}/{y}.png`;
     const mapTokens = useMemo(
         () => ({
             markerRadius: readCssNumberToken('--map-marker-radius', 6),
@@ -44,110 +66,43 @@ const Map = () => {
         [],
     );
 
-    useEffect(() => {
-        if (!isLoaded || !mapElementRef.current || mapRef.current) {
-            return;
-        }
-
-        const googleMaps = getGoogleMaps() as any;
-        if (!googleMaps) {
-            return;
-        }
-
-        mapRef.current = new googleMaps.Map(mapElementRef.current, {
-            center,
-            zoom: DEFAULT_ZOOM,
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: false,
-            clickableIcons: false,
-        });
-
-        centerMarkerRef.current = new googleMaps.Circle({
-            map: mapRef.current,
-            center,
-            radius: Math.max(1, mapTokens.markerRadius) * 40,
-            strokeColor: mapTokens.markerStroke,
-            strokeWeight: 2,
-            strokeOpacity: 1,
-            fillColor: mapTokens.markerFill,
-            fillOpacity: 1,
-        });
-    }, [
-        center,
-        isLoaded,
-        mapTokens.markerFill,
-        mapTokens.markerRadius,
-        mapTokens.markerStroke,
-    ]);
-
-    useEffect(() => {
-        if (!isLoaded || !mapRef.current) {
-            return;
-        }
-
-        const googleMaps = getGoogleMaps() as any;
-        if (!googleMaps) {
-            return;
-        }
-
-        centerMarkerRef.current?.setOptions({
-            center,
-            radius: Math.max(1, mapTokens.markerRadius) * 40,
-            strokeColor: mapTokens.markerStroke,
-            fillColor: mapTokens.markerFill,
-        });
-
-        if (directionsResponse && directionsResponse.length > 1) {
-            if (!routeLineRef.current) {
-                routeLineRef.current = new googleMaps.Polyline({
-                    map: mapRef.current,
-                    geodesic: true,
-                });
-            }
-
-            routeLineRef.current.setOptions({
-                path: directionsResponse,
-                strokeColor: mapTokens.routeColor,
-                strokeOpacity: mapTokens.routeOpacity,
-                strokeWeight: mapTokens.routeWeight,
-            });
-
-            const bounds = new googleMaps.LatLngBounds();
-            directionsResponse.forEach((point) => bounds.extend(point));
-            mapRef.current.fitBounds(bounds, mapTokens.fitPadding);
-            return;
-        }
-
-        routeLineRef.current?.setMap(null);
-        routeLineRef.current = null;
-        mapRef.current.setCenter(center);
-        mapRef.current.setZoom(DEFAULT_ZOOM);
-    }, [
-        center,
-        directionsResponse,
-        isLoaded,
-        mapTokens.fitPadding,
-        mapTokens.markerFill,
-        mapTokens.markerRadius,
-        mapTokens.markerStroke,
-        mapTokens.routeColor,
-        mapTokens.routeOpacity,
-        mapTokens.routeWeight,
-    ]);
-
-    useEffect(() => () => {
-        routeLineRef.current?.setMap(null);
-        centerMarkerRef.current?.setMap(null);
-        routeLineRef.current = null;
-        centerMarkerRef.current = null;
-        mapRef.current = null;
-    }, []);
-
     return (
         <div className="mapContainer">
-            <div className="mapGoogle" ref={mapElementRef} />
-            {error ? <div className="mapError">{error}</div> : null}
+            <MapContainer
+                className="mapLeaflet"
+                center={[center.lat, center.lng]}
+                zoom={DEFAULT_ZOOM}
+                scrollWheelZoom={true}
+            >
+                <TileLayer
+                    url={tileUrl}
+                    attribution="Map data"
+                />
+                <CircleMarker
+                    center={[center.lat, center.lng]}
+                    radius={mapTokens.markerRadius}
+                    pathOptions={{
+                        color: mapTokens.markerStroke,
+                        fillColor: mapTokens.markerFill,
+                        fillOpacity: 1,
+                    }}
+                />
+                {directionsResponse && directionsResponse.length > 1 ? (
+                    <Polyline
+                        positions={directionsResponse.map((point) => [point.lat, point.lng])}
+                        pathOptions={{
+                            color: mapTokens.routeColor,
+                            weight: mapTokens.routeWeight,
+                            opacity: mapTokens.routeOpacity,
+                        }}
+                    />
+                ) : null}
+                <MapViewUpdater
+                    center={center}
+                    route={directionsResponse}
+                    fitPadding={mapTokens.fitPadding}
+                />
+            </MapContainer>
         </div>
     );
 };

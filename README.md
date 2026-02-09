@@ -24,7 +24,7 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 | Variable Name                       | Description                                                                                                                                                                                           |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VITE_API_URL`                      | URL of the backend API (default: `/api`).                                                                                                                                                             |
-| `VITE_GOOGLE_MAPS_API_KEY`          | Google Maps JavaScript API key used by the frontend map.                                                                                                                                              |
+| `VITE_TILE_URL`                     | Optional override for the backend tile endpoint (default: `${VITE_API_URL}/tiles/{z}/{x}/{y}.png`).                                                                                                 |
 
 ### Backend Runtime Environment Variables
 
