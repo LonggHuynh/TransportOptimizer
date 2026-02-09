@@ -16,11 +16,6 @@ interface DisplayDirectionsVariables {
     to: string;
 }
 
-type DisplayDirectionsMutationOptions = Omit<
-    UseMutationOptions<RouteLine | null, AxiosError, DisplayDirectionsVariables>,
-    'mutationFn'
->;
-
 const fetchDirections = async (
     from: string,
     to: string,
@@ -40,24 +35,23 @@ const fetchDirections = async (
 };
 
 export const useDisplayDirections = (
-    options: DisplayDirectionsMutationOptions = {},
+    options: UseMutationOptions<RouteLine | null, AxiosError, DisplayDirectionsVariables> = {},
 ) => {
-    const { onSuccess, onError, ...mutationOptions } = options;
     const setDirectionsResponse = useDirectionsStore(
         (state) => state.setDirectionsResponse,
     );
 
     return useMutation<RouteLine | null, AxiosError, DisplayDirectionsVariables>({
+        ...options,
         mutationFn: async ({ from, to }: DisplayDirectionsVariables) =>
             fetchDirections(from, to),
-        ...mutationOptions,
         onSuccess: (data, variables, context) => {
             setDirectionsResponse(data);
-            onSuccess?.(data, variables, context);
+            options.onSuccess?.(data, variables, context);
         },
         onError: (error, variables, context) => {
             notify.error(`Failed to fetch directions: ${error.message}`);
-            onError?.(error, variables, context);
+            options.onError?.(error, variables, context);
         },
     });
 };

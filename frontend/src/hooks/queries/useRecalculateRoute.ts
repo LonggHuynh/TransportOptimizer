@@ -36,24 +36,17 @@ const enqueueComputeRoute = async ({
     return response.data;
 };
 
-type RecalculateRouteMutationOptions = Omit<
-    UseMutationOptions<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput>,
-    'mutationFn'
->;
-
 export const useRecalculateRoute = (
-    options: RecalculateRouteMutationOptions = {},
+    options: UseMutationOptions<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput> = {},
 ) => {
     const routes = useRouteComputationStore((state) => state.bestRoutes);
     const estimatedTime = useRouteComputationStore((state) => state.totalTime);
     const setComputedRouteResult = useRouteComputationStore(
         (state) => state.setComputedRouteResult,
     );
-    const { onSuccess, onError, ...mutationOptions } = options;
-
     return useMutation<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput>({
+        ...options,
         mutationFn: enqueueComputeRoute,
-        ...mutationOptions,
         onSuccess: (data, variables, context) => {
             setComputedRouteResult({
                 status: data.status,
@@ -61,11 +54,11 @@ export const useRecalculateRoute = (
                 bestRoutes: routes,
                 totalTime: estimatedTime,
             });
-            onSuccess?.(data, variables, context);
+            options.onSuccess?.(data, variables, context);
         },
         onError: (error, variables, context) => {
             notify.error('Failed to start recalculation.');
-            onError?.(error, variables, context);
+            options.onError?.(error, variables, context);
         },
     });
 };

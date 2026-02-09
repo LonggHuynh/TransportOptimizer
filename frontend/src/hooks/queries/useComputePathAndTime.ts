@@ -35,27 +35,20 @@ const enqueueComputeRoute = async ({
     return response.data;
 };
 
-type ComputeRouteMutationOptions = Omit<
-    UseMutationOptions<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput>,
-    'mutationFn'
->;
-
 export const useComputePathAndTime = (
-    options: ComputeRouteMutationOptions = {},
+    options: UseMutationOptions<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput> = {},
 ) => {
     const setComputedRouteResult = useRouteComputationStore(
         (state) => state.setComputedRouteResult,
     );
     const setLastRequest = useRouteComputationStore((state) => state.setLastRequest);
-    const { onSuccess, onError, ...mutationOptions } = options;
-
     const enqueueMutation = useMutation<
         ComputeRouteQueuedResponse,
         AxiosError,
         ComputeOrderInput
     >({
+        ...options,
         mutationFn: enqueueComputeRoute,
-        ...mutationOptions,
         onSuccess: (data, variables, context) => {
             setLastRequest({
                 places: variables.places,
@@ -69,7 +62,7 @@ export const useComputePathAndTime = (
                 bestRoutes: [],
                 totalTime: null,
             });
-            onSuccess?.(data, variables, context);
+            options.onSuccess?.(data, variables, context);
         },
         onError: (error, variables, context) => {
             setComputedRouteResult({
@@ -78,7 +71,7 @@ export const useComputePathAndTime = (
                 bestRoutes: [],
                 totalTime: null,
             });
-            onError?.(error, variables, context);
+            options.onError?.(error, variables, context);
         },
     });
 
