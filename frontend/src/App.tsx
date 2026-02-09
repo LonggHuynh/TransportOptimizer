@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 const App = () => {
     return (
         <>
-            <ToastContainer position="top-center" hideProgressBar theme="dark" icon={false}  />
+            <ToastContainer />
             <Main />
         </>
     );

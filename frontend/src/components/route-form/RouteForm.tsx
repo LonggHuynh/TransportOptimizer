@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import './RouteForm.scss';
-import { DEMO_SCENARIO, DEFAULT_STOP } from './constants';
+import { DEFAULT_STOP } from './constants';
 import IntermediateStopInput from './IntermediateStopInput';
 import {
     IntermediateStopInputValue,
@@ -45,22 +45,17 @@ const RouteForm = () => {
         (state) => state.rememberLocation,
     );
 
-    const {
-        control,
-        clearErrors,
-        getValues,
-        handleSubmit,
-        setValue,
-    } = useForm<RouteFormValues>({
-        defaultValues: {
-            sameDestination: true,
-            origin: { value: '', coordinateKey: null },
-            destination: { value: '', coordinateKey: null },
-            stops: [],
-            departTimeLocal: toTimeLocalValue(new Date()),
-            travelMode: 'driving',
-        },
-    });
+    const { control, clearErrors, getValues, handleSubmit, setValue } =
+        useForm<RouteFormValues>({
+            defaultValues: {
+                sameDestination: true,
+                origin: { value: '', coordinateKey: null },
+                destination: { value: '', coordinateKey: null },
+                stops: [],
+                departTimeLocal: toTimeLocalValue(new Date()),
+                travelMode: 'driving',
+            },
+        });
 
     const submitRouteRequest = useRouteFormSubmission({
         clearErrors,
@@ -204,9 +199,10 @@ const RouteForm = () => {
         props: React.HTMLAttributes<HTMLLIElement>,
         option: MapboxSuggestion,
     ) => {
-        const { key: _key, ...optionProps } = props as React.HTMLAttributes<HTMLLIElement> & {
-            key?: React.Key;
-        };
+        const { key: _key, ...optionProps } =
+            props as React.HTMLAttributes<HTMLLIElement> & {
+                key?: React.Key;
+            };
         const optionKey = option.coordinateKey ?? option.label;
 
         return (

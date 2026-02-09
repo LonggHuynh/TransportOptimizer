@@ -26,20 +26,3 @@ export interface NormalizedIntermediateStop {
     deadlineMinutes: number | null;
     serviceMinutes: number;
 }
-
-export interface DemoLocation {
-    label: string;
-    coordinateKey: string;
-}
-
-export interface DemoStop extends DemoLocation {
-    deadlineMinutes: string;
-    serviceMinutes: string;
-}
-
-export interface DemoScenario {
-    returnToStart: boolean;
-    origin: DemoLocation;
-    destination: DemoLocation;
-    stops: DemoStop[];
-}
