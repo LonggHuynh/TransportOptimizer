@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using api.Externals;
-using api.Middlewares;
 using api.Models;
 
 namespace api.Services
@@ -22,16 +21,6 @@ namespace api.Services
             var res = !string.IsNullOrWhiteSpace(normalizedPlaceId)
                 ? await _googleMapsClient.ForwardGeocodeByPlaceIdAsync(normalizedPlaceId)
                 : await _googleMapsClient.ForwardGeocodeAsync(normalizedAddress!);
-            if (res is null)
-            {
-                throw new GoogleMapsApiException("Google geocode request failed.");
-            }
-
-            if (IsGoogleDeniedStatus(res.Status))
-            {
-                throw new GoogleMapsApiException($"Google geocode request denied: {res.Status}");
-            }
-
             var location = res?.Results?.FirstOrDefault()?.Geometry?.Location;
             if (!IsGoogleOkStatus(res?.Status) || location == null)
             {
@@ -62,16 +51,6 @@ namespace api.Services
             var res = await _googleMapsClient.ForwardGeocodeAutocompleteAsync(trimmed, clampedLimit);
             var suggestions = new List<GeocodeSuggestion>();
             var dedupe = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (res is null)
-            {
-                throw new GoogleMapsApiException("Google place autocomplete request failed.");
-            }
-
-            if (IsGoogleDeniedStatus(res.Status))
-            {
-                throw new GoogleMapsApiException($"Google place autocomplete denied: {res.Status}");
-            }
-
             if (!IsGoogleOkStatus(res?.Status))
             {
                 return suggestions;
@@ -111,10 +90,6 @@ namespace api.Services
 
         private static bool IsGoogleOkStatus(string? status) =>
             string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase);
-        private static bool IsGoogleDeniedStatus(string? status) =>
-            string.Equals(status, "REQUEST_DENIED", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(status, "OVER_DAILY_LIMIT", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(status, "OVER_QUERY_LIMIT", StringComparison.OrdinalIgnoreCase);
 
         private static string NormalizeAddress(string address)
         {
