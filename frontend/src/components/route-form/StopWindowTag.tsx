@@ -1,9 +1,9 @@
 import React from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import './StopWindowTag.scss';
-import { useStopWindowsStore } from '../hooks/store/useStopWindowsStore';
-import { useIntermediateListStore } from '../hooks/store/useIntermediateListStore';
-import { StopWindow } from '../models/stopWindow';
+import { useStopWindowsStore } from '../../hooks/store/useStopWindowsStore';
+import { useIntermediateListStore } from '../../hooks/store/useIntermediateListStore';
+import { StopWindow } from '../../models/stopWindow';
 
 interface StopWindowTagProps {
     stopWindow: StopWindow;

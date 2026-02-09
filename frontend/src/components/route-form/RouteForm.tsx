@@ -8,34 +8,34 @@ import {
 } from '@mui/material';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import './RouteForm.scss';
-import { DEMO_SCENARIO, DEFAULT_STOP } from './route-form/constants';
-import IntermediateStopInput from './route-form/IntermediateStopInput';
+import { DEMO_SCENARIO, DEFAULT_STOP } from './constants';
+import IntermediateStopInput from './IntermediateStopInput';
 import {
     IntermediateStopInputValue,
     LocationInput,
     RouteFormValues,
-} from './route-form/types';
+} from './types';
 import {
     normalizeIntermediateStops,
     toLocalDateTimeFromTime,
     toStopDeadlineTimeLocalValue,
     toStopWindows,
     toTimeLocalValue,
-} from './route-form/utils';
-import { useComputePathAndTime } from '../hooks/queries/useComputePathAndTime';
+} from './utils';
+import { useComputePathAndTime } from '../../hooks/queries/useComputePathAndTime';
 import {
     MapboxSuggestion,
     useMapboxSuggestions,
-} from '../hooks/queries/useMapboxSuggestions';
-import { useCenterStore } from '../hooks/store/useCenterStore';
-import { useIntermediateListStore } from '../hooks/store/useIntermediateListStore';
-import { useLocationLabelsStore } from '../hooks/store/useLocationLabelsStore';
-import { useRouteComputationStore } from '../hooks/store/useRouteComputationStore';
-import { useStopWindowsStore } from '../hooks/store/useStopWindowsStore';
-import { useRouteFormSubmission } from '../hooks/useRouteFormSubmission';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { TRAVEL_MODES, TravelMode } from '../models/routeOptions';
-import { parseCoordinateKey } from '../utils/coordinates';
+} from '../../hooks/queries/useMapboxSuggestions';
+import { useCenterStore } from '../../hooks/store/useCenterStore';
+import { useIntermediateListStore } from '../../hooks/store/useIntermediateListStore';
+import { useLocationLabelsStore } from '../../hooks/store/useLocationLabelsStore';
+import { useRouteComputationStore } from '../../hooks/store/useRouteComputationStore';
+import { useStopWindowsStore } from '../../hooks/store/useStopWindowsStore';
+import { useRouteFormSubmission } from '../../hooks/useRouteFormSubmission';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { TRAVEL_MODES, TravelMode } from '../../models/routeOptions';
+import { parseCoordinateKey } from '../../utils/coordinates';
 
 const RouteForm = () => {
     const { enqueueMutation, computedResult } = useComputePathAndTime();

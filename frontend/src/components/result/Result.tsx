@@ -1,9 +1,9 @@
 import React, { useRef } from 'react';
 import Draggable from 'react-draggable';
 import RouteDetails from './RouteDetails';
-import { useRouteComputationStore } from '../hooks/store/useRouteComputationStore';
-import { useRecalculateRoute } from '../hooks/queries/useRecalculateRoute';
-import { useResultPanelState } from '../hooks/useResultPanelState';
+import { useRouteComputationStore } from '../../hooks/store/useRouteComputationStore';
+import { useRecalculateRoute } from '../../hooks/queries/useRecalculateRoute';
+import { useResultPanelState } from '../../hooks/useResultPanelState';
 
 import './Result.scss';
 

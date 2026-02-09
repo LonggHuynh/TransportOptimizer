@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
-import Map from '../components/Map';
-import RouteForm from '../components/RouteForm';
-import Result from '../components/Result';
+import Map from '../components/map/Map';
+import RouteForm from '../components/route-form/RouteForm';
+import Result from '../components/result/Result';
 import './Main.scss';
 import { useCenterStore } from '../hooks/store/useCenterStore';
 import { useDirectionsStore } from '../hooks/store/useDirectionsStore';

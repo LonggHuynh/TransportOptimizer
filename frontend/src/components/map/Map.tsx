@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet';
 import './Map.scss';
-import { useDirectionsStore } from '../hooks/store/useDirectionsStore';
-import { useCenterStore } from '../hooks/store/useCenterStore';
-import { RouteLine } from '../models/map';
+import { useDirectionsStore } from '../../hooks/store/useDirectionsStore';
+import { useCenterStore } from '../../hooks/store/useCenterStore';
+import { RouteLine } from '../../models/map';
 
 const DEFAULT_ZOOM = 13;
 

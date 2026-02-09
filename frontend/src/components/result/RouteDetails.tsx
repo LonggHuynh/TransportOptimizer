@@ -1,9 +1,9 @@
 import React from 'react';
 import './RouteDetails.scss';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { useDisplayDirections } from '../hooks/queries/useDisplayDirections';
-import { useLocationLabelsStore } from '../hooks/store/useLocationLabelsStore';
-import { parseCoordinateKey } from '../utils/coordinates';
+import { useDisplayDirections } from '../../hooks/queries/useDisplayDirections';
+import { useLocationLabelsStore } from '../../hooks/store/useLocationLabelsStore';
+import { parseCoordinateKey } from '../../utils/coordinates';
 
 interface RouteDetailsProps {
     route: string[];

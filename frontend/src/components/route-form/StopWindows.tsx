@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import './StopWindows.scss';
-import { useIntermediateListStore } from '../hooks/store/useIntermediateListStore';
-import { useStopWindowsStore } from '../hooks/store/useStopWindowsStore';
+import { useIntermediateListStore } from '../../hooks/store/useIntermediateListStore';
+import { useStopWindowsStore } from '../../hooks/store/useStopWindowsStore';
 import StopWindowTag from './StopWindowTag';
-import { notify } from '../utils/notify';
+import { notify } from '../../utils/notify';
 
 const DEFAULT_START_TIME = '09:00';
 const DEFAULT_END_TIME = '17:00';
