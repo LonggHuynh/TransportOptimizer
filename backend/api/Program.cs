@@ -9,6 +9,30 @@ var builder = WebApplication.CreateBuilder(args);
 
 var appOptions = new AppOptions();
 builder.Configuration.Bind(appOptions);
+
+var quotaProject =
+    appOptions.GoogleMaps?.QuotaProject
+    ?? Environment.GetEnvironmentVariable("GOOGLE_CLOUD_QUOTA_PROJECT")
+    ?? Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT");
+
+if (!string.IsNullOrWhiteSpace(quotaProject))
+{
+    appOptions.GoogleMaps ??= new GoogleMapsOptions();
+    appOptions.GoogleMaps.QuotaProject = quotaProject.Trim();
+}
+
+if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS")) && builder.Environment.IsDevelopment())
+{
+    var backendRootPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, ".."));
+    var localCredentialPath = Directory.EnumerateFiles(backendRootPath, "pathoptimizer-*.json")
+        .FirstOrDefault();
+
+    if (!string.IsNullOrWhiteSpace(localCredentialPath))
+    {
+        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", localCredentialPath);
+    }
+}
+
 builder.Services.AddSingleton(appOptions);
 builder.Services.AddSingleton<GoogleCredential>(_ =>
 {
