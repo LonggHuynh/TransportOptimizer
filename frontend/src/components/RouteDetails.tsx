@@ -7,8 +7,9 @@ import { parseCoordinateKey } from '../utils/coordinates';
 
 interface RouteDetailsProps {
     route: string[];
+    index: number;
 }
-const RouteDetails = ({ route }: RouteDetailsProps) => {
+const RouteDetails = ({ route, index }: RouteDetailsProps) => {
     const [from, to] = route;
     const fromLabel = useLocationLabelsStore((state) => state.labelsByCoordinate[from]);
     const toLabel = useLocationLabelsStore((state) => state.labelsByCoordinate[to]);
@@ -16,18 +17,23 @@ const RouteDetails = ({ route }: RouteDetailsProps) => {
     const displayFrom = fromLabel ?? (parseCoordinateKey(from) ? from : from.split(',')[0]);
     const displayTo = toLabel ?? (parseCoordinateKey(to) ? to : to.split(',')[0]);
 
-    const { mutateAsync: displayRoute } = useDisplayDirections()
+    const { mutate: displayRoute, isPending } = useDisplayDirections();
 
     return (
         <div className="route-details">
-            <span>{displayFrom}</span>
-            <ArrowForwardIcon />
-            <span> {displayTo}</span>
+            <span className="route-details__index">{index}</span>
+            <div className="route-details__path">
+                <span className="route-details__point">{displayFrom}</span>
+                <ArrowForwardIcon fontSize="small" />
+                <span className="route-details__point">{displayTo}</span>
+            </div>
             <button
+                type="button"
                 className="display-route"
+                disabled={isPending}
                 onClick={() => displayRoute({ from, to })}
             >
-                Show on map
+                {isPending ? 'Loading...' : 'Show on map'}
             </button>
         </div>
     );
