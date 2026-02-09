@@ -6,51 +6,35 @@ namespace api.Externals.Handlers;
 
 public class GoogleMapsErrorHandler : DelegatingHandler
 {
-    private static readonly HashSet<string> IgnoredStatuses = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "OK",
-        "ZERO_RESULTS",
-        "NOT_FOUND",
-    };
-
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken
     )
     {
         var response = await base.SendAsync(request, cancellationToken);
+
         var payload = response.Content is null
             ? null
             : await response.Content.ReadAsByteArrayAsync(cancellationToken);
-        var body = payload is { Length: > 0 }
-            ? Encoding.UTF8.GetString(payload)
-            : null;
+        var body = payload is { Length: > 0 } ? Encoding.UTF8.GetString(payload) : null;
+        RestoreContent(response, payload);
 
-        if (payload is { Length: > 0 } && response.Content is not null)
-        {
-            var restoredContent = new ByteArrayContent(payload);
-            foreach (var header in response.Content.Headers)
-            {
-                restoredContent.Headers.TryAddWithoutValidation(header.Key, header.Value);
-            }
-
-            response.Content = restoredContent;
-        }
-
+        var (googleStatus, googleErrorMessage) = ParseGoogleStatusAndErrorMessage(body);
         if (!response.IsSuccessStatusCode)
         {
-            var message = TryExtractErrorMessage(body)
-                ?? $"Google Maps request failed with status code {(int)response.StatusCode}.";
-            throw new HttpRequestException(message, null, response.StatusCode);
+            throw new HttpRequestException(
+                googleErrorMessage ?? $"Google Maps request failed with HTTP {(int)response.StatusCode}.",
+                null,
+                response.StatusCode
+            );
         }
 
-        var googleStatus = TryExtractGoogleStatus(body);
-        if (string.IsNullOrWhiteSpace(googleStatus) || IgnoredStatuses.Contains(googleStatus))
+        if (string.IsNullOrWhiteSpace(googleStatus) || string.Equals(googleStatus, "OK", StringComparison.OrdinalIgnoreCase))
         {
             return response;
         }
 
-        var mappedStatusCode = googleStatus.ToUpperInvariant() switch
+        var statusCode = googleStatus.ToUpperInvariant() switch
         {
             "REQUEST_DENIED" => HttpStatusCode.Forbidden,
             "OVER_QUERY_LIMIT" => HttpStatusCode.TooManyRequests,
@@ -59,79 +43,64 @@ public class GoogleMapsErrorHandler : DelegatingHandler
             "UNKNOWN_ERROR" => HttpStatusCode.BadGateway,
             _ => HttpStatusCode.BadGateway,
         };
-        var mappedMessage = TryExtractErrorMessage(body)
-            ?? $"Google Maps request failed with status: {googleStatus}.";
-        throw new HttpRequestException(mappedMessage, null, mappedStatusCode);
+
+        throw new HttpRequestException(
+            googleErrorMessage ?? $"Google Maps request failed with status: {googleStatus}.",
+            null,
+            statusCode
+        );
     }
 
-    private static string? TryExtractGoogleStatus(string? body)
+    private static void RestoreContent(HttpResponseMessage response, byte[]? payload)
+    {
+        if (payload is null || response.Content is null)
+        {
+            return;
+        }
+
+        var restoredContent = new ByteArrayContent(payload);
+        foreach (var header in response.Content.Headers)
+        {
+            restoredContent.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
+        response.Content = restoredContent;
+    }
+
+    private static (string? Status, string? ErrorMessage) ParseGoogleStatusAndErrorMessage(string? body)
     {
         if (string.IsNullOrWhiteSpace(body))
         {
-            return null;
+            return (null, null);
         }
 
         try
         {
-            using var jsonDoc = JsonDocument.Parse(body);
-            var root = jsonDoc.RootElement;
-            if (root.ValueKind == JsonValueKind.Object
-                && root.TryGetProperty("status", out var statusElement)
-                && statusElement.ValueKind == JsonValueKind.String)
-            {
-                return statusElement.GetString();
-            }
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-
-        return null;
-    }
-
-    private static string? TryExtractErrorMessage(string? body)
-    {
-        if (string.IsNullOrWhiteSpace(body))
-        {
-            return null;
-        }
-
-        try
-        {
-            using var jsonDoc = JsonDocument.Parse(body);
-            var root = jsonDoc.RootElement;
+            using var document = JsonDocument.Parse(body);
+            var root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object)
             {
-                return null;
+                return (null, null);
             }
 
-            if (root.TryGetProperty("error_message", out var legacyErrorMessage)
-                && legacyErrorMessage.ValueKind == JsonValueKind.String)
+            string? status = null;
+            string? errorMessage = null;
+
+            if (root.TryGetProperty("status", out var statusElement) && statusElement.ValueKind == JsonValueKind.String)
             {
-                return legacyErrorMessage.GetString();
+                status = statusElement.GetString();
             }
 
-            if (root.TryGetProperty("error", out var errorElement))
+            if (root.TryGetProperty("error_message", out var errorMessageElement) && errorMessageElement.ValueKind == JsonValueKind.String)
             {
-                if (errorElement.ValueKind == JsonValueKind.String)
-                {
-                    return errorElement.GetString();
-                }
-
-                if (errorElement.ValueKind == JsonValueKind.Object
-                    && errorElement.TryGetProperty("message", out var messageElement)
-                    && messageElement.ValueKind == JsonValueKind.String)
-                {
-                    return messageElement.GetString();
-                }
+                errorMessage = errorMessageElement.GetString();
             }
+
+            return (status, errorMessage);
         }
         catch (JsonException)
         {
-            return null;
+            return (null, null);
         }
-
-        return null;
     }
 }
