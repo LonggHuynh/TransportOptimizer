@@ -1,6 +1,7 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { apiInstance } from '../../api';
+import { LatLng } from '../../models/map';
 
 export interface GeocodeSuggestion {
     id: string;
@@ -16,7 +17,7 @@ type GeocodeSuggestionsQueryOptions = Omit<
         GeocodeSuggestion[],
         AxiosError,
         GeocodeSuggestion[],
-        [string, string]
+        [string, string, string, string]
     >,
     'queryKey' | 'queryFn' | 'enabled'
 >;
@@ -103,12 +104,21 @@ const parseSuggestions = (data: unknown): GeocodeSuggestion[] => {
 const fetchSuggestions = async ({
     query,
     signal,
+    centerLat,
+    centerLng,
 }: {
     query: string;
     signal: AbortSignal;
+    centerLat?: number;
+    centerLng?: number;
 }) => {
     const response = await apiInstance.get<unknown>('geocode/suggest', {
-        params: { query, limit: SUGGESTION_LIMIT },
+        params: {
+            query,
+            limit: SUGGESTION_LIMIT,
+            centerLat,
+            centerLng,
+        },
         signal,
     });
     return response.data;
@@ -116,20 +126,38 @@ const fetchSuggestions = async ({
 
 export const useGeocodeSuggestions = (
     query: string,
+    center?: LatLng | null,
     options: GeocodeSuggestionsQueryOptions = {},
 ) => {
     const trimmedQuery = query.trim();
     const canSearch = trimmedQuery.length >= MIN_QUERY_LENGTH;
+    const centerLat =
+        typeof center?.lat === 'number' && Number.isFinite(center.lat)
+            ? center.lat
+            : undefined;
+    const centerLng =
+        typeof center?.lng === 'number' && Number.isFinite(center.lng)
+            ? center.lng
+            : undefined;
+    const centerLatKey = centerLat?.toFixed(4) ?? '';
+    const centerLngKey = centerLng?.toFixed(4) ?? '';
 
     const suggestionQuery = useQuery<
         GeocodeSuggestion[],
         AxiosError,
         GeocodeSuggestion[],
-        [string, string]
+        [string, string, string, string]
     >({
-        queryKey: ['geocodeSuggestions', trimmedQuery],
+        queryKey: ['geocodeSuggestions', trimmedQuery, centerLatKey, centerLngKey],
         queryFn: async ({ signal }) =>
-            parseSuggestions(await fetchSuggestions({ query: trimmedQuery, signal })),
+            parseSuggestions(
+                await fetchSuggestions({
+                    query: trimmedQuery,
+                    signal,
+                    centerLat,
+                    centerLng,
+                }),
+            ),
         enabled: canSearch,
         refetchOnWindowFocus: false,
         retry: false,

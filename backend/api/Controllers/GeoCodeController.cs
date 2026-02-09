@@ -22,9 +22,17 @@ namespace api.Controllers
         }
 
         [HttpGet("suggest")]
-        public async Task<IEnumerable<GeocodeSuggestionDto>> GetSuggestions([FromQuery] string query, [FromQuery] int limit = 6)
+        public async Task<IEnumerable<GeocodeSuggestionDto>> GetSuggestions(
+            [FromQuery] string query,
+            [FromQuery] int limit = 6,
+            [FromQuery] double? centerLat = null,
+            [FromQuery] double? centerLng = null
+        )
         {
-            var suggestions = await _geocodeService.GetSuggestions(query, limit);
+            var biasCenter = centerLat.HasValue && centerLng.HasValue
+                ? new GeoCode { Latitude = centerLat, Longitude = centerLng }
+                : null;
+            var suggestions = await _geocodeService.GetSuggestions(query, limit, biasCenter);
             return suggestions.Select(suggestion => _mapper.Map<GeocodeSuggestionDto>(suggestion));
         }
 

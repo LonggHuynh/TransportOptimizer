@@ -44,6 +44,7 @@ const RouteForm = () => {
     );
     const setStopWindows = useStopWindowsStore((state) => state.setStopWindows);
     const setCenter = useCenterStore((state) => state.setCenter);
+    const center = useCenterStore((state) => state.center);
     const rememberLocation = useLocationLabelsStore(
         (state) => state.rememberLocation,
     );
@@ -91,9 +92,9 @@ const RouteForm = () => {
     const debouncedOrigin = useDebouncedValue(origin.value, 300);
     const debouncedDestination = useDebouncedValue(destination.value, 300);
     const { suggestions: originSuggestions, loading: originLoading } =
-        useGeocodeSuggestions(debouncedOrigin);
+        useGeocodeSuggestions(debouncedOrigin, center);
     const { suggestions: destinationSuggestions, loading: destinationLoading } =
-        useGeocodeSuggestions(debouncedDestination);
+        useGeocodeSuggestions(debouncedDestination, center);
     const geocodeLookup = useGeocodeLookup();
 
     useEffect(() => {

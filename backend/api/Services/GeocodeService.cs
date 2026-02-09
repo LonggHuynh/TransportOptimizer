@@ -34,7 +34,7 @@ namespace api.Services
             };
         }
 
-        public async Task<IReadOnlyList<GeocodeSuggestion>> GetSuggestions(string query, int limit)
+        public async Task<IReadOnlyList<GeocodeSuggestion>> GetSuggestions(string query, int limit, GeoCode? biasCenter = null)
         {
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -48,7 +48,7 @@ namespace api.Services
             }
 
             var clampedLimit = Math.Max(1, Math.Min(limit, 10));
-            var res = await _googleMapsClient.ForwardGeocodeAutocompleteAsync(trimmed, clampedLimit);
+            var res = await _googleMapsClient.ForwardGeocodeAutocompleteAsync(trimmed, clampedLimit, biasCenter);
             var suggestions = new List<GeocodeSuggestion>();
             var dedupe = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (!IsGoogleOkStatus(res?.Status))

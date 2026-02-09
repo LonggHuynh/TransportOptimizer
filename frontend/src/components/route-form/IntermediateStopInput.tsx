@@ -3,6 +3,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { Autocomplete, CircularProgress, TextField } from '@mui/material';
 import { GeocodeSuggestion, useGeocodeSuggestions } from '../../hooks/queries/useGeocodeSuggestions';
+import { useCenterStore } from '../../hooks/store/useCenterStore';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
 
 interface IntermediateStopInputProps {
@@ -33,7 +34,8 @@ const IntermediateStopInput = ({
     onRemove,
 }: IntermediateStopInputProps) => {
     const debouncedValue = useDebouncedValue(value, 300);
-    const { suggestions, loading } = useGeocodeSuggestions(debouncedValue);
+    const center = useCenterStore((state) => state.center);
+    const { suggestions, loading } = useGeocodeSuggestions(debouncedValue, center);
 
     const renderSuggestionOption = (
         props: React.HTMLAttributes<HTMLLIElement>,

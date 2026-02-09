@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using api.Configuration;
 using api.Externals.DTOs;
+using api.Models;
 
 namespace api.Externals;
 
@@ -21,6 +22,7 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
     private const string PlaceDetailsFieldMask =
         "id,displayName.text,formattedAddress,location";
     private const string PlacesApiBaseUrl = "https://places.googleapis.com/v1/";
+    private const double AutocompleteBiasRadiusMeters = 50_000;
 
     public async Task<GoogleDistanceMatrixResponse?> GetDistanceMatrixAsync(
         string origins,
@@ -117,7 +119,8 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
 
     public async Task<GooglePlacesAutocompleteResponse?> ForwardGeocodeAutocompleteAsync(
         string query,
-        int limit
+        int limit,
+        GeoCode? biasCenter = null
     )
     {
         if (string.IsNullOrWhiteSpace(query))
@@ -126,6 +129,25 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
         }
 
         var clampedLimit = Math.Max(1, Math.Min(limit, 10));
+        PlacesLocationBias? locationBias = null;
+        if (IsValidBiasCenter(biasCenter))
+        {
+            var latitude = biasCenter?.Latitude ?? 0;
+            var longitude = biasCenter?.Longitude ?? 0;
+            locationBias = new PlacesLocationBias
+            {
+                Circle = new PlacesLocationBiasCircle
+                {
+                    Center = new PlacesCenterPoint
+                    {
+                        Latitude = latitude,
+                        Longitude = longitude,
+                    },
+                    Radius = AutocompleteBiasRadiusMeters,
+                },
+            };
+        }
+
         var request = new HttpRequestMessage(
             HttpMethod.Post,
             $"{PlacesApiBaseUrl}places:autocomplete"
@@ -135,6 +157,7 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             {
                 Input = query,
                 IncludeQueryPredictions = true,
+                LocationBias = locationBias,
             }),
         };
         request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", PlacesAutocompleteFieldMask);
@@ -171,6 +194,19 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             Status = "OK",
             Predictions = predictions,
         };
+    }
+
+    private static bool IsValidBiasCenter(GeoCode? center)
+    {
+        if (center?.Latitude is not double latitude || center.Longitude is not double longitude)
+        {
+            return false;
+        }
+
+        return latitude >= -90
+            && latitude <= 90
+            && longitude >= -180
+            && longitude <= 180;
     }
 
     public async Task<GoogleDirectionsResponse?> GetDirectionsAsync(
@@ -247,6 +283,34 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
 
         [JsonPropertyName("includeQueryPredictions")]
         public bool IncludeQueryPredictions { get; set; }
+
+        [JsonPropertyName("locationBias")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public PlacesLocationBias? LocationBias { get; set; }
+    }
+
+    private class PlacesLocationBias
+    {
+        [JsonPropertyName("circle")]
+        public PlacesLocationBiasCircle? Circle { get; set; }
+    }
+
+    private class PlacesLocationBiasCircle
+    {
+        [JsonPropertyName("center")]
+        public PlacesCenterPoint? Center { get; set; }
+
+        [JsonPropertyName("radius")]
+        public double Radius { get; set; }
+    }
+
+    private class PlacesCenterPoint
+    {
+        [JsonPropertyName("latitude")]
+        public double Latitude { get; set; }
+
+        [JsonPropertyName("longitude")]
+        public double Longitude { get; set; }
     }
 
     private class PlacesAutocompleteResponse
