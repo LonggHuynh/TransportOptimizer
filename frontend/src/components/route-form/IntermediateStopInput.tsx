@@ -4,7 +4,6 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { Autocomplete, CircularProgress, TextField } from '@mui/material';
 import { GeocodeSuggestion, useGeocodeSuggestions } from '../../hooks/queries/useGeocodeSuggestions';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
-import { toCoordinateKey } from '../../utils/coordinates';
 
 interface IntermediateStopInputProps {
     value: string;
@@ -43,12 +42,9 @@ const IntermediateStopInput = ({
         const { key: _key, ...optionProps } = props as React.HTMLAttributes<HTMLLIElement> & {
             key?: React.Key;
         };
-        const optionKey = option.coordinate
-            ? toCoordinateKey(option.coordinate)
-            : option.label;
 
         return (
-            <li key={optionKey} {...optionProps}>
+            <li key={option.id} {...optionProps}>
                 {option.label}
             </li>
         );

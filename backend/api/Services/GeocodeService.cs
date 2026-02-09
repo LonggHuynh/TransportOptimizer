@@ -1,6 +1,5 @@
 using System.Linq;
 using System.Threading.Tasks;
-using System.Globalization;
 using api.Externals;
 using api.Models;
 using Microsoft.Extensions.Caching.Memory;
@@ -19,14 +18,18 @@ namespace api.Services
         private const int GeocodeFailureCacheMinutes = 10;
         private const int GeocodeSuggestCacheMinutes = 60;
 
-        public async Task<GeoCode?> GetGeocode(string address)
+        public async Task<GeoCode?> GetGeocode(string? address, string? placeId = null)
         {
-            if (string.IsNullOrWhiteSpace(address))
+            var normalizedPlaceId = placeId?.Trim();
+            var normalizedAddress = address?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedAddress) && string.IsNullOrWhiteSpace(normalizedPlaceId))
             {
                 return null;
             }
 
-            var normalized = NormalizeAddress(address);
+            var normalized = !string.IsNullOrWhiteSpace(normalizedPlaceId)
+                ? $"placeid:{normalizedPlaceId.ToLowerInvariant()}"
+                : NormalizeAddress(normalizedAddress!);
             var cacheKey = $"geocode:{normalized}";
             if (_cache.TryGetValue(cacheKey, out object? cached))
             {
@@ -41,7 +44,9 @@ namespace api.Services
                 }
             }
 
-            var res = await _googleMapsClient.ForwardGeocodeAsync(address);
+            var res = !string.IsNullOrWhiteSpace(normalizedPlaceId)
+                ? await _googleMapsClient.ForwardGeocodeByPlaceIdAsync(normalizedPlaceId)
+                : await _googleMapsClient.ForwardGeocodeAsync(normalizedAddress!);
             var location = res?.Results?.FirstOrDefault()?.Geometry?.Location;
             if (!IsGoogleOkStatus(res?.Status) || location == null)
             {
@@ -95,28 +100,16 @@ namespace api.Services
 
             foreach (var prediction in res?.Predictions ?? [])
             {
-                if (string.IsNullOrWhiteSpace(prediction.PlaceId))
-                {
-                    continue;
-                }
-
-                var placeGeocodeResponse = await _googleMapsClient.ForwardGeocodeByPlaceIdAsync(prediction.PlaceId);
-                var placeResult = placeGeocodeResponse?.Results?.FirstOrDefault();
-                var location = placeResult?.Geometry?.Location;
-                if (!IsGoogleOkStatus(placeGeocodeResponse?.Status) || location == null)
-                {
-                    continue;
-                }
-
-                var label = prediction.Description ?? placeResult?.FormattedAddress;
+                var label = prediction.Description?.Trim();
                 if (string.IsNullOrWhiteSpace(label))
                 {
                     continue;
                 }
 
-                var longitude = location.Longitude;
-                var latitude = location.Latitude;
-                var dedupeKey = $"{NormalizeAddress(label)}|{longitude.ToString("F6", CultureInfo.InvariantCulture)}|{latitude.ToString("F6", CultureInfo.InvariantCulture)}";
+                var placeId = prediction.PlaceId?.Trim();
+                var dedupeKey = !string.IsNullOrWhiteSpace(placeId)
+                    ? $"place:{placeId.ToLowerInvariant()}"
+                    : $"label:{NormalizeAddress(label)}";
                 if (!dedupe.Add(dedupeKey))
                 {
                     continue;
@@ -125,8 +118,7 @@ namespace api.Services
                 suggestions.Add(new GeocodeSuggestion
                 {
                     Label = label,
-                    Longitude = longitude,
-                    Latitude = latitude,
+                    PlaceId = placeId,
                 });
 
                 if (suggestions.Count >= clampedLimit)

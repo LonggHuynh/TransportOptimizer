@@ -26,6 +26,7 @@ import {
     GeocodeSuggestion,
     useGeocodeSuggestions,
 } from '../../hooks/queries/useGeocodeSuggestions';
+import { useGeocodeLookup } from '../../hooks/queries/useGeocodeLookup';
 import { useCenterStore } from '../../hooks/store/useCenterStore';
 import { useIntermediateListStore } from '../../hooks/store/useIntermediateListStore';
 import { useLocationLabelsStore } from '../../hooks/store/useLocationLabelsStore';
@@ -33,7 +34,9 @@ import { useStopWindowsStore } from '../../hooks/store/useStopWindowsStore';
 import { useRouteFormSubmission } from './hooks/useRouteFormSubmission';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
 import { TRAVEL_MODES, TravelMode } from '../../models/routeOptions';
+import { Coordinate } from '../../models/coordinate';
 import { toCoordinateKey } from '../../utils/coordinates';
+import { notify } from '../../utils/notify';
 
 const RouteForm = () => {
     const setIntermediateList = useIntermediateListStore(
@@ -91,6 +94,7 @@ const RouteForm = () => {
         useGeocodeSuggestions(debouncedOrigin);
     const { suggestions: destinationSuggestions, loading: destinationLoading } =
         useGeocodeSuggestions(debouncedDestination);
+    const geocodeLookup = useGeocodeLookup();
 
     useEffect(() => {
         const routeStartLocal = toLocalDateTimeFromTime(departTimeLocal);
@@ -103,15 +107,27 @@ const RouteForm = () => {
         setStopWindows(toStopWindows(normalizedStops));
     }, [departTimeLocal, setIntermediateList, setStopWindows, stops]);
 
-    const handleRememberLocation = (suggestion: GeocodeSuggestion) => {
-        if (!suggestion.coordinate) {
-            return;
+    const handleRememberLocation = (label: string, coordinate: Coordinate) => {
+        rememberLocation({
+            coordinateKey: toCoordinateKey(coordinate),
+            label,
+        });
+    };
+
+    const resolveSuggestionCoordinate = async (
+        suggestion: GeocodeSuggestion,
+    ): Promise<Coordinate | null> => {
+        const coordinate = await geocodeLookup.mutateAsync({
+            address: suggestion.label,
+            placeId: suggestion.placeId,
+        });
+
+        if (!coordinate) {
+            notify.error('Failed to resolve selected location.');
+            return null;
         }
 
-        rememberLocation({
-            coordinateKey: toCoordinateKey(suggestion.coordinate),
-            label: suggestion.label,
-        });
+        return coordinate;
     };
 
     const handleLocate = (location: LocationInput) => {
@@ -144,33 +160,53 @@ const RouteForm = () => {
         appendStop({ ...DEFAULT_STOP });
     };
 
-    const handleSelectOrigin = (suggestion: GeocodeSuggestion) => {
-        if (!suggestion.coordinate) {
-            return;
-        }
-
-        handleRememberLocation(suggestion);
+    const handleSelectOrigin = async (suggestion: GeocodeSuggestion) => {
         setValue(
             'origin',
             {
                 value: suggestion.label,
-                coordinate: suggestion.coordinate,
+                coordinate: null,
+            },
+            { shouldDirty: true },
+        );
+
+        const coordinate = await resolveSuggestionCoordinate(suggestion);
+        if (!coordinate) {
+            return;
+        }
+
+        handleRememberLocation(suggestion.label, coordinate);
+        setValue(
+            'origin',
+            {
+                value: suggestion.label,
+                coordinate,
             },
             { shouldDirty: true },
         );
     };
 
-    const handleSelectDestination = (suggestion: GeocodeSuggestion) => {
-        if (!suggestion.coordinate) {
-            return;
-        }
-
-        handleRememberLocation(suggestion);
+    const handleSelectDestination = async (suggestion: GeocodeSuggestion) => {
         setValue(
             'destination',
             {
                 value: suggestion.label,
-                coordinate: suggestion.coordinate,
+                coordinate: null,
+            },
+            { shouldDirty: true },
+        );
+
+        const coordinate = await resolveSuggestionCoordinate(suggestion);
+        if (!coordinate) {
+            return;
+        }
+
+        handleRememberLocation(suggestion.label, coordinate);
+        setValue(
+            'destination',
+            {
+                value: suggestion.label,
+                coordinate,
             },
             { shouldDirty: true },
         );
@@ -180,17 +216,25 @@ const RouteForm = () => {
         index: number,
         suggestion: GeocodeSuggestion,
     ) => {
-        const coordinate = suggestion.coordinate;
-        if (!coordinate) {
-            return;
-        }
-
-        handleRememberLocation(suggestion);
         updateStopAtIndex(index, (item) => ({
             ...item,
             value: suggestion.label,
-            coordinate,
+            coordinate: null,
         }));
+
+        void (async () => {
+            const coordinate = await resolveSuggestionCoordinate(suggestion);
+            if (!coordinate) {
+                return;
+            }
+
+            handleRememberLocation(suggestion.label, coordinate);
+            updateStopAtIndex(index, (item) => ({
+                ...item,
+                value: suggestion.label,
+                coordinate,
+            }));
+        })();
     };
 
     const renderSuggestionOption = (
@@ -201,15 +245,28 @@ const RouteForm = () => {
             props as React.HTMLAttributes<HTMLLIElement> & {
                 key?: React.Key;
             };
-        const optionKey = option.coordinate
-            ? toCoordinateKey(option.coordinate)
-            : option.label;
 
         return (
-            <li key={optionKey} {...optionProps}>
+            <li key={option.id} {...optionProps}>
                 {option.label}
             </li>
         );
+    };
+
+    const suggestionLoading = geocodeLookup.isPending;
+    const handleSelectOriginChange = (suggestion: GeocodeSuggestion) => {
+        void handleSelectOrigin(suggestion);
+    };
+
+    const handleSelectDestinationChange = (suggestion: GeocodeSuggestion) => {
+        void handleSelectDestination(suggestion);
+    };
+
+    const handleSelectIntermediateChange = (
+        index: number,
+        suggestion: GeocodeSuggestion,
+    ) => {
+        handleSelectIntermediate(index, suggestion);
     };
 
     return (
@@ -254,10 +311,10 @@ const RouteForm = () => {
                         }}
                         onChange={(_, selected) => {
                             if (selected && typeof selected !== 'string') {
-                                handleSelectOrigin(selected);
+                                handleSelectOriginChange(selected);
                             }
                         }}
-                        loading={originLoading}
+                        loading={originLoading || suggestionLoading}
                         renderOption={renderSuggestionOption}
                         renderInput={(params) => (
                             <TextField
@@ -269,7 +326,7 @@ const RouteForm = () => {
                                     ...params.InputProps,
                                     endAdornment: (
                                         <>
-                                            {originLoading ? (
+                                            {originLoading || suggestionLoading ? (
                                                 <CircularProgress
                                                     color="inherit"
                                                     size={16}
@@ -322,10 +379,10 @@ const RouteForm = () => {
                             }}
                             onChange={(_, selected) => {
                                 if (selected && typeof selected !== 'string') {
-                                    handleSelectDestination(selected);
+                                    handleSelectDestinationChange(selected);
                                 }
                             }}
-                            loading={destinationLoading}
+                            loading={destinationLoading || suggestionLoading}
                             renderOption={renderSuggestionOption}
                             renderInput={(params) => (
                                 <TextField
@@ -337,7 +394,7 @@ const RouteForm = () => {
                                         ...params.InputProps,
                                         endAdornment: (
                                             <>
-                                                {destinationLoading ? (
+                                                {destinationLoading || suggestionLoading ? (
                                                     <CircularProgress
                                                         color="inherit"
                                                         size={16}
@@ -475,7 +532,7 @@ const RouteForm = () => {
                                         }));
                                     }}
                                     onSelectSuggestion={(suggestion) =>
-                                        handleSelectIntermediate(
+                                        handleSelectIntermediateChange(
                                             index,
                                             suggestion,
                                         )

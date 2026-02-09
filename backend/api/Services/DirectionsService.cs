@@ -17,10 +17,10 @@ namespace api.Services
         {
             var origin = TryParseCoordinate(from, out var parsedOrigin)
                 ? parsedOrigin
-                : await _geocodeService.GetGeocode(from);
+                : await _geocodeService.GetGeocode(from, null);
             var destination = TryParseCoordinate(to, out var parsedDestination)
                 ? parsedDestination
-                : await _geocodeService.GetGeocode(to);
+                : await _geocodeService.GetGeocode(to, null);
 
             if (origin?.Latitude == null || origin.Longitude == null ||
                 destination?.Latitude == null || destination.Longitude == null)

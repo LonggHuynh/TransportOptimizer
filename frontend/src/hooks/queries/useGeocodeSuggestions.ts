@@ -1,13 +1,11 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { apiInstance } from '../../api';
-import { Coordinate } from '../../models/coordinate';
-import { toCoordinateKey } from '../../utils/coordinates';
 
 export interface GeocodeSuggestion {
     id: string;
     label: string;
-    coordinate?: Coordinate;
+    placeId?: string;
 }
 
 const MIN_QUERY_LENGTH = 3;
@@ -26,19 +24,14 @@ type GeocodeSuggestionsQueryOptions = Omit<
 interface SuggestionRecord extends Record<string, unknown> {
     id?: unknown;
     label?: unknown;
-    placeName?: unknown;
-    place_name?: unknown;
+    placeId?: unknown;
+    place_id?: unknown;
+    description?: unknown;
     text?: unknown;
-    latitude?: unknown;
-    longitude?: unknown;
-    center?: unknown;
 }
 
 const isRecord = (value: unknown): value is SuggestionRecord =>
     typeof value === 'object' && value !== null;
-
-const getFiniteNumber = (value: unknown): number | null =>
-    typeof value === 'number' && Number.isFinite(value) ? value : null;
 
 const parseSuggestion = (
     input: unknown,
@@ -60,7 +53,7 @@ const parseSuggestion = (
         return null;
     }
 
-    const rawLabel = input.label ?? input.placeName ?? input.place_name ?? input.text;
+    const rawLabel = input.label ?? input.description ?? input.text;
     if (typeof rawLabel !== 'string') {
         return null;
     }
@@ -70,31 +63,19 @@ const parseSuggestion = (
         return null;
     }
 
-    let latitude = getFiniteNumber(input.latitude);
-    let longitude = getFiniteNumber(input.longitude);
-    if (
-        (latitude === null || longitude === null)
-        && Array.isArray(input.center)
-        && input.center.length >= 2
-    ) {
-        longitude = getFiniteNumber(input.center[0]);
-        latitude = getFiniteNumber(input.center[1]);
-    }
-
-    const coordinate = latitude !== null && longitude !== null
-        ? { longitude, latitude }
+    const rawPlaceId = input.placeId ?? input.place_id;
+    const placeId = typeof rawPlaceId === 'string' && rawPlaceId.trim()
+        ? rawPlaceId.trim()
         : undefined;
-
-    const id = typeof input.id === 'string' && input.id.trim()
-        ? input.id
-        : coordinate
-            ? toCoordinateKey(coordinate)
-            : `${label}-${index}`;
+    const id = placeId
+        ?? (typeof input.id === 'string' && input.id.trim()
+            ? input.id.trim()
+            : `${label}-${index}`);
 
     return {
         id,
         label,
-        coordinate,
+        placeId,
     };
 };
 
@@ -108,9 +89,9 @@ const parseSuggestions = (data: unknown): GeocodeSuggestion[] => {
             return;
         }
 
-        const dedupeKey = parsed.coordinate
-            ? toCoordinateKey(parsed.coordinate)
-            : parsed.label.toLowerCase();
+        const dedupeKey = parsed.placeId
+            ? `place:${parsed.placeId.toLowerCase()}`
+            : `label:${parsed.label.toLowerCase()}`;
         if (!dedupe.has(dedupeKey)) {
             dedupe.set(dedupeKey, parsed);
         }
