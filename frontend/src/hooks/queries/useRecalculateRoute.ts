@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useCallback, useRef, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { Id } from 'react-toastify';
 import { StopWindow } from '../../models/stopWindow';
+import { notify } from '../../utils/notify';
 import { useRouteComputationStore } from '../store/useRouteComputationStore';
 import {
     ComputeOrderInput,
@@ -12,7 +13,8 @@ import {
     RouteJobStatusResponse,
     toBestRoutes,
 } from './routeJobApi';
-import { notify } from '../../utils/notify';
+
+const RECALCULATION_STATUS_POLL_INTERVAL_MS = 1000;
 
 const buildRemainingPlaces = (
     bestRoutes: [string, string][],
@@ -72,6 +74,11 @@ const remapStopWindows = (
     });
 };
 
+const wait = (ms: number) =>
+    new Promise<void>((resolve) => {
+        window.setTimeout(resolve, ms);
+    });
+
 export interface UseRecalculateRouteOptions {
     onEnqueueSuccess?: (
         data: ComputeRouteQueuedResponse,
@@ -96,6 +103,7 @@ export const useRecalculateRoute = (
         onRecalculationFailed: onRecalculationFailedOption,
         onStatusQueryError: onStatusQueryErrorOption,
     } = options;
+
     const routes = useRouteComputationStore((state) => state.bestRoutes);
     const estimatedTime = useRouteComputationStore((state) => state.totalTime);
     const lastRequest = useRouteComputationStore((state) => state.lastRequest);
@@ -103,171 +111,178 @@ export const useRecalculateRoute = (
         (state) => state.setComputedRouteResult,
     );
 
-    const [recalculationJobId, setRecalculationJobId] = useState<string | null>(null);
-    const [recalculationPlaces, setRecalculationPlaces] = useState<string[]>([]);
-    const [handledCompletedJobId, setHandledCompletedJobId] = useState<string | null>(null);
-    const [recalculationToastId, setRecalculationToastId] = useState<Id | null>(null);
+    const routesRef = useRef(routes);
+    routesRef.current = routes;
+    const estimatedTimeRef = useRef(estimatedTime);
+    estimatedTimeRef.current = estimatedTime;
+
+    const [isRecalculating, setIsRecalculating] = useState(false);
+    const activeRequestIdRef = useRef(0);
+    const recalculationToastIdRef = useRef<Id | null>(null);
+
+    const startRecalculationToast = useCallback(() => {
+        if (recalculationToastIdRef.current) {
+            notify.dismiss(recalculationToastIdRef.current);
+        }
+        recalculationToastIdRef.current = notify.loading('Recalculating remaining route...');
+    }, []);
+
+    const resolveRecalculationToast = useCallback((
+        message: string,
+        tone: 'success' | 'error' = 'success',
+    ) => {
+        if (recalculationToastIdRef.current) {
+            notify.resolve(recalculationToastIdRef.current, message, tone);
+            recalculationToastIdRef.current = null;
+            return;
+        }
+
+        if (tone === 'error') {
+            notify.error(message);
+            return;
+        }
+
+        notify.success(message);
+    }, []);
+
+    const pollRecalculationStatus = useCallback(async (
+        jobId: string,
+        places: string[],
+        requestId: number,
+    ) => {
+        while (activeRequestIdRef.current === requestId) {
+            try {
+                const statusResponse = await fetchRouteStatus(jobId);
+                if (activeRequestIdRef.current !== requestId) {
+                    return;
+                }
+
+                if (statusResponse.status === 'failed') {
+                    setComputedRouteResult({
+                        status: statusResponse.status,
+                        error: statusResponse.error ?? 'Recalculation failed.',
+                        bestRoutes: routesRef.current,
+                        totalTime: estimatedTimeRef.current,
+                    });
+                    setIsRecalculating(false);
+                    resolveRecalculationToast(
+                        statusResponse.error ?? 'Recalculation failed.',
+                        'error',
+                    );
+                    onRecalculationFailedOption?.(statusResponse);
+                    return;
+                }
+
+                if (statusResponse.status === 'completed' && statusResponse.result) {
+                    setComputedRouteResult({
+                        status: statusResponse.status,
+                        error: statusResponse.error,
+                        bestRoutes: toBestRoutes(statusResponse.result, places),
+                        totalTime: statusResponse.result.totalTime ?? null,
+                    });
+                    setIsRecalculating(false);
+                    resolveRecalculationToast('Route recalculated.');
+                    onRecalculationSuccessOption?.(statusResponse);
+                    return;
+                }
+
+                setComputedRouteResult({
+                    status: statusResponse.status,
+                    error: statusResponse.error,
+                    bestRoutes: routesRef.current,
+                    totalTime: estimatedTimeRef.current,
+                });
+                await wait(RECALCULATION_STATUS_POLL_INTERVAL_MS);
+            } catch (error) {
+                if (activeRequestIdRef.current !== requestId) {
+                    return;
+                }
+
+                const axiosError = error as AxiosError;
+                setComputedRouteResult({
+                    status: 'failed',
+                    error: axiosError.message || 'Failed to check recalculation status.',
+                    bestRoutes: routesRef.current,
+                    totalTime: estimatedTimeRef.current,
+                });
+                setIsRecalculating(false);
+                resolveRecalculationToast('Recalculation failed.', 'error');
+                onStatusQueryErrorOption?.(axiosError);
+                return;
+            }
+        }
+    }, [
+        onRecalculationFailedOption,
+        onRecalculationSuccessOption,
+        onStatusQueryErrorOption,
+        resolveRecalculationToast,
+        setComputedRouteResult,
+    ]);
 
     const onEnqueueSuccess = useCallback((
         response: ComputeRouteQueuedResponse,
         payload: ComputeOrderInput,
+        requestId: number,
     ) => {
-        if (recalculationToastId) {
-            notify.dismiss(recalculationToastId);
-        }
-        setRecalculationJobId(response.jobId);
-        setRecalculationPlaces(payload.places);
-        setHandledCompletedJobId(null);
         setComputedRouteResult({
             status: response.status,
             error: undefined,
-            bestRoutes: routes,
-            totalTime: estimatedTime,
+            bestRoutes: routesRef.current,
+            totalTime: estimatedTimeRef.current,
         });
-        const toastId = notify.loading('Recalculating remaining route...');
-        setRecalculationToastId(toastId);
         onEnqueueSuccessOption?.(response, payload);
+        void pollRecalculationStatus(response.jobId, payload.places, requestId);
     }, [
-        estimatedTime,
         onEnqueueSuccessOption,
-        recalculationToastId,
-        routes,
+        pollRecalculationStatus,
         setComputedRouteResult,
     ]);
 
     const onEnqueueError = useCallback((error: AxiosError, payload: ComputeOrderInput) => {
-        notify.error('Failed to start recalculation.');
+        setComputedRouteResult({
+            status: 'failed',
+            error: error.message || 'Failed to start recalculation.',
+            bestRoutes: routesRef.current,
+            totalTime: estimatedTimeRef.current,
+        });
+        setIsRecalculating(false);
+        resolveRecalculationToast('Failed to start recalculation.', 'error');
         onEnqueueErrorOption?.(error, payload);
-    }, [onEnqueueErrorOption]);
-
-    const onRecalculationFailed = useCallback((
-        queryData: RouteJobStatusResponse,
-        activeJobId: string,
-    ) => {
-        setComputedRouteResult({
-            status: queryData.status,
-            error: queryData.error ?? 'Recalculation failed.',
-            bestRoutes: routes,
-            totalTime: estimatedTime,
-        });
-        setHandledCompletedJobId(activeJobId);
-        if (recalculationToastId) {
-            notify.resolve(recalculationToastId, queryData.error ?? 'Recalculation failed.', 'error');
-            setRecalculationToastId(null);
-        } else {
-            notify.error(queryData.error ?? 'Recalculation failed.');
-        }
-        onRecalculationFailedOption?.(queryData);
     }, [
-        estimatedTime,
-        onRecalculationFailedOption,
-        recalculationToastId,
-        routes,
+        onEnqueueErrorOption,
+        resolveRecalculationToast,
         setComputedRouteResult,
     ]);
 
-    const onRecalculationSuccess = useCallback((
-        queryData: RouteJobStatusResponse,
-        activeJobId: string,
-    ) => {
-        if (!queryData.result) {
-            return;
-        }
-
-        setComputedRouteResult({
-            status: queryData.status,
-            error: queryData.error,
-            bestRoutes: toBestRoutes(queryData.result, recalculationPlaces),
-            totalTime: queryData.result.totalTime ?? null,
-        });
-        setHandledCompletedJobId(activeJobId);
-        if (recalculationToastId) {
-            notify.resolve(recalculationToastId, 'Route recalculated.');
-            setRecalculationToastId(null);
-        } else {
-            notify.success('Route recalculated.');
-        }
-        onRecalculationSuccessOption?.(queryData);
-    }, [
-        onRecalculationSuccessOption,
-        recalculationPlaces,
-        recalculationToastId,
-        setComputedRouteResult,
-    ]);
-
-    const enqueueRecalculationMutation = useMutation<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput>({
+    const enqueueRecalculationMutation = useMutation<
+        ComputeRouteQueuedResponse,
+        AxiosError,
+        ComputeOrderInput,
+        { requestId: number }
+    >({
         mutationFn: enqueueComputeRoute,
-        onSuccess: onEnqueueSuccess,
-        onError: onEnqueueError,
-    });
-
-    const recalculationStatusQuery = useQuery<RouteJobStatusResponse, AxiosError>({
-        queryKey: ['routeRecalculation', recalculationJobId],
-        queryFn: () => fetchRouteStatus(recalculationJobId!),
-        enabled: Boolean(recalculationJobId),
-        refetchOnWindowFocus: false,
-        refetchInterval: (query) => {
-            const queryStatus = query.state.data?.status;
-            if (queryStatus === 'completed' || queryStatus === 'failed') {
-                return false;
-            }
-            return 1000;
+        onMutate: () => {
+            const requestId = activeRequestIdRef.current + 1;
+            activeRequestIdRef.current = requestId;
+            setIsRecalculating(true);
+            startRecalculationToast();
+            return { requestId };
         },
-    });
-
-    useEffect(() => {
-        if (!recalculationStatusQuery.isError) {
-            return;
-        }
-
-        onStatusQueryErrorOption?.(recalculationStatusQuery.error);
-    }, [
-        onStatusQueryErrorOption,
-        recalculationStatusQuery.error,
-        recalculationStatusQuery.isError,
-    ]);
-
-    useEffect(() => {
-        if (!recalculationJobId) {
-            return;
-        }
-
-        const queryData = recalculationStatusQuery.data;
-        if (!queryData) {
-            return;
-        }
-
-        if (queryData.status === 'failed') {
-            if (handledCompletedJobId === recalculationJobId) {
+        onSuccess: (response, payload, context) => {
+            if (!context || activeRequestIdRef.current !== context.requestId) {
                 return;
             }
 
-            onRecalculationFailed(queryData, recalculationJobId);
-            return;
-        }
+            onEnqueueSuccess(response, payload, context.requestId);
+        },
+        onError: (error, payload, context) => {
+            if (context && activeRequestIdRef.current !== context.requestId) {
+                return;
+            }
 
-        if (queryData.status !== 'completed' || !queryData.result) {
-            return;
-        }
-
-        if (handledCompletedJobId === recalculationJobId) {
-            return;
-        }
-
-        onRecalculationSuccess(queryData, recalculationJobId);
-    }, [
-        handledCompletedJobId,
-        onRecalculationFailed,
-        onRecalculationSuccess,
-        recalculationJobId,
-        recalculationStatusQuery.data,
-    ]);
-
-    const recalculationStatus = recalculationStatusQuery.data?.status;
-    const isRecalculating = enqueueRecalculationMutation.isPending
-        || (Boolean(recalculationJobId)
-            && recalculationStatus !== 'completed'
-            && recalculationStatus !== 'failed');
+            onEnqueueError(error, payload);
+        },
+    });
 
     const handleDoneAndRecalculate = useCallback(async (completedLegIndex: number) => {
         if (!lastRequest) {
@@ -275,7 +290,7 @@ export const useRecalculateRoute = (
             return;
         }
 
-        const remainingPlaces = buildRemainingPlaces(routes, completedLegIndex);
+        const remainingPlaces = buildRemainingPlaces(routesRef.current, completedLegIndex);
         if (remainingPlaces.length < 2) {
             notify.info('All route legs are complete. Nothing to recalculate.');
             return;
@@ -297,7 +312,7 @@ export const useRecalculateRoute = (
         } catch {
             // Error toast is handled in mutation onError.
         }
-    }, [enqueueRecalculationMutation, lastRequest, routes]);
+    }, [enqueueRecalculationMutation, lastRequest]);
 
     return {
         isRecalculating,

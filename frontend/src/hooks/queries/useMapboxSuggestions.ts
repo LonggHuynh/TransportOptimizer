@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiInstance } from '../../api';
 import { AxiosError } from 'axios';
@@ -14,7 +13,6 @@ export interface MapboxSuggestion {
 
 const MIN_QUERY_LENGTH = 3;
 const SUGGESTION_LIMIT = 6;
-const SUGGESTION_DEBOUNCE_MS = 200;
 
 export interface UseMapboxSuggestionsOptions {
     onSuccess?: (suggestions: MapboxSuggestion[], rawData: unknown) => void;
@@ -122,74 +120,36 @@ export const useMapboxSuggestions = (
     options: UseMapboxSuggestionsOptions = {},
 ) => {
     const { onSuccess: onSuccessOption, onError: onErrorOption } = options;
-    const [debouncedQuery, setDebouncedQuery] = useState('');
-    const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
-    const [error, setError] = useState<string | null>(null);
-
     const trimmedQuery = query.trim();
     const canSearch = trimmedQuery.length >= MIN_QUERY_LENGTH;
 
-    const onSuccess = useCallback((data: unknown) => {
-        const nextSuggestions = parseSuggestions(data);
-        setSuggestions(nextSuggestions);
-        setError(null);
-        onSuccessOption?.(nextSuggestions, data);
-    }, [onSuccessOption]);
-
-    const onError = useCallback((err: AxiosError) => {
-        if (err.code === 'ERR_CANCELED') {
-            return;
-        }
-
-        setError('Failed to load suggestions');
-        setSuggestions([]);
-        onErrorOption?.(err);
-    }, [onErrorOption]);
-
-    useEffect(() => {
-        if (!canSearch) {
-            setDebouncedQuery('');
-            setSuggestions([]);
-            setError(null);
-            return;
-        }
-
-        const timeoutId = window.setTimeout(() => {
-            setDebouncedQuery(trimmedQuery);
-        }, SUGGESTION_DEBOUNCE_MS);
-
-        return () => {
-            window.clearTimeout(timeoutId);
-        };
-    }, [canSearch, trimmedQuery]);
-
-    const suggestionQuery = useQuery<unknown, AxiosError>({
-        queryKey: ['mapboxSuggestions', debouncedQuery],
-        queryFn: ({ signal }) => fetchSuggestions({ query: debouncedQuery, signal }),
-        enabled: debouncedQuery.length >= MIN_QUERY_LENGTH,
+    const suggestionQuery = useQuery<MapboxSuggestion[], AxiosError>({
+        queryKey: ['mapboxSuggestions', trimmedQuery],
+        queryFn: async ({ signal }) => {
+            try {
+                const data = await fetchSuggestions({ query: trimmedQuery, signal });
+                const nextSuggestions = parseSuggestions(data);
+                onSuccessOption?.(nextSuggestions, data);
+                return nextSuggestions;
+            } catch (error) {
+                const axiosError = error as AxiosError;
+                if (axiosError.code !== 'ERR_CANCELED') {
+                    onErrorOption?.(axiosError);
+                }
+                throw axiosError;
+            }
+        },
+        enabled: canSearch,
         refetchOnWindowFocus: false,
         retry: false,
     });
 
-    useEffect(() => {
-        if (!suggestionQuery.isSuccess) {
-            return;
-        }
-
-        onSuccess(suggestionQuery.data);
-    }, [onSuccess, suggestionQuery.data, suggestionQuery.isSuccess]);
-
-    useEffect(() => {
-        if (!suggestionQuery.isError) {
-            return;
-        }
-
-        onError(suggestionQuery.error);
-    }, [onError, suggestionQuery.error, suggestionQuery.isError]);
-
     return {
-        suggestions,
-        loading: debouncedQuery.length >= MIN_QUERY_LENGTH && suggestionQuery.isFetching,
-        error,
+        suggestions: suggestionQuery.data ?? [],
+        loading: canSearch && suggestionQuery.isFetching,
+        error:
+            suggestionQuery.isError && suggestionQuery.error.code !== 'ERR_CANCELED'
+                ? 'Failed to load suggestions'
+                : null,
     };
 };

@@ -100,7 +100,6 @@ export const useRouteFormSubmission = ({
             return false;
         }
 
-        const submitToastId = notify.loading('Optimizing route...');
         try {
             await enqueueMutation.mutateAsync({
                 places,
@@ -108,10 +107,8 @@ export const useRouteFormSubmission = ({
                 startTimeUtc,
                 travelMode: values.travelMode,
             });
-            notify.resolve(submitToastId, 'Optimization started.');
             return true;
         } catch {
-            notify.resolve(submitToastId, 'Failed to calculate route.', 'error');
             return false;
         }
     }, [clearErrors, enqueueMutation]);

@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useCallback, useRef } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
+import { Id } from 'react-toastify';
+import { notify } from '../../utils/notify';
 import { useRouteComputationStore } from '../store/useRouteComputationStore';
 import {
     ComputeOrderInput,
@@ -8,14 +10,10 @@ import {
     enqueueComputeRoute,
     fetchRouteStatus,
     RouteJobStatusResponse,
+    toBestRoutes,
 } from './routeJobApi';
 
-interface RouteComputationResult {
-    status?: string;
-    error?: string;
-    bestRoutes: [string, string][];
-    totalTime: number | null;
-}
+const ROUTE_STATUS_POLL_INTERVAL_MS = 1000;
 
 export interface UseComputePathAndTimeOptions {
     onEnqueueSuccess?: (
@@ -27,8 +25,14 @@ export interface UseComputePathAndTimeOptions {
         variables: ComputeOrderInput,
     ) => void;
     onJobStatusSuccess?: (data: RouteJobStatusResponse) => void;
+    onJobStatusFailed?: (data: RouteJobStatusResponse) => void;
     onJobStatusError?: (error: AxiosError) => void;
 }
+
+const wait = (ms: number) =>
+    new Promise<void>((resolve) => {
+        window.setTimeout(resolve, ms);
+    });
 
 export const useComputePathAndTime = (
     options: UseComputePathAndTimeOptions = {},
@@ -37,104 +41,187 @@ export const useComputePathAndTime = (
         onEnqueueSuccess: onEnqueueSuccessOption,
         onEnqueueError: onEnqueueErrorOption,
         onJobStatusSuccess: onJobStatusSuccessOption,
+        onJobStatusFailed: onJobStatusFailedOption,
         onJobStatusError: onJobStatusErrorOption,
     } = options;
-    const [jobId, setJobId] = useState<string | null>(null);
-    const [jobPlaces, setJobPlaces] = useState<string[]>([]);
+
+    const setComputedRouteResult = useRouteComputationStore(
+        (state) => state.setComputedRouteResult,
+    );
     const setLastRequest = useRouteComputationStore((state) => state.setLastRequest);
+
+    const activeRequestIdRef = useRef(0);
+    const optimizationToastIdRef = useRef<Id | null>(null);
+
+    const startOptimizationToast = useCallback(() => {
+        if (optimizationToastIdRef.current) {
+            notify.dismiss(optimizationToastIdRef.current);
+        }
+        optimizationToastIdRef.current = notify.loading('Optimizing route...');
+    }, []);
+
+    const resolveOptimizationToast = useCallback((
+        message: string,
+        tone: 'success' | 'error' = 'success',
+    ) => {
+        if (optimizationToastIdRef.current) {
+            notify.resolve(optimizationToastIdRef.current, message, tone);
+            optimizationToastIdRef.current = null;
+            return;
+        }
+
+        if (tone === 'error') {
+            notify.error(message);
+            return;
+        }
+
+        notify.success(message);
+    }, []);
+
+    const pollRouteStatus = useCallback(async (
+        jobId: string,
+        places: string[],
+        requestId: number,
+    ) => {
+        while (activeRequestIdRef.current === requestId) {
+            try {
+                const statusResponse = await fetchRouteStatus(jobId);
+                if (activeRequestIdRef.current !== requestId) {
+                    return;
+                }
+
+                if (statusResponse.status === 'failed') {
+                    setComputedRouteResult({
+                        status: statusResponse.status,
+                        error: statusResponse.error ?? 'Route optimization failed.',
+                        bestRoutes: [],
+                        totalTime: null,
+                    });
+                    resolveOptimizationToast(
+                        statusResponse.error ?? 'Failed to calculate route.',
+                        'error',
+                    );
+                    onJobStatusFailedOption?.(statusResponse);
+                    return;
+                }
+
+                if (statusResponse.status === 'completed' && statusResponse.result) {
+                    setComputedRouteResult({
+                        status: statusResponse.status,
+                        error: statusResponse.error,
+                        bestRoutes: toBestRoutes(statusResponse.result, places),
+                        totalTime: statusResponse.result.totalTime ?? null,
+                    });
+                    resolveOptimizationToast('Route optimized.');
+                    onJobStatusSuccessOption?.(statusResponse);
+                    return;
+                }
+
+                setComputedRouteResult({
+                    status: statusResponse.status,
+                    error: statusResponse.error,
+                    bestRoutes: [],
+                    totalTime: null,
+                });
+                await wait(ROUTE_STATUS_POLL_INTERVAL_MS);
+            } catch (error) {
+                if (activeRequestIdRef.current !== requestId) {
+                    return;
+                }
+
+                const axiosError = error as AxiosError;
+                setComputedRouteResult({
+                    status: 'failed',
+                    error: axiosError.message || 'Failed to check route status.',
+                    bestRoutes: [],
+                    totalTime: null,
+                });
+                resolveOptimizationToast('Failed to calculate route.', 'error');
+                onJobStatusErrorOption?.(axiosError);
+                return;
+            }
+        }
+    }, [
+        onJobStatusErrorOption,
+        onJobStatusFailedOption,
+        onJobStatusSuccessOption,
+        resolveOptimizationToast,
+        setComputedRouteResult,
+    ]);
 
     const onEnqueueSuccess = useCallback((
         data: ComputeRouteQueuedResponse,
         variables: ComputeOrderInput,
+        requestId: number,
     ) => {
-        setJobId(data.jobId);
-        setJobPlaces(variables.places);
         setLastRequest({
             places: variables.places,
             stopWindows: variables.stopWindows,
             startTimeUtc: variables.startTimeUtc,
             travelMode: variables.travelMode,
         });
+        setComputedRouteResult({
+            status: data.status,
+            error: undefined,
+            bestRoutes: [],
+            totalTime: null,
+        });
         onEnqueueSuccessOption?.(data, variables);
-    }, [onEnqueueSuccessOption, setLastRequest]);
+        void pollRouteStatus(data.jobId, variables.places, requestId);
+    }, [
+        onEnqueueSuccessOption,
+        pollRouteStatus,
+        setComputedRouteResult,
+        setLastRequest,
+    ]);
 
     const onEnqueueError = useCallback((error: AxiosError, variables: ComputeOrderInput) => {
+        setComputedRouteResult({
+            status: 'failed',
+            error: error.message || 'Failed to calculate route.',
+            bestRoutes: [],
+            totalTime: null,
+        });
+        resolveOptimizationToast('Failed to calculate route.', 'error');
         onEnqueueErrorOption?.(error, variables);
-    }, [onEnqueueErrorOption]);
+    }, [onEnqueueErrorOption, resolveOptimizationToast, setComputedRouteResult]);
 
-    const onJobStatusSuccess = useCallback((data: RouteJobStatusResponse) => {
-        onJobStatusSuccessOption?.(data);
-    }, [onJobStatusSuccessOption]);
-
-    const onJobStatusError = useCallback((error: AxiosError) => {
-        onJobStatusErrorOption?.(error);
-    }, [onJobStatusErrorOption]);
-
-    const jobQuery = useQuery<RouteJobStatusResponse, AxiosError>({
-        queryKey: ['routeJob', jobId],
-        queryFn: () => fetchRouteStatus(jobId!),
-        enabled: Boolean(jobId),
-        refetchOnWindowFocus: false,
-        refetchInterval: (query) => {
-            const status = query.state.data?.status;
-            if (status === 'completed' || status === 'failed') {
-                return false;
+    const enqueueMutation = useMutation<
+        ComputeRouteQueuedResponse,
+        AxiosError,
+        ComputeOrderInput,
+        { requestId: number }
+    >({
+        mutationFn: enqueueComputeRoute,
+        onMutate: () => {
+            const requestId = activeRequestIdRef.current + 1;
+            activeRequestIdRef.current = requestId;
+            startOptimizationToast();
+            setComputedRouteResult({
+                status: 'queued',
+                error: undefined,
+                bestRoutes: [],
+                totalTime: null,
+            });
+            return { requestId };
+        },
+        onSuccess: (data, variables, context) => {
+            if (!context || activeRequestIdRef.current !== context.requestId) {
+                return;
             }
-            return 1000;
+
+            onEnqueueSuccess(data, variables, context.requestId);
+        },
+        onError: (error, variables, context) => {
+            if (context && activeRequestIdRef.current !== context.requestId) {
+                return;
+            }
+
+            onEnqueueError(error, variables);
         },
     });
 
-    const enqueueMutation = useMutation<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput>({
-        mutationFn: enqueueComputeRoute,
-        onSuccess: onEnqueueSuccess,
-        onError: onEnqueueError,
-    });
-
-    useEffect(() => {
-        if (!jobQuery.isSuccess) {
-            return;
-        }
-
-        onJobStatusSuccess(jobQuery.data);
-    }, [jobQuery.data, jobQuery.isSuccess, onJobStatusSuccess]);
-
-    useEffect(() => {
-        if (!jobQuery.isError) {
-            return;
-        }
-
-        onJobStatusError(jobQuery.error);
-    }, [jobQuery.error, jobQuery.isError, onJobStatusError]);
-
-    const computedResult = useMemo<RouteComputationResult>(() => {
-        const status = jobQuery.data?.status;
-        const error = jobQuery.data?.error;
-        if (status !== 'completed' || !jobQuery.data?.result) {
-            return {
-                status,
-                error,
-                totalTime: null,
-                bestRoutes: [],
-            };
-        }
-
-        const result = jobQuery.data.result;
-        const bestRoutes: [string, string][] = result.bestRoutes
-            ?? result.order.slice(0, -1).map((_, i) => {
-                return [jobPlaces[result.order[i]], jobPlaces[result.order[i + 1]]];
-            });
-
-        return {
-            status,
-            error,
-            totalTime: result.totalTime ?? null,
-            bestRoutes,
-        };
-    }, [jobPlaces, jobQuery.data]);
-
     return {
         enqueueMutation,
-        jobQuery,
-        computedResult,
     };
 };

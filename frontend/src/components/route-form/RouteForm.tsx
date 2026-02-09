@@ -30,7 +30,6 @@ import {
 import { useCenterStore } from '../../hooks/store/useCenterStore';
 import { useIntermediateListStore } from '../../hooks/store/useIntermediateListStore';
 import { useLocationLabelsStore } from '../../hooks/store/useLocationLabelsStore';
-import { useRouteComputationStore } from '../../hooks/store/useRouteComputationStore';
 import { useStopWindowsStore } from '../../hooks/store/useStopWindowsStore';
 import { useRouteFormSubmission } from './hooks/useRouteFormSubmission';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
@@ -38,10 +37,7 @@ import { TRAVEL_MODES, TravelMode } from '../../models/routeOptions';
 import { parseCoordinateKey } from '../../utils/coordinates';
 
 const RouteForm = () => {
-    const { enqueueMutation, computedResult } = useComputePathAndTime();
-    const setComputedRouteResult = useRouteComputationStore(
-        (state) => state.setComputedRouteResult,
-    );
+    const { enqueueMutation } = useComputePathAndTime();
 
     const setIntermediateList = useIntermediateListStore(
         (state) => state.setIntermediateList,
@@ -104,17 +100,6 @@ const RouteForm = () => {
         useMapboxSuggestions(debouncedOrigin);
     const { suggestions: destinationSuggestions, loading: destinationLoading } =
         useMapboxSuggestions(debouncedDestination);
-
-    useEffect(() => {
-        setComputedRouteResult({
-            status:
-                computedResult.status ??
-                (enqueueMutation.isPending ? 'queued' : undefined),
-            error: computedResult.error,
-            bestRoutes: computedResult.bestRoutes,
-            totalTime: computedResult.totalTime,
-        });
-    }, [computedResult, enqueueMutation.isPending, setComputedRouteResult]);
 
     useEffect(() => {
         const routeStartLocal = toLocalDateTimeFromTime(departTimeLocal);
