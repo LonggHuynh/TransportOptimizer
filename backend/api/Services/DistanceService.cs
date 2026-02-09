@@ -71,11 +71,12 @@ namespace api.Services
         {
             if (!string.Equals(response.Status, "OK", StringComparison.OrdinalIgnoreCase))
             {
-                var status = response.Status?.Trim().ToUpperInvariant() ?? "UNKNOWN_ERROR";
                 throw new HttpRequestException(
-                    BuildGoogleMatrixErrorMessage(status, response.ErrorMessage, expectedLocationCount),
+                    string.IsNullOrWhiteSpace(response.ErrorMessage)
+                        ? "Google Distance Matrix request failed."
+                        : response.ErrorMessage.Trim(),
                     null,
-                    MapGoogleStatusToHttpStatus(status)
+                    HttpStatusCode.BadGateway
                 );
             }
 
@@ -192,46 +193,6 @@ namespace api.Services
                 null,
                 HttpStatusCode.BadRequest
             );
-        }
-
-        private static string BuildGoogleMatrixErrorMessage(
-            string status,
-            string? googleErrorMessage,
-            int locationCount
-        )
-        {
-            var details = string.IsNullOrWhiteSpace(googleErrorMessage)
-                ? string.Empty
-                : $" Details: {googleErrorMessage.Trim()}";
-
-            return status switch
-            {
-                "INVALID_REQUEST" when locationCount > GoogleMaxSquareMatrixLocations =>
-                    $"Google Distance Matrix rejected the request because the matrix is too large.{details}",
-                "INVALID_REQUEST" =>
-                    $"Google Distance Matrix rejected the request as invalid.{details}",
-                "REQUEST_DENIED" =>
-                    $"Google Distance Matrix request was denied. Check API key and enabled services.{details}",
-                "OVER_QUERY_LIMIT" or "OVER_DAILY_LIMIT" =>
-                    $"Google Distance Matrix quota was exceeded.{details}",
-                "MAX_ELEMENTS_EXCEEDED" =>
-                    $"Google Distance Matrix element limit exceeded for this request.{details}",
-                _ =>
-                    $"Google Distance Matrix failed with status '{status}'.{details}",
-            };
-        }
-
-        private static HttpStatusCode MapGoogleStatusToHttpStatus(string status)
-        {
-            return status switch
-            {
-                "INVALID_REQUEST" => HttpStatusCode.BadRequest,
-                "REQUEST_DENIED" => HttpStatusCode.Forbidden,
-                "OVER_QUERY_LIMIT" => HttpStatusCode.TooManyRequests,
-                "OVER_DAILY_LIMIT" => HttpStatusCode.TooManyRequests,
-                "MAX_ELEMENTS_EXCEEDED" => HttpStatusCode.BadRequest,
-                _ => HttpStatusCode.BadGateway,
-            };
         }
     }
 }
