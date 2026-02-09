@@ -75,16 +75,7 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
         );
         request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", PlaceDetailsFieldMask);
 
-        var httpResponse = await _httpClient.SendAsync(request);
-        if (!httpResponse.IsSuccessStatusCode)
-        {
-            return new GoogleGeocodeResponse
-            {
-                Status = "REQUEST_DENIED",
-                Results = [],
-            };
-        }
-
+        using var httpResponse = await _httpClient.SendAsync(request);
         var payload = await httpResponse.Content.ReadFromJsonAsync<PlaceDetailsResponse>(JsonOptions);
         if (payload?.Location == null)
         {
@@ -162,15 +153,7 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
         };
         request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", PlacesAutocompleteFieldMask);
 
-        var httpResponse = await _httpClient.SendAsync(request);
-        if (!httpResponse.IsSuccessStatusCode)
-        {
-            return new GooglePlacesAutocompleteResponse
-            {
-                Status = "REQUEST_DENIED",
-                Predictions = [],
-            };
-        }
+        using var httpResponse = await _httpClient.SendAsync(request);
 
         var payload = await httpResponse.Content.ReadFromJsonAsync<PlacesAutocompleteResponse>(JsonOptions);
         var predictions = payload?.Suggestions?
