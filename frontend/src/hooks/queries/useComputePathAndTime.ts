@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import { useRouteComputationStore } from '../store/useRouteComputationStore';
-import { StopWindow } from '../../models/stopWindow';
-import { TravelMode } from '../../models/routeOptions';
 import {
+    ComputeOrderInput,
+    ComputeRouteQueuedResponse,
     enqueueComputeRoute,
     fetchRouteStatus,
+    RouteJobStatusResponse,
 } from './routeJobApi';
 
 interface RouteComputationResult {
@@ -15,57 +17,94 @@ interface RouteComputationResult {
     totalTime: number | null;
 }
 
-export const useComputePathAndTime = () => {
+export interface UseComputePathAndTimeOptions {
+    onEnqueueSuccess?: (
+        data: ComputeRouteQueuedResponse,
+        variables: ComputeOrderInput,
+    ) => void;
+    onEnqueueError?: (
+        error: AxiosError,
+        variables: ComputeOrderInput,
+    ) => void;
+    onJobStatusSuccess?: (data: RouteJobStatusResponse) => void;
+    onJobStatusError?: (error: AxiosError) => void;
+}
+
+export const useComputePathAndTime = (
+    options: UseComputePathAndTimeOptions = {},
+) => {
+    const {
+        onEnqueueSuccess: onEnqueueSuccessOption,
+        onEnqueueError: onEnqueueErrorOption,
+        onJobStatusSuccess: onJobStatusSuccessOption,
+        onJobStatusError: onJobStatusErrorOption,
+    } = options;
     const [jobId, setJobId] = useState<string | null>(null);
     const [jobPlaces, setJobPlaces] = useState<string[]>([]);
     const setLastRequest = useRouteComputationStore((state) => state.setLastRequest);
 
-    const jobQuery = useQuery(
-        {
-            queryKey: ['routeJob', jobId],
-            queryFn: () => fetchRouteStatus(jobId!),
-            enabled: Boolean(jobId),
-            refetchOnWindowFocus: false,
-            refetchInterval: (query) => {
-                const status = query.state.data?.status;
-                if (status === 'completed' || status === 'failed') {
-                    return false;
-                }
-                return 1000;
-            },
-        }
-    );
+    const onEnqueueSuccess = useCallback((
+        data: ComputeRouteQueuedResponse,
+        variables: ComputeOrderInput,
+    ) => {
+        setJobId(data.jobId);
+        setJobPlaces(variables.places);
+        setLastRequest({
+            places: variables.places,
+            stopWindows: variables.stopWindows,
+            startTimeUtc: variables.startTimeUtc,
+            travelMode: variables.travelMode,
+        });
+        onEnqueueSuccessOption?.(data, variables);
+    }, [onEnqueueSuccessOption, setLastRequest]);
 
-    const enqueueMutation = useMutation(
-        {
-            mutationFn: async ({
-                places,
-                stopWindows,
-                startTimeUtc,
-                travelMode,
-            }: {
-                places: string[];
-                stopWindows: StopWindow[];
-                startTimeUtc: string | null;
-                travelMode: TravelMode;
-            }) => enqueueComputeRoute({
-                places,
-                stopWindows,
-                startTimeUtc,
-                travelMode,
-            }),
-            onSuccess: (data, variables) => {
-                setJobId(data.jobId);
-                setJobPlaces(variables.places);
-                setLastRequest({
-                    places: variables.places,
-                    stopWindows: variables.stopWindows,
-                    startTimeUtc: variables.startTimeUtc,
-                    travelMode: variables.travelMode,
-                });
-            },
+    const onEnqueueError = useCallback((error: AxiosError, variables: ComputeOrderInput) => {
+        onEnqueueErrorOption?.(error, variables);
+    }, [onEnqueueErrorOption]);
+
+    const onJobStatusSuccess = useCallback((data: RouteJobStatusResponse) => {
+        onJobStatusSuccessOption?.(data);
+    }, [onJobStatusSuccessOption]);
+
+    const onJobStatusError = useCallback((error: AxiosError) => {
+        onJobStatusErrorOption?.(error);
+    }, [onJobStatusErrorOption]);
+
+    const jobQuery = useQuery<RouteJobStatusResponse, AxiosError>({
+        queryKey: ['routeJob', jobId],
+        queryFn: () => fetchRouteStatus(jobId!),
+        enabled: Boolean(jobId),
+        refetchOnWindowFocus: false,
+        refetchInterval: (query) => {
+            const status = query.state.data?.status;
+            if (status === 'completed' || status === 'failed') {
+                return false;
+            }
+            return 1000;
+        },
+    });
+
+    const enqueueMutation = useMutation<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput>({
+        mutationFn: enqueueComputeRoute,
+        onSuccess: onEnqueueSuccess,
+        onError: onEnqueueError,
+    });
+
+    useEffect(() => {
+        if (!jobQuery.isSuccess) {
+            return;
         }
-    );
+
+        onJobStatusSuccess(jobQuery.data);
+    }, [jobQuery.data, jobQuery.isSuccess, onJobStatusSuccess]);
+
+    useEffect(() => {
+        if (!jobQuery.isError) {
+            return;
+        }
+
+        onJobStatusError(jobQuery.error);
+    }, [jobQuery.error, jobQuery.isError, onJobStatusError]);
 
     const computedResult = useMemo<RouteComputationResult>(() => {
         const status = jobQuery.data?.status;

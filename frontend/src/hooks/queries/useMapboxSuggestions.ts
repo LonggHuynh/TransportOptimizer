@@ -16,6 +16,11 @@ const MIN_QUERY_LENGTH = 3;
 const SUGGESTION_LIMIT = 6;
 const SUGGESTION_DEBOUNCE_MS = 200;
 
+export interface UseMapboxSuggestionsOptions {
+    onSuccess?: (suggestions: MapboxSuggestion[], rawData: unknown) => void;
+    onError?: (error: AxiosError) => void;
+}
+
 interface SuggestionRecord extends Record<string, unknown> {
     id?: unknown;
     label?: unknown;
@@ -112,7 +117,11 @@ const fetchSuggestions = async ({ query, signal }: { query: string; signal: Abor
     return response.data;
 };
 
-export const useMapboxSuggestions = (query: string) => {
+export const useMapboxSuggestions = (
+    query: string,
+    options: UseMapboxSuggestionsOptions = {},
+) => {
+    const { onSuccess: onSuccessOption, onError: onErrorOption } = options;
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -121,9 +130,11 @@ export const useMapboxSuggestions = (query: string) => {
     const canSearch = trimmedQuery.length >= MIN_QUERY_LENGTH;
 
     const onSuccess = useCallback((data: unknown) => {
-        setSuggestions(parseSuggestions(data));
+        const nextSuggestions = parseSuggestions(data);
+        setSuggestions(nextSuggestions);
         setError(null);
-    }, []);
+        onSuccessOption?.(nextSuggestions, data);
+    }, [onSuccessOption]);
 
     const onError = useCallback((err: AxiosError) => {
         if (err.code === 'ERR_CANCELED') {
@@ -132,7 +143,8 @@ export const useMapboxSuggestions = (query: string) => {
 
         setError('Failed to load suggestions');
         setSuggestions([]);
-    }, []);
+        onErrorOption?.(err);
+    }, [onErrorOption]);
 
     useEffect(() => {
         if (!canSearch) {

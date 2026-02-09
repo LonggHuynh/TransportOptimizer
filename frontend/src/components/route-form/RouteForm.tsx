@@ -32,8 +32,8 @@ import { useIntermediateListStore } from '../../hooks/store/useIntermediateListS
 import { useLocationLabelsStore } from '../../hooks/store/useLocationLabelsStore';
 import { useRouteComputationStore } from '../../hooks/store/useRouteComputationStore';
 import { useStopWindowsStore } from '../../hooks/store/useStopWindowsStore';
-import { useRouteFormSubmission } from '../../hooks/useRouteFormSubmission';
-import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { useRouteFormSubmission } from './hooks/useRouteFormSubmission';
+import { useDebouncedValue } from './hooks/useDebouncedValue';
 import { TRAVEL_MODES, TravelMode } from '../../models/routeOptions';
 import { parseCoordinateKey } from '../../utils/coordinates';
 

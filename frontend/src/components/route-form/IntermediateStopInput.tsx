@@ -3,7 +3,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { Autocomplete, CircularProgress, TextField } from '@mui/material';
 import { MapboxSuggestion, useMapboxSuggestions } from '../../hooks/queries/useMapboxSuggestions';
-import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { useDebouncedValue } from './hooks/useDebouncedValue';
 
 interface IntermediateStopInputProps {
     value: string;

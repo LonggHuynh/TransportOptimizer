@@ -11,6 +11,22 @@ interface DirectionsResponse {
     coordinates: { latitude: number; longitude: number }[];
 }
 
+interface DisplayDirectionsVariables {
+    from: string;
+    to: string;
+}
+
+export interface UseDisplayDirectionsOptions {
+    onSuccess?: (
+        data: RouteLine | null,
+        variables: DisplayDirectionsVariables,
+    ) => void;
+    onError?: (
+        error: AxiosError,
+        variables: DisplayDirectionsVariables,
+    ) => void;
+}
+
 const fetchDirections = async (
     from: string,
     to: string,
@@ -29,19 +45,24 @@ const fetchDirections = async (
     }));
 };
 
-export const useDisplayDirections = () => {
+export const useDisplayDirections = (
+    options: UseDisplayDirectionsOptions = {},
+) => {
+    const { onSuccess: onSuccessOption, onError: onErrorOption } = options;
     const setDirectionsResponse = useDirectionsStore(
         (state) => state.setDirectionsResponse,
     );
 
     return useMutation({
-        mutationFn: async ({ from, to }: { from: string; to: string }) =>
+        mutationFn: async ({ from, to }: DisplayDirectionsVariables) =>
             fetchDirections(from, to),
-        onSuccess: (data) => {
+        onSuccess: (data, variables) => {
             setDirectionsResponse(data);
+            onSuccessOption?.(data, variables);
         },
-        onError: (error: AxiosError) => {
+        onError: (error: AxiosError, variables) => {
             notify.error(`Failed to fetch directions: ${error.message}`);
+            onErrorOption?.(error, variables);
         },
     });
 };

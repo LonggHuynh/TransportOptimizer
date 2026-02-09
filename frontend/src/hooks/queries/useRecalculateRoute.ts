@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import { Id } from 'react-toastify';
 import { StopWindow } from '../../models/stopWindow';
 import { useRouteComputationStore } from '../store/useRouteComputationStore';
 import {
+    ComputeOrderInput,
+    ComputeRouteQueuedResponse,
     enqueueComputeRoute,
     fetchRouteStatus,
+    RouteJobStatusResponse,
     toBestRoutes,
 } from './routeJobApi';
 import { notify } from '../../utils/notify';
@@ -68,7 +72,30 @@ const remapStopWindows = (
     });
 };
 
-export const useRecalculateRoute = () => {
+export interface UseRecalculateRouteOptions {
+    onEnqueueSuccess?: (
+        data: ComputeRouteQueuedResponse,
+        payload: ComputeOrderInput,
+    ) => void;
+    onEnqueueError?: (
+        error: AxiosError,
+        payload: ComputeOrderInput,
+    ) => void;
+    onRecalculationSuccess?: (data: RouteJobStatusResponse) => void;
+    onRecalculationFailed?: (data: RouteJobStatusResponse) => void;
+    onStatusQueryError?: (error: AxiosError) => void;
+}
+
+export const useRecalculateRoute = (
+    options: UseRecalculateRouteOptions = {},
+) => {
+    const {
+        onEnqueueSuccess: onEnqueueSuccessOption,
+        onEnqueueError: onEnqueueErrorOption,
+        onRecalculationSuccess: onRecalculationSuccessOption,
+        onRecalculationFailed: onRecalculationFailedOption,
+        onStatusQueryError: onStatusQueryErrorOption,
+    } = options;
     const routes = useRouteComputationStore((state) => state.bestRoutes);
     const estimatedTime = useRouteComputationStore((state) => state.totalTime);
     const lastRequest = useRouteComputationStore((state) => state.lastRequest);
@@ -81,7 +108,7 @@ export const useRecalculateRoute = () => {
     const [handledCompletedJobId, setHandledCompletedJobId] = useState<string | null>(null);
     const [recalculationToastId, setRecalculationToastId] = useState<Id | null>(null);
 
-    const enqueueRecalculationMutation = useMutation({
+    const enqueueRecalculationMutation = useMutation<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput>({
         mutationFn: enqueueComputeRoute,
         onSuccess: (response, payload) => {
             if (recalculationToastId) {
@@ -98,13 +125,15 @@ export const useRecalculateRoute = () => {
             });
             const toastId = notify.loading('Recalculating remaining route...');
             setRecalculationToastId(toastId);
+            onEnqueueSuccessOption?.(response, payload);
         },
-        onError: () => {
+        onError: (error, payload) => {
             notify.error('Failed to start recalculation.');
+            onEnqueueErrorOption?.(error, payload);
         },
     });
 
-    const recalculationStatusQuery = useQuery({
+    const recalculationStatusQuery = useQuery<RouteJobStatusResponse, AxiosError>({
         queryKey: ['routeRecalculation', recalculationJobId],
         queryFn: () => fetchRouteStatus(recalculationJobId!),
         enabled: Boolean(recalculationJobId),
@@ -117,6 +146,18 @@ export const useRecalculateRoute = () => {
             return 1000;
         },
     });
+
+    useEffect(() => {
+        if (!recalculationStatusQuery.isError) {
+            return;
+        }
+
+        onStatusQueryErrorOption?.(recalculationStatusQuery.error);
+    }, [
+        onStatusQueryErrorOption,
+        recalculationStatusQuery.error,
+        recalculationStatusQuery.isError,
+    ]);
 
     useEffect(() => {
         if (!recalculationJobId) {
@@ -146,6 +187,7 @@ export const useRecalculateRoute = () => {
             } else {
                 notify.error(queryData.error ?? 'Recalculation failed.');
             }
+            onRecalculationFailedOption?.(queryData);
             return;
         }
 
@@ -170,9 +212,12 @@ export const useRecalculateRoute = () => {
         } else {
             notify.success('Route recalculated.');
         }
+        onRecalculationSuccessOption?.(queryData);
     }, [
         estimatedTime,
         handledCompletedJobId,
+        onRecalculationFailedOption,
+        onRecalculationSuccessOption,
         recalculationJobId,
         recalculationPlaces,
         recalculationToastId,
