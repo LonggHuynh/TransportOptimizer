@@ -21,7 +21,6 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
         "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text";
     private const string PlaceDetailsFieldMask =
         "id,displayName.text,formattedAddress,location";
-    private const string PlacesApiBaseUrl = "https://places.googleapis.com/v1/";
     private const double AutocompleteBiasRadiusMeters = 50_000;
 
     public async Task<GoogleDistanceMatrixResponse?> GetDistanceMatrixAsync(
@@ -69,11 +68,11 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             ? placeId["places/".Length..]
             : placeId;
 
-        var request = new HttpRequestMessage(
+        using var request = CreatePlacesRequest(
             HttpMethod.Get,
-            $"{PlacesApiBaseUrl}places/{Uri.EscapeDataString(normalizedPlaceId)}"
+            $"places/{Uri.EscapeDataString(normalizedPlaceId)}",
+            PlaceDetailsFieldMask
         );
-        request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", PlaceDetailsFieldMask);
 
         using var httpResponse = await _httpClient.SendAsync(request);
         var payload = await httpResponse.Content.ReadFromJsonAsync<PlaceDetailsResponse>(JsonOptions);
@@ -139,19 +138,17 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
             };
         }
 
-        var request = new HttpRequestMessage(
+        using var request = CreatePlacesRequest(
             HttpMethod.Post,
-            $"{PlacesApiBaseUrl}places:autocomplete"
-        )
-        {
-            Content = JsonContent.Create(new PlacesAutocompleteRequest
+            "places:autocomplete",
+            PlacesAutocompleteFieldMask,
+            new PlacesAutocompleteRequest
             {
                 Input = query,
                 IncludeQueryPredictions = true,
                 LocationBias = locationBias,
-            }),
-        };
-        request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", PlacesAutocompleteFieldMask);
+            }
+        );
 
         using var httpResponse = await _httpClient.SendAsync(request);
 
@@ -271,6 +268,23 @@ public class GoogleMapsClient(HttpClient httpClient, AppOptions appOptions) : IG
 
         var separator = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
         return $"{url}{separator}key={Uri.EscapeDataString(apiKey)}";
+    }
+
+    private static HttpRequestMessage CreatePlacesRequest(
+        HttpMethod method,
+        string path,
+        string fieldMask,
+        object? payload = null
+    )
+    {
+        var request = new HttpRequestMessage(method, $"https://places.googleapis.com/v1/{path}");
+        request.Headers.TryAddWithoutValidation("X-Goog-FieldMask", fieldMask);
+        if (payload is not null)
+        {
+            request.Content = JsonContent.Create(payload);
+        }
+
+        return request;
     }
 
     private class PlacesAutocompleteRequest
