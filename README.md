@@ -31,8 +31,12 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 | Variable Name                 | Description                                                                  |
 | ----------------------------- | ---------------------------------------------------------------------------- |
 | `CorsSettings:AllowedOrigins` | Origins for CORS settings in the backend. No cors needed for the deployment. |
-| `GoogleMaps:ApiUrl`           | Google Maps API base URL (default: `https://maps.googleapis.com/maps/api`).   |
-| `GoogleMaps:ApiKey`           | Google Maps API key used by backend geocode, directions, and distance matrix endpoints. |
+| `GoogleMaps:ServiceAccountJsonPath` | Absolute path to service-account JSON key used by backend Google clients. |
+| `GoogleMaps:ServiceAccountScopes:0` | OAuth scope item. Default is `https://www.googleapis.com/auth/cloud-platform`. |
+| `GoogleMaps:QuotaProject` | Optional billing/quota project ID sent as `X-Goog-User-Project`. |
+| `GoogleMaps:TilesApiUrl` | Tiles base URL (default: `https://tile.googleapis.com/v1`). |
+| `GoogleMaps:PlacesApiUrl` | Places base URL (default: `https://places.googleapis.com/v1`). |
+| `GoogleMaps:RoutesApiUrl` | Routes base URL (default: `https://routes.googleapis.com`). |
 
 ## Running the application
 
@@ -74,3 +78,20 @@ kubectl apply -f infra/k8s/namespaces.yaml
 helm upgrade --install transport-optimizer infra/app-chart --namespace transport-stage
 # or use --namespace transport-prod
 ```
+
+## Google Service Account Setup
+
+1. In Google Cloud Console, open your project and enable: Places API (New), Routes API, and Map Tiles API.
+2. Create a service account:
+`IAM & Admin -> Service Accounts -> Create Service Account`.
+3. Grant required roles to that service account:
+`roles/serviceusage.serviceUsageConsumer` (or another role that includes `serviceusage.services.use`).
+4. Create and download a JSON key for the service account.
+5. Store the key securely on the backend host (for example `/secrets/google-maps-sa.json`).
+6. Configure backend env vars (or appsettings):
+`GoogleMaps:ServiceAccountJsonPath=/secrets/google-maps-sa.json`
+and optionally
+`GoogleMaps:QuotaProject=<your-gcp-project-id>`.
+7. Restart backend and verify `/api/tiles/{z}/{x}/{y}.png` and route/geocode flows.
+
+Alternative: instead of `GoogleMaps:ServiceAccountJsonPath`, set `GOOGLE_APPLICATION_CREDENTIALS` to the same JSON file path.

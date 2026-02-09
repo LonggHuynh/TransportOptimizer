@@ -36,15 +36,9 @@ public class GoogleTilesClient(HttpClient httpClient, AppOptions appOptions, IMe
 
         _ = tileSize;
         var normalizedMapType = NormalizeMapType(mapType);
-        var apiKey = _appOptions.GoogleMaps?.ApiKey?.Trim();
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            throw new InvalidOperationException("Google Maps API key is missing.");
-        }
 
-        var session = await GetOrCreateSessionAsync(normalizedMapType, apiKey);
-        var url =
-            $"2dtiles/{z}/{x}/{y}?session={Uri.EscapeDataString(session)}&key={Uri.EscapeDataString(apiKey)}";
+        var session = await GetOrCreateSessionAsync(normalizedMapType);
+        var url = $"2dtiles/{z}/{x}/{y}?session={Uri.EscapeDataString(session)}";
         try
         {
             using var response = await _httpClient.GetAsync(url);
@@ -63,7 +57,7 @@ public class GoogleTilesClient(HttpClient httpClient, AppOptions appOptions, IMe
         }
     }
 
-    private async Task<string> GetOrCreateSessionAsync(string normalizedMapType, string apiKey)
+    private async Task<string> GetOrCreateSessionAsync(string normalizedMapType)
     {
         var cacheKey = $"{SessionCachePrefix}:{normalizedMapType}";
         if (_cache.TryGetValue(cacheKey, out string? cachedSession) && !string.IsNullOrWhiteSpace(cachedSession))
@@ -72,7 +66,7 @@ public class GoogleTilesClient(HttpClient httpClient, AppOptions appOptions, IMe
         }
 
         var requestBody = BuildCreateSessionRequest(normalizedMapType);
-        var requestUrl = $"createSession?key={Uri.EscapeDataString(apiKey)}";
+        var requestUrl = "createSession";
         using var request = new HttpRequestMessage(HttpMethod.Post, requestUrl)
         {
             Content = JsonContent.Create(requestBody),

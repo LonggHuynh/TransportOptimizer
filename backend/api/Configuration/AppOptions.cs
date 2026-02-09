@@ -10,7 +10,9 @@ namespace api.Configuration
 
     public class GoogleMapsOptions
     {
-        public string? ApiKey { get; set; }
+        public string? ServiceAccountJsonPath { get; set; }
+        public string[] ServiceAccountScopes { get; set; } = ["https://www.googleapis.com/auth/cloud-platform"];
+        public string? QuotaProject { get; set; }
         public string TilesApiUrl { get; set; } = "https://tile.googleapis.com/v1";
         public string PlacesApiUrl { get; set; } = "https://places.googleapis.com/v1";
         public string RoutesApiUrl { get; set; } = "https://routes.googleapis.com";
