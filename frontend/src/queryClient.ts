@@ -3,25 +3,28 @@ import { AxiosError, isAxiosError } from 'axios';
 import { notify } from './utils/notify';
 
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
+type ApiErrorPayload = { error?: string; message?: string } | string;
 
 const toDefaultErrorMessage = (error: unknown): string | null => {
     if (isAxiosError(error)) {
-        const axiosError = error as AxiosError<{ error?: string; message?: string }>;
+        const axiosError = error as AxiosError<ApiErrorPayload>;
         if (axiosError.code === 'ERR_CANCELED') {
             return null;
         }
 
         const responseData = axiosError.response?.data;
-        if (typeof responseData === 'string' && responseData.trim()) {
-            return responseData;
-        }
+        if (typeof responseData === 'string') {
+            if (responseData.trim()) {
+                return responseData;
+            }
+        } else if (responseData && typeof responseData === 'object') {
+            if (responseData.error) {
+                return responseData.error;
+            }
 
-        if (responseData?.error) {
-            return responseData.error;
-        }
-
-        if (responseData?.message) {
-            return responseData.message;
+            if (responseData.message) {
+                return responseData.message;
+            }
         }
 
         if (axiosError.message) {
