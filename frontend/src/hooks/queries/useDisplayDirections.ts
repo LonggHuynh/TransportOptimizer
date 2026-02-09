@@ -2,7 +2,9 @@ import { useMutation, UseMutationOptions } from '@tanstack/react-query';
 import { useDirectionsStore } from '../store/useDirectionsStore';
 import { AxiosError } from 'axios';
 import { apiInstance } from '../../api';
+import { Coordinate } from '../../models/coordinate';
 import { RouteLine } from '../../models/map';
+import { toCoordinateKey } from '../../utils/coordinates';
 import { notify } from '../../utils/notify';
 
 interface DirectionsResponse {
@@ -12,16 +14,18 @@ interface DirectionsResponse {
 }
 
 interface DisplayDirectionsVariables {
-    from: string;
-    to: string;
+    from: Coordinate;
+    to: Coordinate;
 }
 
 const fetchDirections = async (
-    from: string,
-    to: string,
+    from: Coordinate,
+    to: Coordinate,
 ): Promise<RouteLine | null> => {
+    const fromKey = toCoordinateKey(from);
+    const toKey = toCoordinateKey(to);
     const response = await apiInstance.get<DirectionsResponse>('directions', {
-        params: { from, to },
+        params: { from: fromKey, to: toKey },
     });
     const coordinates = response.data.coordinates ?? [];
     if (!coordinates.length) {

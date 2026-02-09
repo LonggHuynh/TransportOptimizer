@@ -1,9 +1,10 @@
 import { create } from 'zustand';
+import { Coordinate } from '../../models/coordinate';
 import { TravelMode } from '../../models/routeOptions';
 import { StopWindow } from '../../models/stopWindow';
 
 interface RouteRequestSnapshot {
-    places: string[];
+    places: Coordinate[];
     stopWindows: StopWindow[];
     startTimeUtc: string | null;
     travelMode: TravelMode;
@@ -12,13 +13,13 @@ interface RouteRequestSnapshot {
 interface RouteComputationState {
     status?: string;
     error?: string;
-    bestRoutes: [string, string][];
+    bestRoutes: [Coordinate, Coordinate][];
     totalTime: number | null;
     lastRequest: RouteRequestSnapshot | null;
     setComputedRouteResult: (payload: {
         status?: string;
         error?: string;
-        bestRoutes: [string, string][];
+        bestRoutes: [Coordinate, Coordinate][];
         totalTime: number | null;
     }) => void;
     setLastRequest: (payload: RouteRequestSnapshot) => void;
@@ -28,7 +29,7 @@ interface RouteComputationState {
 const initialState = {
     status: undefined,
     error: undefined,
-    bestRoutes: [] as [string, string][],
+    bestRoutes: [] as [Coordinate, Coordinate][],
     totalTime: null as number | null,
     lastRequest: null as RouteRequestSnapshot | null,
 };

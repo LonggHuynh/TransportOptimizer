@@ -1,14 +1,13 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { apiInstance } from '../../api';
 import { AxiosError } from 'axios';
+import { Coordinate } from '../../models/coordinate';
 import { toCoordinateKey } from '../../utils/coordinates';
 
 export interface MapboxSuggestion {
     id: string;
     label: string;
-    coordinateKey?: string;
-    latitude?: number;
-    longitude?: number;
+    coordinate?: Coordinate;
 }
 
 const MIN_QUERY_LENGTH = 3;
@@ -69,22 +68,19 @@ const parseSuggestion = (input: unknown, index: number): MapboxSuggestion | null
         latitude = getFiniteNumber(input.center[1]);
     }
 
-    const coordinateKey =
-        latitude !== null && longitude !== null
-            ? toCoordinateKey(longitude, latitude)
-            : undefined;
+    const coordinate = latitude !== null && longitude !== null
+        ? { longitude, latitude }
+        : undefined;
 
     const id =
         typeof input.id === 'string' && input.id.trim()
             ? input.id
-            : coordinateKey ?? `${label}-${index}`;
+            : (coordinate ? toCoordinateKey(coordinate) : `${label}-${index}`);
 
     return {
         id,
         label,
-        coordinateKey,
-        latitude: latitude ?? undefined,
-        longitude: longitude ?? undefined,
+        coordinate,
     };
 };
 
@@ -98,7 +94,9 @@ const parseSuggestions = (data: unknown): MapboxSuggestion[] => {
             return;
         }
 
-        const dedupeKey = parsed.coordinateKey ?? parsed.label.toLowerCase();
+        const dedupeKey = parsed.coordinate
+            ? toCoordinateKey(parsed.coordinate)
+            : parsed.label.toLowerCase();
         if (!dedupe.has(dedupeKey)) {
             dedupe.set(dedupeKey, parsed);
         }

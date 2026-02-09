@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Id } from 'react-toastify';
+import { Coordinate } from '../../../models/coordinate';
 import { StopWindow } from '../../../models/stopWindow';
 import { notify } from '../../../utils/notify';
+import { parseCoordinateKey, toCoordinateKey } from '../../../utils/coordinates';
 import { useRouteJobStatus } from '../../../hooks/queries/useRouteJobStatus';
 import { useRecalculateRoute } from '../../../hooks/queries/useRecalculateRoute';
 import { useRouteComputationStore } from '../../../hooks/store/useRouteComputationStore';
@@ -16,10 +18,22 @@ interface ComputeRouteResult {
 
 const toBestRoutes = (
     result: ComputeRouteResult,
-    places: string[],
-): [string, string][] => {
+    places: Coordinate[],
+): [Coordinate, Coordinate][] => {
     if (result.bestRoutes && result.bestRoutes.length > 0) {
-        return result.bestRoutes;
+        const parsedBestRoutes = result.bestRoutes.flatMap(([from, to]) => {
+            const parsedFrom = parseCoordinateKey(from);
+            const parsedTo = parseCoordinateKey(to);
+            if (!parsedFrom || !parsedTo) {
+                return [];
+            }
+
+            return [[parsedFrom, parsedTo] as [Coordinate, Coordinate]];
+        });
+
+        if (parsedBestRoutes.length > 0) {
+            return parsedBestRoutes;
+        }
     }
 
     return result.order.slice(0, -1).flatMap((_, index) => {
@@ -29,17 +43,17 @@ const toBestRoutes = (
             return [];
         }
 
-        return [[from, to] as [string, string]];
+        return [[from, to] as [Coordinate, Coordinate]];
     });
 };
 
 const buildRemainingPlaces = (
-    bestRoutes: [string, string][],
+    bestRoutes: [Coordinate, Coordinate][],
     completedLegIndex: number,
 ) => {
     const completedLeg = bestRoutes[completedLegIndex];
     if (!completedLeg) {
-        return [] as string[];
+        return [] as Coordinate[];
     }
 
     const [_, nextOrigin] = completedLeg;
@@ -51,8 +65,8 @@ const buildRemainingPlaces = (
 };
 
 const remapStopWindows = (
-    nextPlaces: string[],
-    previousPlaces: string[],
+    nextPlaces: Coordinate[],
+    previousPlaces: Coordinate[],
     previousStopWindows: StopWindow[],
 ) => {
     if (nextPlaces.length < 3 || previousStopWindows.length === 0) {
@@ -63,11 +77,13 @@ const remapStopWindows = (
         previousStopWindows.map((window) => [window.stopIndex, window]),
     );
     const usedOriginalIndices = new Set<number>();
+    const previousPlaceKeys = previousPlaces.map((place) => toCoordinateKey(place));
+    const nextPlaceKeys = nextPlaces.map((place) => toCoordinateKey(place));
 
-    return nextPlaces.slice(1, -1).flatMap((place, intermediateIndex) => {
-        const originalIndex = previousPlaces.findIndex(
-            (candidate, candidateIndex) =>
-                candidate === place &&
+    return nextPlaceKeys.slice(1, -1).flatMap((placeKey, intermediateIndex) => {
+        const originalIndex = previousPlaceKeys.findIndex(
+            (candidateKey, candidateIndex) =>
+                candidateKey === placeKey &&
                 candidateIndex > 0 &&
                 candidateIndex < previousPlaces.length - 1 &&
                 !usedOriginalIndices.has(candidateIndex),
@@ -100,7 +116,7 @@ export const useRouteRecalculation = () => {
     );
 
     const [recalculationJobId, setRecalculationJobId] = useState<string | null>(null);
-    const [recalculationPlaces, setRecalculationPlaces] = useState<string[]>([]);
+    const [recalculationPlaces, setRecalculationPlaces] = useState<Coordinate[]>([]);
     const recalculationToastIdRef = useRef<Id | null>(null);
 
     const resolveRecalculationToast = useCallback((

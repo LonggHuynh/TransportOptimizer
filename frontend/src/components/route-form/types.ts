@@ -1,8 +1,9 @@
 import { TravelMode } from '../../models/routeOptions';
+import { Coordinate } from '../../models/coordinate';
 
 export interface LocationInput {
     value: string;
-    coordinateKey: string | null;
+    coordinate: Coordinate | null;
 }
 
 export interface IntermediateStopInputValue extends LocationInput {
@@ -21,7 +22,7 @@ export interface RouteFormValues {
 
 export interface NormalizedIntermediateStop {
     label: string;
-    coordinateKey: string | null;
+    coordinate: Coordinate | null;
     index: number;
     deadlineMinutes: number | null;
     serviceMinutes: number;

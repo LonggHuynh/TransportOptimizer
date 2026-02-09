@@ -3,10 +3,11 @@ import './RouteDetails.scss';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useDisplayDirections } from '../../hooks/queries/useDisplayDirections';
 import { useLocationLabelsStore } from '../../hooks/store/useLocationLabelsStore';
-import { parseCoordinateKey } from '../../utils/coordinates';
+import { Coordinate } from '../../models/coordinate';
+import { toCoordinateKey } from '../../utils/coordinates';
 
 interface RouteDetailsProps {
-    route: string[];
+    route: [Coordinate, Coordinate];
     index: number;
     canMarkDone: boolean;
     onMarkDone: () => void;
@@ -20,11 +21,13 @@ const RouteDetails = ({
     isRecalculating,
 }: RouteDetailsProps) => {
     const [from, to] = route;
-    const fromLabel = useLocationLabelsStore((state) => state.labelsByCoordinate[from]);
-    const toLabel = useLocationLabelsStore((state) => state.labelsByCoordinate[to]);
+    const fromKey = toCoordinateKey(from);
+    const toKey = toCoordinateKey(to);
+    const fromLabel = useLocationLabelsStore((state) => state.labelsByCoordinate[fromKey]);
+    const toLabel = useLocationLabelsStore((state) => state.labelsByCoordinate[toKey]);
 
-    const displayFrom = fromLabel ?? (parseCoordinateKey(from) ? from : from.split(',')[0]);
-    const displayTo = toLabel ?? (parseCoordinateKey(to) ? to : to.split(',')[0]);
+    const displayFrom = fromLabel ?? fromKey;
+    const displayTo = toLabel ?? toKey;
 
     const { mutate: displayRoute, isPending } = useDisplayDirections();
 

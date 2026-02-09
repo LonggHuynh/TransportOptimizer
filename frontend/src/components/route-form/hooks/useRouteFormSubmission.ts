@@ -9,15 +9,17 @@ import {
     toStopWindows,
     toUtcIsoFromLocalTime,
 } from '../utils';
+import { Coordinate } from '../../../models/coordinate';
 import { TravelMode } from '../../../models/routeOptions';
 import { StopWindow } from '../../../models/stopWindow';
 import { notify } from '../../../utils/notify';
+import { parseCoordinateKey } from '../../../utils/coordinates';
 import { useComputePathAndTime } from '../../../hooks/queries/useComputePathAndTime';
 import { useRouteJobStatus } from '../../../hooks/queries/useRouteJobStatus';
 import { useRouteComputationStore } from '../../../hooks/store/useRouteComputationStore';
 
 interface RouteMutationPayload {
-    places: string[];
+    places: Coordinate[];
     stopWindows: StopWindow[];
     startTimeUtc: string | null;
     travelMode: TravelMode;
@@ -37,10 +39,22 @@ interface ComputeRouteResult {
 
 const toBestRoutes = (
     result: ComputeRouteResult,
-    places: string[],
-): [string, string][] => {
+    places: Coordinate[],
+): [Coordinate, Coordinate][] => {
     if (result.bestRoutes && result.bestRoutes.length > 0) {
-        return result.bestRoutes;
+        const parsedBestRoutes = result.bestRoutes.flatMap(([from, to]) => {
+            const parsedFrom = parseCoordinateKey(from);
+            const parsedTo = parseCoordinateKey(to);
+            if (!parsedFrom || !parsedTo) {
+                return [];
+            }
+
+            return [[parsedFrom, parsedTo] as [Coordinate, Coordinate]];
+        });
+
+        if (parsedBestRoutes.length > 0) {
+            return parsedBestRoutes;
+        }
     }
 
     return result.order.slice(0, -1).flatMap((_, index) => {
@@ -50,7 +64,7 @@ const toBestRoutes = (
             return [];
         }
 
-        return [[from, to] as [string, string]];
+        return [[from, to] as [Coordinate, Coordinate]];
     });
 };
 
@@ -61,7 +75,7 @@ export const useRouteFormSubmission = ({
         (state) => state.setComputedRouteResult,
     );
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
-    const [activeJobPlaces, setActiveJobPlaces] = useState<string[]>([]);
+    const [activeJobPlaces, setActiveJobPlaces] = useState<Coordinate[]>([]);
     const submitToastIdRef = useRef<Id | null>(null);
 
     const resolveSubmitToast = useCallback((
@@ -181,7 +195,7 @@ export const useRouteFormSubmission = ({
         const originLabel = values.origin.value.trim();
         if (!originLabel) {
             addValidationError('Start location is required');
-        } else if (!values.origin.coordinateKey) {
+        } else if (!values.origin.coordinate) {
             addValidationError('Start location must be selected from suggestions');
         }
 
@@ -190,7 +204,7 @@ export const useRouteFormSubmission = ({
 
         if (!destinationLabel) {
             addValidationError('End location is required');
-        } else if (!destinationValue.coordinateKey) {
+        } else if (!destinationValue.coordinate) {
             addValidationError('End location must be selected from suggestions');
         }
 
@@ -204,7 +218,7 @@ export const useRouteFormSubmission = ({
                 return;
             }
 
-            if (!stop.coordinateKey) {
+            if (!stop.coordinate) {
                 addValidationError(`Job stop ${index + 1} must be selected from suggestions`);
             }
         });
@@ -213,8 +227,8 @@ export const useRouteFormSubmission = ({
         const stopWindowsForRequest = toStopWindows(normalizedStops);
 
         const { places, missingStopNumber } = buildPlacesPayload(
-            values.origin.coordinateKey,
-            destinationValue.coordinateKey,
+            values.origin.coordinate,
+            destinationValue.coordinate,
             normalizedStops,
         );
         if (!places) {

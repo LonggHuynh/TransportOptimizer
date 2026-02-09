@@ -4,6 +4,7 @@ import RouteDetails from './RouteDetails';
 import { useRouteComputationStore } from '../../hooks/store/useRouteComputationStore';
 import { useResultPanelState } from './hooks/useResultPanelState';
 import { useRouteRecalculation } from './hooks/useRouteRecalculation';
+import { toCoordinateKey } from '../../utils/coordinates';
 
 import './Result.scss';
 
@@ -101,7 +102,7 @@ const Result = () => {
                                         canMarkDone={index === 0 && routeLegCount > 1}
                                         onMarkDone={() => handleDoneAndRecalculate(index)}
                                         isRecalculating={isRecalculating}
-                                        key={`${route[0]}-${route[1]}-${index}`}
+                                        key={`${toCoordinateKey(route[0])}-${toCoordinateKey(route[1])}-${index}`}
                                     />
                                 ))}
                             </div>

@@ -33,7 +33,7 @@ import { useStopWindowsStore } from '../../hooks/store/useStopWindowsStore';
 import { useRouteFormSubmission } from './hooks/useRouteFormSubmission';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
 import { TRAVEL_MODES, TravelMode } from '../../models/routeOptions';
-import { parseCoordinateKey } from '../../utils/coordinates';
+import { toCoordinateKey } from '../../utils/coordinates';
 
 const RouteForm = () => {
     const setIntermediateList = useIntermediateListStore(
@@ -49,8 +49,8 @@ const RouteForm = () => {
         useForm<RouteFormValues>({
             defaultValues: {
                 sameDestination: true,
-                origin: { value: '', coordinateKey: null },
-                destination: { value: '', coordinateKey: null },
+                origin: { value: '', coordinate: null },
+                destination: { value: '', coordinate: null },
                 stops: [],
                 departTimeLocal: toTimeLocalValue(new Date()),
                 travelMode: 'driving',
@@ -74,11 +74,11 @@ const RouteForm = () => {
         useWatch({ control, name: 'sameDestination' }) ?? false;
     const origin = useWatch({ control, name: 'origin' }) ?? {
         value: '',
-        coordinateKey: null,
+        coordinate: null,
     };
     const destination = useWatch({ control, name: 'destination' }) ?? {
         value: '',
-        coordinateKey: null,
+        coordinate: null,
     };
     const stops = useWatch({ control, name: 'stops' }) ?? [];
     const departTimeLocal =
@@ -104,27 +104,25 @@ const RouteForm = () => {
     }, [departTimeLocal, setIntermediateList, setStopWindows, stops]);
 
     const handleRememberLocation = (suggestion: MapboxSuggestion) => {
-        if (!suggestion.coordinateKey) {
+        if (!suggestion.coordinate) {
             return;
         }
 
         rememberLocation({
-            coordinateKey: suggestion.coordinateKey,
+            coordinateKey: toCoordinateKey(suggestion.coordinate),
             label: suggestion.label,
         });
     };
 
     const handleLocate = (location: LocationInput) => {
-        if (!location.coordinateKey) {
+        if (!location.coordinate) {
             return;
         }
 
-        const coordinates = parseCoordinateKey(location.coordinateKey);
-        if (!coordinates) {
-            return;
-        }
-
-        setCenter({ lat: coordinates.latitude, lng: coordinates.longitude });
+        setCenter({
+            lat: location.coordinate.latitude,
+            lng: location.coordinate.longitude,
+        });
     };
 
     const updateStopAtIndex = (
@@ -147,7 +145,7 @@ const RouteForm = () => {
     };
 
     const handleSelectOrigin = (suggestion: MapboxSuggestion) => {
-        if (!suggestion.coordinateKey) {
+        if (!suggestion.coordinate) {
             return;
         }
 
@@ -156,14 +154,14 @@ const RouteForm = () => {
             'origin',
             {
                 value: suggestion.label,
-                coordinateKey: suggestion.coordinateKey,
+                coordinate: suggestion.coordinate,
             },
             { shouldDirty: true },
         );
     };
 
     const handleSelectDestination = (suggestion: MapboxSuggestion) => {
-        if (!suggestion.coordinateKey) {
+        if (!suggestion.coordinate) {
             return;
         }
 
@@ -172,7 +170,7 @@ const RouteForm = () => {
             'destination',
             {
                 value: suggestion.label,
-                coordinateKey: suggestion.coordinateKey,
+                coordinate: suggestion.coordinate,
             },
             { shouldDirty: true },
         );
@@ -182,8 +180,8 @@ const RouteForm = () => {
         index: number,
         suggestion: MapboxSuggestion,
     ) => {
-        const coordinateKey = suggestion.coordinateKey;
-        if (!coordinateKey) {
+        const coordinate = suggestion.coordinate;
+        if (!coordinate) {
             return;
         }
 
@@ -191,7 +189,7 @@ const RouteForm = () => {
         updateStopAtIndex(index, (item) => ({
             ...item,
             value: suggestion.label,
-            coordinateKey,
+            coordinate,
         }));
     };
 
@@ -203,7 +201,9 @@ const RouteForm = () => {
             props as React.HTMLAttributes<HTMLLIElement> & {
                 key?: React.Key;
             };
-        const optionKey = option.coordinateKey ?? option.label;
+        const optionKey = option.coordinate
+            ? toCoordinateKey(option.coordinate)
+            : option.label;
 
         return (
             <li key={optionKey} {...optionProps}>
@@ -244,9 +244,9 @@ const RouteForm = () => {
                                 'origin',
                                 {
                                     value: nextValue,
-                                    coordinateKey:
+                                    coordinate:
                                         origin.value === nextValue
-                                            ? origin.coordinateKey
+                                            ? origin.coordinate
                                             : null,
                                 },
                                 { shouldDirty: true },
@@ -282,7 +282,7 @@ const RouteForm = () => {
                             />
                         )}
                     />
-                    {origin.coordinateKey ? (
+                    {origin.coordinate ? (
                         <button
                             type="button"
                             className="inputLocateButton"
@@ -312,9 +312,9 @@ const RouteForm = () => {
                                     'destination',
                                     {
                                         value: nextValue,
-                                        coordinateKey:
+                                        coordinate:
                                             destination.value === nextValue
-                                                ? destination.coordinateKey
+                                                ? destination.coordinate
                                                 : null,
                                     },
                                     { shouldDirty: true },
@@ -350,7 +350,7 @@ const RouteForm = () => {
                                 />
                             )}
                         />
-                        {destination.coordinateKey ? (
+                        {destination.coordinate ? (
                             <button
                                 type="button"
                                 className="inputLocateButton"
@@ -449,16 +449,16 @@ const RouteForm = () => {
                                     key={field.id}
                                     value={stop.value}
                                     placeholder={`Job stop ${index + 1}`}
-                                    hasCoordinate={Boolean(stop.coordinateKey)}
+                                    hasCoordinate={Boolean(stop.coordinate)}
                                     deadlineTimeLocal={stop.deadlineTimeLocal}
                                     serviceMinutes={stop.serviceMinutes}
                                     onChange={(value) => {
                                         updateStopAtIndex(index, (item) => ({
                                             ...item,
                                             value,
-                                            coordinateKey:
+                                            coordinate:
                                                 item.value === value
-                                                    ? item.coordinateKey
+                                                    ? item.coordinate
                                                     : null,
                                         }));
                                     }}

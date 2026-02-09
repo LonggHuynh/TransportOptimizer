@@ -1,8 +1,10 @@
 import { useMutation, UseMutationOptions } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { apiInstance } from '../../api';
+import { Coordinate } from '../../models/coordinate';
 import { TravelMode } from '../../models/routeOptions';
 import { StopWindow } from '../../models/stopWindow';
+import { toCoordinateKey } from '../../utils/coordinates';
 import { notify } from '../../utils/notify';
 import { useRouteComputationStore } from '../store/useRouteComputationStore';
 
@@ -12,7 +14,7 @@ interface ComputeRouteQueuedResponse {
 }
 
 interface ComputeOrderInput {
-    places: string[];
+    places: Coordinate[];
     stopWindows: StopWindow[];
     startTimeUtc: string | null;
     travelMode: TravelMode;
@@ -24,10 +26,11 @@ const enqueueComputeRoute = async ({
     startTimeUtc,
     travelMode,
 }: ComputeOrderInput): Promise<ComputeRouteQueuedResponse> => {
+    const serializedPlaces = places.map((place) => toCoordinateKey(place));
     const response = await apiInstance.post<ComputeRouteQueuedResponse>(
         'Route/ComputeOrder',
         {
-            places,
+            places: serializedPlaces,
             stopWindows,
             startTimeUtc,
             travelMode,

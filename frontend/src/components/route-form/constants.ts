@@ -2,7 +2,7 @@ import { IntermediateStopInputValue } from './types';
 
 export const DEFAULT_STOP: IntermediateStopInputValue = {
     value: '',
-    coordinateKey: null,
+    coordinate: null,
     deadlineTimeLocal: '',
     serviceMinutes: '',
 };

@@ -1,4 +1,5 @@
 import { StopWindow } from '../../models/stopWindow';
+import { Coordinate } from '../../models/coordinate';
 import { IntermediateStopInputValue, NormalizedIntermediateStop } from './types';
 
 export const toLocalDateTimeFromTime = (timeLocal: string): Date | null => {
@@ -105,7 +106,7 @@ export const normalizeIntermediateStops = (
 
         acc.push({
             label,
-            coordinateKey: item.coordinateKey,
+            coordinate: item.coordinate,
             index,
             deadlineMinutes: parsedDeadline,
             serviceMinutes: parsedServiceMinutes,
@@ -130,34 +131,34 @@ export const toStopWindows = (normalizedStops: NormalizedIntermediateStop[]): St
     });
 
 export const buildPlacesPayload = (
-    originCoordinateKey: string | null,
-    destinationCoordinateKey: string | null,
+    originCoordinate: Coordinate | null,
+    destinationCoordinate: Coordinate | null,
     normalizedStops: NormalizedIntermediateStop[],
 ): {
-    places: string[] | null;
+    places: Coordinate[] | null;
     missingStopNumber: number | null;
 } => {
-    if (!originCoordinateKey || !destinationCoordinateKey) {
+    if (!originCoordinate || !destinationCoordinate) {
         return {
             places: null,
             missingStopNumber: null,
         };
     }
 
-    const intermediatePlaceKeys: string[] = [];
+    const intermediatePlaces: Coordinate[] = [];
     for (const stop of normalizedStops) {
-        if (!stop.coordinateKey) {
+        if (!stop.coordinate) {
             return {
                 places: null,
                 missingStopNumber: stop.index + 1,
             };
         }
 
-        intermediatePlaceKeys.push(stop.coordinateKey);
+        intermediatePlaces.push(stop.coordinate);
     }
 
     return {
-        places: [originCoordinateKey, ...intermediatePlaceKeys, destinationCoordinateKey],
+        places: [originCoordinate, ...intermediatePlaces, destinationCoordinate],
         missingStopNumber: null,
     };
 };

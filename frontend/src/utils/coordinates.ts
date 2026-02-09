@@ -1,11 +1,13 @@
+import { Coordinate } from '../models/coordinate';
+
 const COORDINATE_PRECISION = 6;
 
-export const toCoordinateKey = (longitude: number, latitude: number): string =>
+export const toCoordinateKey = ({ longitude, latitude }: Coordinate): string =>
     `${longitude.toFixed(COORDINATE_PRECISION)},${latitude.toFixed(COORDINATE_PRECISION)}`;
 
 export const parseCoordinateKey = (
     coordinateKey: string,
-): { longitude: number; latitude: number } | null => {
+): Coordinate | null => {
     const parts = coordinateKey.split(',').map((part) => part.trim());
     if (parts.length !== 2) {
         return null;
@@ -20,4 +22,3 @@ export const parseCoordinateKey = (
 
     return { longitude, latitude };
 };
-
