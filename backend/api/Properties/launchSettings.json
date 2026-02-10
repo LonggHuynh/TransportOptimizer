@@ -18,7 +18,10 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "GOOGLE_APPLICATION_CREDENTIALS": "../pathoptimizer-486102-973fd8fb3bcb.json",
-        "GOOGLE_CLOUD_QUOTA_PROJECT": "pathoptimizer-486102"
+        "GOOGLE_CLOUD_QUOTA_PROJECT": "pathoptimizer-486102",
+        "OTEL_SERVICE_NAME": "transport-optimizer-backend",
+        "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4318/v1/traces",
+        "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf"
       }
     },
     "https": {
@@ -30,7 +33,10 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "GOOGLE_APPLICATION_CREDENTIALS": "../pathoptimizer-486102-973fd8fb3bcb.json",
-        "GOOGLE_CLOUD_QUOTA_PROJECT": "pathoptimizer-486102"
+        "GOOGLE_CLOUD_QUOTA_PROJECT": "pathoptimizer-486102",
+        "OTEL_SERVICE_NAME": "transport-optimizer-backend",
+        "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4318/v1/traces",
+        "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf"
       }
     },
     "IIS Express": {
@@ -40,7 +46,10 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "GOOGLE_APPLICATION_CREDENTIALS": "../pathoptimizer-486102-973fd8fb3bcb.json",
-        "GOOGLE_CLOUD_QUOTA_PROJECT": "pathoptimizer-486102"
+        "GOOGLE_CLOUD_QUOTA_PROJECT": "pathoptimizer-486102",
+        "OTEL_SERVICE_NAME": "transport-optimizer-backend",
+        "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4318/v1/traces",
+        "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf"
       }
     }
   }
