@@ -29,20 +29,12 @@ export interface DemoScenarioOption {
 
 export const DEMO_SCENARIOS: DemoScenarioOption[] = [
     {
+        fileName: 'helsinki-last-mile-delivery',
+        label: 'Helsinki Last-Mile',
+    },
+    {
         fileName: 'helsinki-tampere-multi-stop',
-        label: 'Helsinki-Tampere XL',
-    },
-    {
-        fileName: 'sf-peninsula-priority-calls',
-        label: 'SF Priority Calls',
-    },
-    {
-        fileName: 'austin-loop-maintenance',
-        label: 'Austin Loop',
-    },
-    {
-        fileName: 'chicago-downtown-rush',
-        label: 'Chicago Rush',
+        label: 'Helsinki-Tampere Intercity',
     },
 ];
 

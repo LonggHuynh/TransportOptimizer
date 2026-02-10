@@ -1,0 +1,95 @@
+{
+    "name": "Helsinki Last-Mile Delivery Shift",
+    "description": "Urban parcel run from a central depot with realistic service times and soft deadlines.",
+    "sameDestination": true,
+    "origin": {
+        "label": "Pasila Station, Helsinki, Finland",
+        "coordinate": {
+            "latitude": 60.1989,
+            "longitude": 24.9337
+        }
+    },
+    "destination": {
+        "label": "Pasila Station, Helsinki, Finland",
+        "coordinate": {
+            "latitude": 60.1989,
+            "longitude": 24.9337
+        }
+    },
+    "departTimeLocal": "08:10",
+    "travelMode": "driving",
+    "stops": [
+        {
+            "label": "Hakaniemi Market Hall, Helsinki, Finland",
+            "coordinate": {
+                "latitude": 60.1798,
+                "longitude": 24.9505
+            },
+            "deadlineTimeLocal": "08:50",
+            "serviceMinutes": 8
+        },
+        {
+            "label": "Katajanokka Ferry Terminal, Helsinki, Finland",
+            "coordinate": {
+                "latitude": 60.1676,
+                "longitude": 24.9752
+            },
+            "deadlineTimeLocal": "09:25",
+            "serviceMinutes": 10
+        },
+        {
+            "label": "Kamppi Centre, Helsinki, Finland",
+            "coordinate": {
+                "latitude": 60.1697,
+                "longitude": 24.9325
+            },
+            "deadlineTimeLocal": "10:00",
+            "serviceMinutes": 12
+        },
+        {
+            "label": "Ruoholahti Shopping Center, Helsinki, Finland",
+            "coordinate": {
+                "latitude": 60.1631,
+                "longitude": 24.9139
+            },
+            "deadlineTimeLocal": "10:35",
+            "serviceMinutes": 10
+        },
+        {
+            "label": "Munkkiniemi Boulevard, Helsinki, Finland",
+            "coordinate": {
+                "latitude": 60.1966,
+                "longitude": 24.8787
+            },
+            "deadlineTimeLocal": "11:05",
+            "serviceMinutes": 7
+        },
+        {
+            "label": "Leppavaara Station, Espoo, Finland",
+            "coordinate": {
+                "latitude": 60.2186,
+                "longitude": 24.8118
+            },
+            "deadlineTimeLocal": "11:45",
+            "serviceMinutes": 10
+        },
+        {
+            "label": "Otaniemi Aalto University, Espoo, Finland",
+            "coordinate": {
+                "latitude": 60.1842,
+                "longitude": 24.8283
+            },
+            "deadlineTimeLocal": "12:20",
+            "serviceMinutes": 12
+        },
+        {
+            "label": "Tripla Mall Pickup Point, Pasila, Helsinki, Finland",
+            "coordinate": {
+                "latitude": 60.1985,
+                "longitude": 24.9331
+            },
+            "deadlineTimeLocal": "13:00",
+            "serviceMinutes": 15
+        }
+    ]
+}
