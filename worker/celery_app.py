@@ -3,10 +3,11 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 from celery import Celery
+from celery.signals import worker_process_init
 
 from config import Settings
 from redis_client import normalize_redis_url
-from telemetry import configure_observability
+from telemetry import configure_logging, configure_observability
 
 
 def _normalize_broker_url(raw_url: str) -> str:
@@ -30,7 +31,7 @@ def _resolve_broker_url(override: str | None, fallback: str, settings: Settings)
 
 
 settings = Settings()
-configure_observability(settings)
+configure_logging()
 broker_url = _resolve_broker_url(settings.celery_broker_url, settings.redis_url, settings)
 backend_url = (
     _normalize_broker_url(settings.celery_result_backend)
@@ -51,5 +52,11 @@ app.conf.update(
     task_acks_late=True,
     task_reject_on_worker_lost=True,
 )
+
+
+@worker_process_init.connect
+def _configure_observability_for_worker_process(**_: object) -> None:
+    configure_observability(settings)
+
 
 import tasks  # noqa: F401
