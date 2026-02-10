@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from exact_route_solver import ExactRouteSolver
-from heuristic_route_solver import HeuristicRouteSolver
 from models import RouteResult, StopWindow
 from route_solver import compute_route as compute_route_v2
-from route_solver_common import (
+from solvers.exact_route_solver import ExactRouteSolver
+from solvers.heuristic_route_solver import HeuristicRouteSolver
+from solvers.route_solver_common import (
     StopConstraint,
     build_stop_constraints as _build_stop_constraints,
     compute_total_time_seconds as _compute_total_time_seconds,

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Protocol, Sequence
 
-from exact_route_solver import ExactRouteSolver
-from heuristic_route_solver import HeuristicRouteSolver
-from route_solver_common import StopConstraint
+from solvers.exact_route_solver import ExactRouteSolver
+from solvers.heuristic_route_solver import HeuristicRouteSolver
+from solvers.route_solver_common import StopConstraint
 
 EXACT_SOLVER_MAX_INTERMEDIATE_STOPS = 14
 

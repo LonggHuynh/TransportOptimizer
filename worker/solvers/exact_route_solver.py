@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from route_solver_common import (
+from solvers.route_solver_common import (
     StopConstraint,
     compute_total_time_seconds,
     departure_after_service,
