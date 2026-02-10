@@ -95,9 +95,7 @@ export const useRouteFormSubmission = ({
         },
     });
 
-    const routeStatusQuery = useRouteJobStatus(activeJobId, {
-
-    });
+    const routeStatusQuery = useRouteJobStatus(activeJobId);
 
     useEffect(() => {
         if (!activeJobId || !routeStatusQuery.data) {
