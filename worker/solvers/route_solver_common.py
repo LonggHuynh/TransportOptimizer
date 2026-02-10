@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
-from models import StopWindow
+from pydantic import ValidationError
+
+from models import StopWindow, StopWindowInput
 
 SECONDS_PER_MINUTE = 60
 MAX_WINDOW_MINUTES = 24 * 60 - 1
@@ -28,20 +30,28 @@ def _to_seconds(minutes: int) -> int:
 
 
 def build_stop_constraints(
-    stop_windows: Sequence[StopWindow],
+    stop_windows: Sequence[StopWindowInput],
     node_count: int,
 ) -> list[StopConstraint]:
     constraints = [StopConstraint() for _ in range(node_count)]
 
-    for stop_window in stop_windows:
-        stop_index = _parse_int(stop_window.get("stopIndex"))
-        if stop_index is None or stop_index < 0 or stop_index >= node_count:
+    for raw_stop_window in stop_windows:
+        if isinstance(raw_stop_window, StopWindow):
+            stop_window = raw_stop_window
+        else:
+            try:
+                stop_window = StopWindow.model_validate(raw_stop_window)
+            except ValidationError:
+                continue
+
+        stop_index = stop_window.stop_index
+        if stop_index < 0 or stop_index >= node_count:
             continue
 
         current = constraints[stop_index]
-        window_start = _parse_int(stop_window.get("windowStartMinutes"))
-        window_end = _parse_int(stop_window.get("windowEndMinutes"))
-        service_minutes = _parse_int(stop_window.get("serviceMinutes"))
+        window_start = stop_window.window_start_minutes
+        window_end = stop_window.window_end_minutes
+        service_minutes = stop_window.service_minutes
 
         start_seconds = (
             _to_seconds(min(MAX_WINDOW_MINUTES, window_start))

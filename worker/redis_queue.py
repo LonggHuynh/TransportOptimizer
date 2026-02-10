@@ -37,7 +37,7 @@ class RedisQueue:
         data = self._db.get(self._job_payload_key(job_id))
         if not data:
             return None
-        return json.loads(data)
+        return RouteJobPayload.model_validate_json(data)
 
     def update_status(
         self,

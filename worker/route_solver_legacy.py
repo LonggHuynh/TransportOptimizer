@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from models import RouteResult, StopWindow
+from models import RouteResult, StopWindowInput
 from route_solver import compute_route as compute_route_v2
 from solvers.exact_route_solver import ExactRouteSolver
 from solvers.heuristic_route_solver import HeuristicRouteSolver
@@ -43,6 +43,6 @@ def _solve_simulated_annealing_tsp(
 
 def compute_route(
     dist: Sequence[Sequence[int]],
-    stop_windows: Sequence[StopWindow],
+    stop_windows: Sequence[StopWindowInput],
 ) -> RouteResult:
     return compute_route_v2(dist, stop_windows)
