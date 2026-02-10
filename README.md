@@ -36,6 +36,46 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 | `GoogleMaps:TilesApiUrl` | Tiles base URL (default: `https://tile.googleapis.com/v1`). |
 | `GoogleMaps:PlacesApiUrl` | Places base URL (default: `https://places.googleapis.com/v1`). |
 | `GoogleMaps:RoutesApiUrl` | Routes base URL (default: `https://routes.googleapis.com`). |
+| `OTEL_SERVICE_NAME` | OpenTelemetry service name for backend traces (default: `transport-optimizer-backend`). |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP endpoint for backend trace export (for example `http://otel-collector:4318/v1/traces`). |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | OTLP protocol for backend exporter. Use `http/protobuf` for HTTP endpoint mode. |
+
+### Worker Runtime Environment Variables
+
+| Variable Name | Description |
+| ------------- | ----------- |
+| `REDIS_URL` | Redis endpoint or URL used by worker. |
+| `CELERY_QUEUE` | Celery queue key (default: `route`). |
+| `OTEL_SERVICE_NAME` | OpenTelemetry service name for worker traces (default: `transport-optimizer-worker`). |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP endpoint for worker trace export (for example `http://otel-collector:4318/v1/traces`). |
+
+### Local Trace Server (Collector + Jaeger)
+
+Start local dependencies:
+
+```bash
+docker compose up -d redis jaeger otel-collector
+```
+
+Use these env vars for local backend and worker:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+```
+
+If backend/worker run inside Kubernetes, use:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+```
+
+Jaeger UI:
+
+```bash
+http://localhost:16686
+```
 
 ## Running the application
 
@@ -43,13 +83,12 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 
 ### Deploy locally with Docker compose
 
-Add the backend variables in the .env.local.docker-compose-backend. Start the local cluster
+Start local dependencies (Redis + observability stack):
 
 ```bash
 docker compose up -d
 ```
 
-The application started at port 8001.
 To shutdown
 
 ```bash
