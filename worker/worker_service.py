@@ -9,6 +9,9 @@ from models import (
 )
 from route_solver import compute_route
 
+NO_FEASIBLE_ROUTE_ERROR = "No feasible route found for the provided route constraints."
+UNKNOWN_PROCESSING_ERROR = "Route optimization failed."
+
 
 class JobQueue(Protocol):
     def pop_job(self, timeout: int = 1) -> Optional[str]:
@@ -43,6 +46,15 @@ def process_job(queue: JobQueue, job_id: str, result_ttl_seconds: int) -> None:
         dist = payload.distance_matrix
         stop_windows = payload.stop_windows
         result = compute_route(dist, stop_windows)
+        if result.total_time is None or not result.order:
+            queue.update_status(
+                job_id,
+                STATUS_FAILED,
+                error=NO_FEASIBLE_ROUTE_ERROR,
+                result_ttl_seconds=result_ttl_seconds,
+            )
+            queue.ack_job(job_id)
+            return
 
         queue.update_status(
             job_id,
@@ -52,7 +64,12 @@ def process_job(queue: JobQueue, job_id: str, result_ttl_seconds: int) -> None:
         )
         queue.ack_job(job_id)
     except Exception as exc:
-        queue.update_status(job_id, STATUS_FAILED, error=str(exc))
+        queue.update_status(
+            job_id,
+            STATUS_FAILED,
+            error=str(exc) or UNKNOWN_PROCESSING_ERROR,
+            result_ttl_seconds=result_ttl_seconds,
+        )
         queue.ack_job(job_id)
         time.sleep(0.5)
 

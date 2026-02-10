@@ -56,7 +56,9 @@ class RedisQueue:
     ) -> None:
         job = self._fetch_job(job_id)
         if not job:
-            return
+            if status != STATUS_FAILED:
+                return
+            job = {}
 
         job["jobId"] = job_id
         job["status"] = status
@@ -71,6 +73,11 @@ class RedisQueue:
                 job["error"] = error
             else:
                 job.pop("error", None)
+
+        ttl_seconds = result_ttl_seconds if self._is_terminal_status(status) and result_ttl_seconds > 0 else None
+        if ttl_seconds is not None:
+            self._db.set(self._job_key(job_id), json.dumps(job), ex=ttl_seconds)
+            return
 
         self._db.set(self._job_key(job_id), json.dumps(job), keepttl=True)
 
