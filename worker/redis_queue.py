@@ -16,10 +16,14 @@ class RedisQueue:
         redis_client,
         queue_key: str = "{route}:queue",
         processing_key: str = "{route}:queue:processing",
+        dlq_key: str = "{route}:queue:dlq",
+        dlq_max_entries: int = 1000,
     ) -> None:
         self._db = redis_client
         self._queue_key = queue_key
         self._processing_key = processing_key
+        self._dlq_key = dlq_key
+        self._dlq_max_entries = dlq_max_entries
         self._job_key_prefix = "{route}:job:"
 
     def pop_job(self, timeout: int = 1) -> Optional[str]:
@@ -69,10 +73,20 @@ class RedisQueue:
             job.pop("result", None)
             if status == STATUS_FAILED and error is not None:
                 job["error"] = error
+                self._push_dlq(job_id, error)
             else:
                 job.pop("error", None)
 
         self._db.set(self._job_key(job_id), json.dumps(job), keepttl=True)
+
+    def _push_dlq(self, job_id: str, error: str) -> None:
+        entry = {
+            "jobId": job_id,
+            "error": error,
+            "failedAt": self._now_iso(),
+        }
+        self._db.lpush(self._dlq_key, json.dumps(entry))
+        self._db.ltrim(self._dlq_key, 0, self._dlq_max_entries - 1)
 
     def _job_key(self, job_id: str) -> str:
         return f"{self._job_key_prefix}{job_id}"

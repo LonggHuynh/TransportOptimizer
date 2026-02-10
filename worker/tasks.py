@@ -27,7 +27,11 @@ def _get_queue() -> RedisQueue:
     global _queue
     if _queue is None:
         settings = _get_settings()
-        _queue = RedisQueue(create_redis_client(settings))
+        _queue = RedisQueue(
+            create_redis_client(settings),
+            dlq_key=settings.celery_dlq_key,
+            dlq_max_entries=settings.celery_dlq_max_entries,
+        )
     return _queue
 
 
