@@ -1,0 +1,142 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background: var(--color-page);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: var(--line-height-base);
+}
+
+button,
+input,
+select {
+    font-family: inherit;
+}
+
+button {
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    color: inherit;
+    transition: var(--transition);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+input,
+select {
+    border: none;
+    outline: none;
+    background: transparent;
+}
+
+a {
+    color: inherit;
+}
+
+@keyframes floatIn {
+    from {
+        opacity: 0;
+        transform: translateY(var(--space-12)) scale(var(--scale-float-start));
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.draggable-panel {
+    display: inline-block;
+    pointer-events: auto;
+}
+
+.panel-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    min-height: var(--space-14);
+    padding: var(--space-6) 0;
+    margin-bottom: var(--space-10);
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    font-size: 0;
+    color: transparent;
+    font-weight: 400;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    transition: var(--transition);
+}
+
+.panel-handle::before {
+    content: "";
+    display: block;
+    width: var(--space-50);
+    height: var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--color-border-strong);
+}
+
+.panel-handle__label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+.panel-handle__grip {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: var(--space-14);
+    min-height: var(--space-14);
+    border-radius: var(--radius-pill);
+    border: none;
+    color: var(--color-ink-muted);
+    letter-spacing: 1px;
+    font-family: var(--font-mono);
+    font-size: var(--text-tiny);
+    opacity: var(--opacity-muted);
+    line-height: 1;
+}
+
+.panel-handle--compact {
+    padding: var(--space-4) 0;
+    margin-bottom: var(--space-8);
+}
+
+.panel-handle:active {
+    cursor: grabbing;
+}
+
+.panel-handle__hint {
+    display: none;
+}
+
+.react-draggable-dragging .panel-handle {
+    background: transparent;
+    border-color: transparent;
+}
+
+.react-draggable-dragging .panel-handle::before {
+    background: var(--color-ink-muted);
+}

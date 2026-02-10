@@ -284,52 +284,22 @@ variable "redis_k8s_service_name" {
   }
 }
 
-variable "mapbox_api_url" {
+variable "google_maps_api_url" {
   type        = string
-  description = "Mapbox API base URL."
-  default     = "https://api.mapbox.com"
+  description = "Google Maps API base URL."
+  default     = "https://maps.googleapis.com/maps/api"
 }
 
-variable "mapbox_tile_style_id" {
+variable "google_maps_tile_map_type" {
   type        = string
-  description = "Mapbox tile style ID."
-  default     = "mapbox/streets-v12"
+  description = "Google Maps Static API map type."
+  default     = "roadmap"
 }
 
-variable "mapbox_tile_resolution" {
-  type        = string
-  description = "Mapbox tile resolution."
-  default     = "low"
-}
-
-variable "mapbox_tile_size" {
+variable "google_maps_tile_size" {
   type        = number
-  description = "Mapbox tile size in pixels."
+  description = "Google Maps tile size in pixels."
   default     = 256
-}
-
-variable "mapbox_geocode_cache_minutes" {
-  type        = number
-  description = "Cache duration for successful geocodes (minutes)."
-  default     = 1440
-}
-
-variable "mapbox_geocode_failure_cache_minutes" {
-  type        = number
-  description = "Cache duration for failed geocodes (minutes)."
-  default     = 10
-}
-
-variable "mapbox_directions_profile" {
-  type        = string
-  description = "Mapbox directions profile."
-  default     = "driving"
-}
-
-variable "mapbox_matrix_profile" {
-  type        = string
-  description = "Mapbox matrix profile."
-  default     = "driving"
 }
 
 variable "cors_allowed_origins" {
@@ -338,16 +308,16 @@ variable "cors_allowed_origins" {
   default     = []
 }
 
-variable "mapbox_access_token" {
+variable "google_maps_api_key" {
   type        = string
-  description = "Mapbox access token for the backend."
+  description = "Google Maps API key for the backend."
   default     = ""
   sensitive   = true
 }
 
-variable "mapbox_access_token_secret" {
+variable "google_maps_api_key_secret" {
   type        = string
-  description = "Secret Manager secret resource name or secret id for Mapbox access token."
+  description = "Optional Secret Manager reference for Google Maps API key when using external secret sync."
   default     = ""
 }
 

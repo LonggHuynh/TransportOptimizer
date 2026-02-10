@@ -1,0 +1,517 @@
+.routePanel {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    pointer-events: auto;
+
+    .routeForm {
+        pointer-events: auto;
+    }
+}
+
+.routeForm {
+    background: var(--color-panel);
+    padding: var(--space-28);
+    display: flex;
+    flex-direction: column;
+    width: min(90vw, var(--space-340));
+    max-height: calc(100vh - var(--space-64));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    gap: var(--space-18);
+    border: var(--border-width) solid var(--color-border-strong);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-2xl);
+    animation: floatIn var(--duration-enter) var(--easing-enter) both;
+
+    .panel-handle {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    h1 {
+        margin: 0;
+    }
+
+    p {
+        margin: 0;
+        color: var(--color-ink-muted);
+        font-size: var(--text-input);
+    }
+}
+
+.subtitle {
+    margin-top: calc(var(--space-10) * -1);
+    font-size: var(--text-body-md);
+}
+
+.demoScenarioBar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    padding: var(--space-10);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-panel-muted);
+}
+
+.demoScenarioBar__title {
+    font-size: var(--text-micro);
+    letter-spacing: var(--tracking-base);
+    color: var(--color-ink-muted);
+}
+
+.demoScenarioBar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.demoScenarioButton {
+    min-height: var(--space-30);
+    padding: 0 var(--space-10);
+    border-radius: var(--radius-sm);
+    border: var(--border-width) solid var(--color-border);
+    background: var(--color-panel);
+    color: var(--color-ink);
+    font-size: var(--text-micro);
+    letter-spacing: var(--tracking-base);
+    box-shadow: none;
+
+    &:hover,
+    &:focus-visible {
+        transform: none;
+        border-color: var(--color-border-strong);
+        background: var(--color-panel-muted);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+
+.inputLine {
+    > input {
+        height: var(--space-44);
+        padding: 0 var(--space-14);
+        font-size: var(--text-input);
+        border-radius: var(--radius-md);
+        background: var(--color-input-bg);
+        border: var(--border-width) solid var(--color-border);
+        width: 100%;
+        transition: var(--transition);
+
+        &:focus {
+            outline: none;
+            border-color: var(--color-border-strong);
+            box-shadow: var(--focus-ring);
+            background: var(--color-surface-strong);
+        }
+
+        &::placeholder {
+            color: var(--color-ink-muted);
+            opacity: var(--opacity-muted);
+        }
+    }
+
+    .input {
+        flex: 1;
+    }
+
+    button {
+        width: var(--space-44);
+        height: var(--space-44);
+        border-radius: var(--radius-md);
+        background: var(--color-accent-strong);
+        color: var(--color-panel);
+        display: grid;
+        place-items: center;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .depotLocateButton {
+        width: var(--space-34);
+        height: var(--space-34);
+        border-radius: var(--radius-sm);
+        background: var(--color-panel-muted);
+        color: var(--color-ink-muted);
+        border: var(--border-width) solid var(--color-border);
+        box-shadow: none;
+        flex: 0 0 auto;
+
+        svg {
+            font-size: var(--text-icon);
+        }
+
+        &:hover,
+        &:focus-visible {
+            transform: none;
+            background: var(--color-panel);
+            color: var(--color-ink);
+            border-color: var(--color-border-strong);
+        }
+    }
+
+    .inputLocateButton {
+        display: none;
+
+        &:focus-visible {
+            display: grid;
+        }
+    }
+
+    &:not(.stopLine):focus-within .inputLocateButton {
+        display: grid;
+    }
+
+    .addButton {
+        width: 100%;
+        min-height: var(--space-40);
+        padding: 0 var(--space-14);
+        background: transparent;
+        color: var(--color-ink);
+        border: var(--border-width) dashed var(--color-border-strong);
+        box-shadow: none;
+        letter-spacing: var(--tracking-base);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover,
+        &:focus-visible {
+            transform: none;
+            background: var(--color-panel-muted);
+            border-color: var(--color-ink);
+        }
+    }
+
+    .removeStopButton {
+        background: var(--color-panel-muted);
+        color: var(--color-ink);
+        border: var(--border-width) solid var(--color-border);
+        box-shadow: none;
+
+        &:hover {
+            background: var(--color-panel);
+        }
+    }
+}
+
+.toggleOrigin {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    padding: var(--space-8) var(--space-12);
+    border-radius: var(--radius-md);
+    background: var(--color-panel-muted);
+    border: var(--border-width) solid var(--color-border);
+}
+
+.toggleSwitch {
+    margin-left: auto;
+}
+
+.travelOptions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-10);
+}
+
+.travelOptionField {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.travelOptionLabel {
+    font-size: var(--text-micro);
+    color: var(--color-ink-muted);
+    letter-spacing: var(--tracking-base);
+}
+
+.travelOptionInput {
+    height: var(--space-40);
+    border-radius: var(--radius-md);
+    border: var(--border-width) solid var(--color-border);
+    background: var(--color-input-bg);
+    color: var(--color-ink);
+    padding: 0 var(--space-12);
+    font-size: var(--text-body);
+
+    &:focus {
+        border-color: var(--color-border-strong);
+        box-shadow: var(--focus-ring);
+    }
+}
+
+.travelOptionSelect {
+    padding-right: var(--space-28);
+}
+
+.route-autocomplete {
+    flex: 1;
+    min-width: 0;
+
+    .MuiOutlinedInput-root {
+        height: var(--space-44);
+        border-radius: var(--radius-md);
+        background: var(--color-input-bg);
+
+        &:hover .MuiOutlinedInput-notchedOutline {
+            border-color: var(--color-border-strong);
+        }
+
+        &.Mui-focused {
+            box-shadow: none;
+
+            .MuiOutlinedInput-notchedOutline {
+                border-color: var(--color-border-strong);
+                border-width: var(--border-width);
+            }
+        }
+    }
+
+    .MuiOutlinedInput-notchedOutline {
+        border: var(--border-width) solid var(--color-border);
+    }
+
+    .MuiInputBase-input {
+        padding: 0 var(--space-14);
+        font-size: var(--text-input);
+        color: var(--color-ink);
+
+        &::placeholder {
+            color: var(--color-ink-muted);
+            opacity: var(--opacity-muted);
+        }
+
+        &:focus-visible {
+            box-shadow: none;
+        }
+    }
+
+    .MuiAutocomplete-endAdornment {
+        right: var(--space-10);
+    }
+
+    .MuiAutocomplete-clearIndicator,
+    .MuiAutocomplete-popupIndicator {
+        color: var(--color-ink-muted);
+    }
+
+    .MuiAutocomplete-popper {
+        z-index: var(--z-menu);
+    }
+
+    .MuiAutocomplete-paper {
+        border-radius: var(--radius-md);
+        border: var(--border-width) solid var(--color-border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .MuiAutocomplete-option {
+        font-size: var(--text-body-md);
+        padding: var(--space-8) var(--space-12);
+
+        &[aria-selected="true"],
+        &.Mui-focused {
+            background: var(--color-panel-muted);
+        }
+    }
+}
+
+.stopLine {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-6);
+    padding: 0;
+    border: none;
+    background: transparent;
+
+    .stopLineTop {
+        display: flex;
+        align-items: center;
+        gap: var(--space-6);
+        width: 100%;
+
+        .route-autocomplete {
+            flex: 1;
+            min-width: 0;
+        }
+
+        &:focus-within .inputLocateButton {
+            display: grid;
+        }
+    }
+
+    .stopIconButton {
+        width: var(--space-30);
+        height: var(--space-30);
+        border-radius: var(--radius-xs);
+        padding: 0;
+        background: transparent;
+        color: var(--color-ink-muted);
+        border: var(--border-width) solid transparent;
+        box-shadow: none;
+
+        svg {
+            font-size: var(--text-icon);
+        }
+
+        &:hover,
+        &:focus-visible {
+            background: transparent;
+            color: var(--color-ink);
+            border-color: transparent;
+            box-shadow: none;
+            transform: none;
+        }
+    }
+
+    .stopLineBottom {
+        display: flex;
+        align-items: center;
+        gap: var(--space-8);
+        padding-left: var(--space-2);
+        flex-wrap: nowrap;
+    }
+
+    .stopEndWindow {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        height: var(--space-34);
+        padding: 0;
+        margin: 0;
+        border: none;
+        background: transparent;
+        color: var(--color-ink-muted);
+        white-space: nowrap;
+
+        &:focus-within {
+            color: var(--color-ink);
+        }
+    }
+
+    .stopStayWindow {
+        margin-left: 0;
+    }
+
+    .stopEndPrefix,
+    .stopEndSuffix {
+        font-size: var(--text-micro);
+        color: var(--color-ink-muted);
+        letter-spacing: var(--tracking-base);
+    }
+
+    .stopDeadlineInput {
+        width: var(--space-30);
+        min-width: var(--space-30);
+        height: auto;
+        padding: 0;
+        border: none;
+        border-bottom: var(--border-width) solid var(--color-border);
+        border-radius: 0;
+        background: transparent;
+        color: var(--color-ink);
+        font-size: var(--text-input-sm);
+        font-weight: 600;
+        text-align: center;
+        box-shadow: none;
+
+        &:focus {
+            border: none;
+            border-bottom: var(--border-width) solid var(--color-border-strong);
+            box-shadow: none;
+            background: transparent;
+        }
+
+        &::placeholder {
+            color: var(--color-ink-muted);
+        }
+
+        &::-webkit-inner-spin-button,
+        &::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        &[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+    }
+
+    .stopServiceInput {
+        width: var(--space-28);
+        min-width: var(--space-28);
+    }
+
+    .stopDeadlineTimeInput {
+        width: auto;
+        min-width: var(--space-64);
+        padding: 0 var(--space-2);
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .removeStopButton {
+        width: var(--space-24);
+        height: var(--space-24);
+        background: transparent;
+        border-color: transparent;
+        color: var(--color-ink-muted);
+
+        svg {
+            font-size: var(--text-sm);
+        }
+
+        &:hover {
+            background: transparent;
+            border-color: transparent;
+            color: var(--color-ink);
+        }
+    }
+
+    button:hover {
+        transform: none;
+    }
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.intermediateList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+}
+
+.emptyHint {
+    margin: 0;
+    color: var(--color-ink-muted);
+    font-size: var(--text-body);
+}
+
+@media (max-width: 1100px) {
+    .routePanel {
+        flex-direction: column;
+        gap: var(--space-10);
+    }
+}
+
+@media (max-width: 900px) {
+    .routeForm {
+        max-height: calc(100vh - var(--space-40));
+    }
+
+    .travelOptions {
+        grid-template-columns: 1fr;
+    }
+}

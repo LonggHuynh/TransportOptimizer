@@ -2,24 +2,23 @@ namespace api.Configuration
 {
     public class AppOptions
     {
-        public MapboxOptions? Mapbox { get; set; }
+        public GoogleMapsOptions? GoogleMaps { get; set; }
         public CorsSettingsOptions? CorsSettings { get; set; }
         public RedisOptions? Redis { get; set; }
         public CeleryOptions? Celery { get; set; }
     }
 
-    public class MapboxOptions
+    public class GoogleMapsOptions
     {
-        public string? AccessToken { get; set; }
-        public string? AccessTokenSecret { get; set; }
-        public string? ApiUrl { get; set; }
-        public string? TileStyleId { get; set; }
-        public string? TileResolution { get; set; } = "low";
+        public string[] ServiceAccountScopes { get; set; } = ["https://www.googleapis.com/auth/cloud-platform"];
+        public string? QuotaProject { get; set; }
+        public string TilesApiUrl { get; set; } = "https://tile.googleapis.com/v1";
+        public string PlacesApiUrl { get; set; } = "https://places.googleapis.com/v1";
+        public string RoutesApiUrl { get; set; } = "https://routes.googleapis.com";
         public int TileSize { get; set; } = 256;
-        public int GeocodeCacheMinutes { get; set; } = 1440;
-        public int GeocodeFailureCacheMinutes { get; set; } = 10;
-        public string? DirectionsProfile { get; set; } = "driving";
-        public string? MatrixProfile { get; set; } = "driving";
+        public string TileMapType { get; set; } = "roadmap";
+        public string TileLanguage { get; set; } = "en-US";
+        public string TileRegion { get; set; } = "US";
     }
 
     public class CorsSettingsOptions
@@ -49,5 +48,6 @@ namespace api.Configuration
     {
         public string Queue { get; set; } = "route";
         public string TaskName { get; set; } = "route.process_job";
+        public TimeSpan JobTtl { get; set; } = TimeSpan.FromMinutes(5);
     }
 }

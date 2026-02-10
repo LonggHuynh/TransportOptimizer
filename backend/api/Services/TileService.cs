@@ -5,9 +5,9 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace api.Services
 {
-    public class TileService(IMapboxClient mapboxClient, AppOptions appOptions, IMemoryCache cache) : ITileService
+    public class TileService(IGoogleTilesClient googleTilesClient, AppOptions appOptions, IMemoryCache cache) : ITileService
     {
-        private readonly IMapboxClient _mapboxClient = mapboxClient;
+        private readonly IGoogleTilesClient _googleTilesClient = googleTilesClient;
         private readonly AppOptions _appOptions = appOptions;
         private readonly IMemoryCache _cache = cache;
 
@@ -20,15 +20,16 @@ namespace api.Services
 
         public async Task<TileServiceResult> GetTileAsync(int z, int x, int y, string? ifNoneMatch)
         {
-            var styleId = _appOptions.Mapbox?.TileStyleId;
-            if (string.IsNullOrWhiteSpace(styleId))
+            var googleOptions = _appOptions.GoogleMaps;
+            if (googleOptions is null)
             {
                 return new TileServiceResult(StatusCodes.Status400BadRequest, null, null, null, null,
-                    "Mapbox tile style is missing.");
+                    "Google Maps configuration is missing.");
             }
 
-            var tileSize = ResolveTileSize(_appOptions.Mapbox);
-            var cacheKey = $"tiles:{styleId}:{tileSize}:{z}:{x}:{y}";
+            var tileSize = ResolveTileSize(googleOptions);
+            var mapType = ResolveMapType(googleOptions);
+            var cacheKey = $"tiles:{mapType}:{tileSize}:{z}:{x}:{y}";
             if (_cache.TryGetValue(cacheKey, out object? cached))
             {
                 if (cached is string marker && marker == NotFoundMarker)
@@ -47,7 +48,7 @@ namespace api.Services
                 }
             }
 
-            var tile = await _mapboxClient.GetTileAsync(styleId, tileSize, z, x, y);
+            var tile = await _googleTilesClient.GetTileAsync(tileSize, z, x, y, mapType);
             if (tile == null)
             {
                 _cache.Set(cacheKey, NotFoundMarker, new MemoryCacheEntryOptions
@@ -67,14 +68,21 @@ namespace api.Services
             return new TileServiceResult(StatusCodes.Status200OK, tile.Data, tile.ContentType, etag, CacheControlValue, null);
         }
 
-        private static int ResolveTileSize(MapboxOptions? options)
+        private static int ResolveTileSize(GoogleMapsOptions options)
         {
-            var resolution = options?.TileResolution?.Trim().ToLowerInvariant();
-            return resolution switch
+            return Math.Clamp(options.TileSize, 64, 640);
+        }
+
+        private static string ResolveMapType(GoogleMapsOptions options)
+        {
+            var mapType = options.TileMapType?.Trim().ToLowerInvariant();
+            return mapType switch
             {
-                "high" => 512,
-                "low" => 256,
-                _ => options?.TileSize ?? 256,
+                "roadmap" => "roadmap",
+                "satellite" => "satellite",
+                "hybrid" => "hybrid",
+                "terrain" => "terrain",
+                _ => "roadmap",
             };
         }
 

@@ -1,0 +1,109 @@
+.container {
+    position: relative;
+    z-index: var(--z-content);
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.dragLayer {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+    overflow: hidden;
+    touch-action: none;
+    pointer-events: none;
+}
+
+.dragPanel {
+    position: absolute;
+    pointer-events: auto;
+
+    &--planner {
+        top: var(--space-32);
+        left: var(--space-32);
+        pointer-events: auto;
+    }
+
+    &--result {
+        top: var(--space-32);
+        right: var(--space-32);
+    }
+
+    .panel-handle {
+        cursor: grab;
+
+        &:active {
+            cursor: grabbing;
+        }
+    }
+
+    &.react-draggable-dragging .panel-handle {
+        cursor: grabbing;
+    }
+}
+
+.calculateRouteButton,
+.addButton {
+    border-radius: var(--radius-md);
+    font-weight: 600;
+}
+
+.calculateRouteButton {
+    background: var(--color-accent-strong);
+    font-size: var(--text-button);
+    color: var(--color-panel);
+    padding: var(--space-14) var(--space-22);
+    margin-top: var(--space-4);
+    box-shadow: var(--shadow-sm);
+    width: 100%;
+    &:hover {
+        transform: translateY(var(--lift-hover));
+        box-shadow: var(--shadow-md);
+    }
+}
+
+.title {
+    font-size: var(--text-title-lg);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+}
+
+.addButton {
+    align-self: stretch;
+    background: transparent;
+    color: var(--color-ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-6);
+    min-height: var(--space-40);
+    padding: 0 var(--space-14);
+    border-radius: var(--radius-md);
+    border: var(--border-width) dashed var(--color-border-strong);
+    font-size: var(--text-body);
+    box-shadow: none;
+    letter-spacing: var(--tracking-base);
+}
+
+.inputLine {
+    display: flex;
+    width: 100%;
+    gap: var(--space-10);
+    align-items: center;
+}
+
+@media (max-width: 900px) {
+    .dragPanel {
+        &--planner {
+            top: var(--space-20);
+            left: var(--space-20);
+        }
+
+        &--result {
+            top: auto;
+            bottom: var(--space-20);
+            right: var(--space-20);
+        }
+    }
+}

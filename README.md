@@ -2,7 +2,7 @@
 
 ## Description
 
-TransportOptimizer assists users in efficiently planning their travel route by sequencing their desired destinations. Leveraging the modified Traveling Salesman Problem (TSP) algorithm, it lets users apply optional constraints, such as mandating the sequence of specific locations. We harness the power of the Mapbox APIs (via a backend proxy) to determine travel times and map visuals.
+TransportOptimizer assists users in efficiently planning their travel route by sequencing their desired destinations. Leveraging the modified Traveling Salesman Problem (TSP) algorithm, it lets users apply optional constraints, such as mandating the sequence of specific locations. The app uses Google Maps APIs for map rendering, geocoding/autocomplete, directions, and time-aware matrix optimization.
 
 ## Tech stack
 
@@ -24,22 +24,18 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 | Variable Name                       | Description                                                                                                                                                                                           |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VITE_API_URL`                      | URL of the backend API (default: `/api`).                                                                                                                                                             |
-| `VITE_TILE_URL`                     | Optional override for the backend tile proxy endpoint (default: `${VITE_API_URL}/tiles/{z}/{x}/{y}.png`).                                                                                           |
+| `VITE_TILE_URL`                     | Optional override for the backend tile endpoint (default: `${VITE_API_URL}/tiles/{z}/{x}/{y}.png`).                                                                                                 |
 
 ### Backend Runtime Environment Variables
 
 | Variable Name                 | Description                                                                  |
 | ----------------------------- | ---------------------------------------------------------------------------- |
 | `CorsSettings:AllowedOrigins` | Origins for CORS settings in the backend. No cors needed for the deployment. |
-| `Mapbox:AccessToken`          | Mapbox access token used by the backend.                                     |
-| `Mapbox:ApiUrl`               | API URL for Mapbox, used by the backend (e.g. `https://api.mapbox.com`).      |
-| `Mapbox:TileStyleId`          | Style identifier for tiles (e.g. `mapbox/streets-v12`).                       |
-| `Mapbox:TileResolution`       | Tile resolution (`low` = 256px, `high` = 512px).                               |
-| `Mapbox:TileSize`             | Tile size in pixels (256 or 512).                                            |
-| `Mapbox:GeocodeCacheMinutes`  | Cache duration for successful geocodes (minutes).                            |
-| `Mapbox:GeocodeFailureCacheMinutes` | Cache duration for failed geocodes (minutes).                           |
-| `Mapbox:DirectionsProfile`    | Profile for directions requests (e.g. `driving`).                             |
-| `Mapbox:MatrixProfile`        | Profile for matrix requests (e.g. `driving`).                                 |
+| `GoogleMaps:ServiceAccountScopes:0` | OAuth scope item. Default is `https://www.googleapis.com/auth/cloud-platform`. |
+| `GoogleMaps:QuotaProject` | Optional billing/quota project ID sent as `X-Goog-User-Project`. |
+| `GoogleMaps:TilesApiUrl` | Tiles base URL (default: `https://tile.googleapis.com/v1`). |
+| `GoogleMaps:PlacesApiUrl` | Places base URL (default: `https://places.googleapis.com/v1`). |
+| `GoogleMaps:RoutesApiUrl` | Routes base URL (default: `https://routes.googleapis.com`). |
 
 ## Running the application
 
@@ -81,3 +77,18 @@ kubectl apply -f infra/k8s/namespaces.yaml
 helm upgrade --install transport-optimizer infra/app-chart --namespace transport-stage
 # or use --namespace transport-prod
 ```
+
+## Google Service Account Setup
+
+1. In Google Cloud Console, open your project and enable: Places API (New), Routes API, and Map Tiles API.
+2. Create a service account:
+`IAM & Admin -> Service Accounts -> Create Service Account`.
+3. Grant required roles to that service account:
+`roles/serviceusage.serviceUsageConsumer` (or another role that includes `serviceusage.services.use`).
+4. Create and download a JSON key for the service account.
+5. Store the key securely on the backend host (for example `/secrets/google-maps-sa.json`).
+6. Configure backend env vars:
+`GOOGLE_APPLICATION_CREDENTIALS=/secrets/google-maps-sa.json`
+and optionally set app config
+`GoogleMaps:QuotaProject=<your-gcp-project-id>`.
+7. Restart backend and verify `/api/tiles/{z}/{x}/{y}.png` and route/geocode flows.

@@ -13,12 +13,6 @@
             "request": "launch",
             "command": "pipenv run python main.py",
             "cwd": "${workspaceFolder}/worker"
-        },
-        {
-            "name": "Backend: Attach",
-            "type": "coreclr",
-            "request": "attach",
-            "processId": "${command:pickProcess}"
         }
     ]
 }

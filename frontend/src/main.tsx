@@ -1,21 +1,20 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './index.css';
+import './styles/tokens.scss';
+import './index.scss';
 import 'leaflet/dist/leaflet.css';
-import { ToastContainer } from 'react-toastify';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './queryClient';
 
 const root = ReactDOM.createRoot(
-    document.getElementById('root') as HTMLElement
+    document.getElementById('root') as HTMLElement,
 );
-const queryClient = new QueryClient();
 
 root.render(
     <React.StrictMode>
         <QueryClientProvider client={queryClient}>
             <App />
-        </QueryClientProvider>,
-
-    </React.StrictMode>
+        </QueryClientProvider>
+    </React.StrictMode>,
 );

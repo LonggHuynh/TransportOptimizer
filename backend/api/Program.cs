@@ -1,21 +1,53 @@
 using api.Configuration;
 using api.Externals;
 using api.Externals.Handlers;
+using api.Middlewares;
 using api.Services;
-using Google.Cloud.SecretManager.V1;
+using Google.Apis.Auth.OAuth2;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var appOptions = new AppOptions();
 builder.Configuration.Bind(appOptions);
-builder.Services.AddSingleton(appOptions);
 
-if (appOptions.Mapbox is not null &&
-    string.IsNullOrWhiteSpace(appOptions.Mapbox.AccessToken) &&
-    !string.IsNullOrWhiteSpace(appOptions.Mapbox.AccessTokenSecret))
+var quotaProject =
+    appOptions.GoogleMaps?.QuotaProject
+    ?? Environment.GetEnvironmentVariable("GOOGLE_CLOUD_QUOTA_PROJECT")
+    ?? Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT");
+
+if (!string.IsNullOrWhiteSpace(quotaProject))
 {
-    appOptions.Mapbox.AccessToken = LoadSecretFromManager(appOptions.Mapbox.AccessTokenSecret);
+    appOptions.GoogleMaps ??= new GoogleMapsOptions();
+    appOptions.GoogleMaps.QuotaProject = quotaProject.Trim();
 }
+
+if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS")) && builder.Environment.IsDevelopment())
+{
+    var backendRootPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, ".."));
+    var localCredentialPath = Directory.EnumerateFiles(backendRootPath, "pathoptimizer-*.json")
+        .FirstOrDefault();
+
+    if (!string.IsNullOrWhiteSpace(localCredentialPath))
+    {
+        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", localCredentialPath);
+    }
+}
+
+builder.Services.AddSingleton(appOptions);
+builder.Services.AddSingleton<GoogleCredential>(_ =>
+{
+    try
+    {
+        return GoogleCredential.GetApplicationDefault();
+    }
+    catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+    {
+        throw new InvalidOperationException(
+            "Failed to load Google credentials via ADC. Configure GOOGLE_APPLICATION_CREDENTIALS or workload identity.",
+            ex
+        );
+    }
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -29,22 +61,41 @@ builder.Services.AddScoped<IGeocodeService, GeocodeService>();
 builder.Services.AddScoped<IDirectionsService, DirectionsService>();
 builder.Services.AddScoped<ITileService, TileService>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddSingleton<IGoogleCredentialFactory, GoogleCredentialFactory>();
 builder.Services.AddSingleton<IConnectionMultiplexerFactory, RedisConnectionFactory>();
 builder.Services.AddSingleton<IRouteJobQueue, RouteJobQueue>();
 
-builder.Services.AddTransient<MapboxAccessTokenHandler>();
-builder.Services.AddHttpClient<IMapboxClient, MapboxClient>(client =>
+builder.Services.AddTransient<GoogleMapsAuthHandler>();
+builder.Services.AddTransient<GoogleMapsErrorHandler>();
+builder.Services.AddHttpClient<IGoogleTilesClient, GoogleTilesClient>(client =>
 {
-    var apiUrl = appOptions.Mapbox?.ApiUrl;
-    if (string.IsNullOrWhiteSpace(apiUrl))
-    {
-        throw new ArgumentException("No Mapbox API Url provided.");
-    }
+    var apiUrl = appOptions.GoogleMaps?.TilesApiUrl ?? "https://tile.googleapis.com/v1";
+    var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
+    client.BaseAddress = new Uri(normalizedApiUrl);
+    client.DefaultRequestHeaders.Add("Accept", "*/*");
+})
+.AddHttpMessageHandler<GoogleMapsAuthHandler>()
+.AddHttpMessageHandler<GoogleMapsErrorHandler>();
 
-    client.BaseAddress = new Uri(apiUrl);
+builder.Services.AddHttpClient<IGooglePlacesClient, GooglePlacesClient>(client =>
+{
+    var apiUrl = appOptions.GoogleMaps?.PlacesApiUrl ?? "https://places.googleapis.com/v1";
+    var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
+    client.BaseAddress = new Uri(normalizedApiUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 })
-.AddHttpMessageHandler<MapboxAccessTokenHandler>();
+.AddHttpMessageHandler<GoogleMapsAuthHandler>()
+.AddHttpMessageHandler<GoogleMapsErrorHandler>();
+
+builder.Services.AddHttpClient<IGoogleRoutesClient, GoogleRoutesClient>(client =>
+{
+    var apiUrl = appOptions.GoogleMaps?.RoutesApiUrl ?? "https://routes.googleapis.com";
+    var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
+    client.BaseAddress = new Uri(normalizedApiUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+})
+.AddHttpMessageHandler<GoogleMapsAuthHandler>()
+.AddHttpMessageHandler<GoogleMapsErrorHandler>();
 
 var allowedOrigins = appOptions.CorsSettings?.AllowedOrigins ?? [];
 builder.Services.AddCors(options =>
@@ -60,6 +111,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -73,43 +126,3 @@ app.UseCors("CorsPolicy");
 app.MapControllers();
 
 app.Run();
-
-static string LoadSecretFromManager(string secretRef)
-{
-    string resolvedRef = secretRef;
-    if (!resolvedRef.Contains("/versions/"))
-    {
-        if (!resolvedRef.StartsWith("projects/", StringComparison.OrdinalIgnoreCase))
-        {
-            var projectId = Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT")
-                            ?? Environment.GetEnvironmentVariable("GCLOUD_PROJECT");
-            if (string.IsNullOrWhiteSpace(projectId))
-            {
-                throw new ArgumentException("Mapbox access token secret must be a full resource name or GOOGLE_CLOUD_PROJECT must be set.");
-            }
-
-            resolvedRef = $"projects/{projectId}/secrets/{resolvedRef}/versions/latest";
-        }
-        else
-        {
-            resolvedRef = $"{resolvedRef}/versions/latest";
-        }
-    }
-
-    try
-    {
-        var client = SecretManagerServiceClient.Create();
-        var response = client.AccessSecretVersion(resolvedRef);
-        var payload = response.Payload?.Data?.ToStringUtf8();
-        if (string.IsNullOrWhiteSpace(payload))
-        {
-            throw new ArgumentException("Secret payload is empty.");
-        }
-
-        return payload;
-    }
-    catch (Exception ex)
-    {
-        throw new ArgumentException($"Failed to load Mapbox access token from Secret Manager: {resolvedRef}", ex);
-    }
-}

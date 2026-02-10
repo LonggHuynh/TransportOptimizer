@@ -1,15 +1,13 @@
 import time
 from typing import Optional, Protocol
 
-from route_solver import compute_route
 from models import (
-    Requirement,
     RouteJobPayload,
     RouteResultDict,
     STATUS_COMPLETED,
     STATUS_FAILED,
-    STATUS_PROCESSING,
 )
+from route_solver import compute_route
 
 
 class JobQueue(Protocol):
@@ -42,10 +40,9 @@ def process_job(queue: JobQueue, job_id: str, result_ttl_seconds: int) -> None:
             queue.ack_job(job_id)
             return
 
-        queue.update_status(job_id, STATUS_PROCESSING)
-        dist = payload.get("distanceMatrix", [])
-        requirements: list[Requirement] = payload.get("requirements", [])
-        result = compute_route(dist, requirements)
+        dist = payload.distance_matrix
+        stop_windows = payload.stop_windows
+        result = compute_route(dist, stop_windows)
 
         queue.update_status(
             job_id,

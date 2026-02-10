@@ -11,15 +11,19 @@ public class ComputeOrderRequest
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public string[] Places { get; init; } = Array.Empty<string>();
-    public List<Requirement> Requirements { get; init; } = new();
+    public Coordinate[] Places { get; init; } = Array.Empty<Coordinate>();
+    public List<StopWindow> StopWindows { get; init; } = new();
+    public DateTimeOffset? StartTimeUtc { get; init; }
+    public string? TravelMode { get; init; }
 
     public string ComputeJobId()
     {
         var payload = new
         {
-            places = Places ?? Array.Empty<string>(),
-            requirements = Requirements ?? new List<Requirement>(),
+            places = Places ?? Array.Empty<Coordinate>(),
+            stopWindows = StopWindows ?? new List<StopWindow>(),
+            startTimeUtc = StartTimeUtc,
+            travelMode = TravelMode,
         };
         var json = JsonSerializer.Serialize(payload, JsonOptions);
         using var sha = SHA256.Create();

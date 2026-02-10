@@ -2,7 +2,8 @@ namespace api.DTOs;
 
 public class ComputeOrderRequestDto
 {
-    
-    public string[] Places { get; init; }
-    public List<RequirementDto> Requirements { get; init; }
+    public CoordinateDto[] Places { get; init; } = Array.Empty<CoordinateDto>();
+    public List<StopWindowDto> StopWindows { get; init; } = new();
+    public DateTimeOffset? StartTimeUtc { get; init; }
+    public string? TravelMode { get; init; }
 }

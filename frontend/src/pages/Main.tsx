@@ -1,55 +1,38 @@
-import React from 'react';
-import { useState } from 'react';
-import CloseIcon from '@mui/icons-material/Close';
-import Map from '../components/Map';
-import Result from '../components/Result';
-import RouteForm from '../components/RouteForm';
-import './Main.css';
-import Requirements from '../components/Requirements';
+import React, { useRef } from 'react';
+import Map from '../components/map/Map';
+import RouteForm from '../components/route-form/RouteForm';
+import Result from '../components/result/Result';
+import './Main.scss';
 import { useCenterStore } from '../hooks/store/useCenterStore';
 import { useDirectionsStore } from '../hooks/store/useDirectionsStore';
-import { useComputePathAndTime } from '../hooks/queries/useComputePathAndTime';
-import { toast } from 'react-toastify';
+import Draggable from 'react-draggable';
 
 const Main = () => {
-
-
-    const [showReq, setShowReq] = useState(false);
-    const { enqueueMutation, computedResult } = useComputePathAndTime();
     // Not direct subscription but to force mapping re-render.
-    useCenterStore((state) => state.center); 
+    useCenterStore((state) => state.center);
     useDirectionsStore((state) => state.directionsResponse);
+    const plannerPanelRef = useRef<HTMLDivElement>(null);
 
-    const handleCompute = (places: string[]) => {
-        toast('Computing best route');
-        enqueueMutation.mutate({ places });
-    };
     return (
         <>
-            <Map />  
+            <Map />
             <div className="container">
-                <div className="console">
-                    <RouteForm
-                        toggleRequirements={() => setShowReq(true)}
-                        onCompute={handleCompute}
-                    />
-
-                    {showReq && (
-                        <div className="requirements">
-                            <div className="closeIcon" onClick={() => setShowReq(false)}>
-                                {' '}
-                                <CloseIcon />
-                            </div>
-                            <Requirements />
+                <div className="dragLayer">
+                    <Draggable
+                        nodeRef={plannerPanelRef}
+                        handle=".panel-handle"
+                        cancel="input,textarea,button,select,option,.MuiSwitch-root,.MuiAutocomplete-root,.MuiAutocomplete-popper,.MuiAutocomplete-option"
+                        bounds="parent"
+                    >
+                        <div
+                            ref={plannerPanelRef}
+                            className="draggable-panel dragPanel dragPanel--planner"
+                        >
+                            <RouteForm />
                         </div>
-                    )}
+                    </Draggable>
+                    <Result />
                 </div>
-                <Result
-                    routes={computedResult.bestRoutes}
-                    estimatedTime={computedResult.totalTime}
-                    status={computedResult.status}
-                    error={computedResult.error}
-                />
             </div>
         </>
     );

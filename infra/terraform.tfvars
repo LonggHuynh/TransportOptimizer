@@ -68,13 +68,8 @@ redis_k8s_service_enabled     = true
 redis_k8s_service_name        = "redis"
 
 # App config (non-secret values)
-mapbox_api_url                      = "https://api.mapbox.com"
-mapbox_tile_style_id                = "mapbox/streets-v12"
-mapbox_tile_resolution              = "low"
-mapbox_tile_size                    = 256
-mapbox_geocode_cache_minutes        = 1440
-mapbox_geocode_failure_cache_minutes = 10
-mapbox_directions_profile           = "driving"
-mapbox_matrix_profile               = "driving"
+google_maps_api_url                = "https://maps.googleapis.com/maps/api"
+google_maps_tile_map_type          = "roadmap"
+google_maps_tile_size              = 256
 
 cors_allowed_origins = ["https://<frontend-domain>"]

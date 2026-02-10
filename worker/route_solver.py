@@ -1,52 +1,29 @@
+from __future__ import annotations
+
 from typing import Sequence
 
-from models import Requirement, RouteResult
+from models import RouteResult, StopWindowInput
+from solvers.route_solver_common import build_stop_constraints, start_departure_seconds
+from solvers.route_solver_selector import RouteSolverSelector
+
+_solver_selector = RouteSolverSelector()
 
 
-def compute_route(dist: Sequence[Sequence[int]], requirements: Sequence[Requirement]) -> RouteResult:
-    req_set = {(req["from"], req["to"]) for req in requirements}
-    n = len(dist)
-    max_val = 10**8
-    minimum_time = [[max_val] * n for _ in range(1 << n)]
-    prev_visit = [[0] * n for _ in range(1 << n)]
+def compute_route(
+    dist: Sequence[Sequence[int]],
+    stop_windows: Sequence[StopWindowInput],
+) -> RouteResult:
+    node_count = len(dist)
+    if node_count == 0:
+        return RouteResult(order=[], total_time=0)
 
-    minimum_time[1][0] = 0
+    constraints = build_stop_constraints(stop_windows, node_count)
+    if node_count == 1:
+        departure = start_departure_seconds(constraints)
+        if departure is None:
+            return RouteResult(order=[], total_time=None)
+        return RouteResult(order=[0], total_time=0)
 
-    for mask in range(1 << n):
-        for last in range(n):
-            if (mask >> last) & 1 == 0:
-                continue
-            for nxt in range(n):
-                if nxt == last or ((mask >> nxt) & 1) == 1:
-                    continue
-
-                valid = True
-                for visited in range(n):
-                    if ((mask >> visited) & 1) == 1 and (nxt, visited) in req_set:
-                        valid = False
-                        break
-                if not valid:
-                    continue
-
-                new_mask = mask | (1 << nxt)
-                cand = minimum_time[mask][last] + dist[last][nxt]
-                if minimum_time[new_mask][nxt] > cand:
-                    minimum_time[new_mask][nxt] = cand
-                    prev_visit[new_mask][nxt] = last
-
-    cur = n - 1
-    cur_mask = (1 << n) - 1
-    best_routes = [cur]
-
-    while cur != 0:
-        prev = prev_visit[cur_mask][cur]
-        cur_mask ^= 1 << cur
-        best_routes.append(prev)
-        cur = prev
-
-    best_routes.reverse()
-    total_time = minimum_time[(1 << n) - 1][n - 1]
-    if total_time >= max_val:
-        total_time = None
-
-    return RouteResult(order=best_routes, total_time=total_time)
+    solver = _solver_selector.select(node_count, constraints)
+    order, total_time = solver.solve(dist, constraints)
+    return RouteResult(order=order, total_time=total_time)
