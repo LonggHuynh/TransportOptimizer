@@ -6,6 +6,7 @@ from celery import Celery
 
 from config import Settings
 from redis_client import normalize_redis_url
+from telemetry import configure_observability
 
 
 def _normalize_broker_url(raw_url: str) -> str:
@@ -29,6 +30,7 @@ def _resolve_broker_url(override: str | None, fallback: str, settings: Settings)
 
 
 settings = Settings()
+configure_observability(settings)
 broker_url = _resolve_broker_url(settings.celery_broker_url, settings.redis_url, settings)
 backend_url = (
     _normalize_broker_url(settings.celery_result_backend)
@@ -46,6 +48,8 @@ app.conf.update(
     accept_content=["json"],
     result_serializer="json",
     task_ignore_result=True,
+    task_acks_late=True,
+    task_reject_on_worker_lost=True,
 )
 
 import tasks  # noqa: F401
