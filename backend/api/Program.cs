@@ -28,18 +28,6 @@ builder.Logging.AddJsonConsole(options =>
 var appOptions = new AppOptions();
 builder.Configuration.Bind(appOptions);
 
-var configuredCredentialPath = builder.Configuration["GOOGLE_APPLICATION_CREDENTIALS"];
-if (
-    string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS"))
-    && !string.IsNullOrWhiteSpace(configuredCredentialPath)
-)
-{
-    var resolvedCredentialPath = Path.IsPathRooted(configuredCredentialPath)
-        ? configuredCredentialPath
-        : Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, configuredCredentialPath));
-    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", resolvedCredentialPath);
-}
-
 var quotaProject =
     appOptions.GoogleMaps?.QuotaProject
     ?? Environment.GetEnvironmentVariable("GOOGLE_CLOUD_QUOTA_PROJECT")
