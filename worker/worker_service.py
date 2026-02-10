@@ -6,7 +6,6 @@ from models import (
     RouteResultDict,
     STATUS_COMPLETED,
     STATUS_FAILED,
-    STATUS_PROCESSING,
 )
 from route_solver import compute_route
 
@@ -41,7 +40,6 @@ def process_job(queue: JobQueue, job_id: str, result_ttl_seconds: int) -> None:
             queue.ack_job(job_id)
             return
 
-        queue.update_status(job_id, STATUS_PROCESSING)
         dist = payload.distance_matrix
         stop_windows = payload.stop_windows
         result = compute_route(dist, stop_windows)

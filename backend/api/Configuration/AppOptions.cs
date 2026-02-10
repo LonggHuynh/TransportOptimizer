@@ -48,5 +48,6 @@ namespace api.Configuration
     {
         public string Queue { get; set; } = "route";
         public string TaskName { get; set; } = "route.process_job";
+        public TimeSpan JobTtl { get; set; } = TimeSpan.FromMinutes(5);
     }
 }
