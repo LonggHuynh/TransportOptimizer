@@ -13,9 +13,6 @@ const Result = () => {
     const estimatedTime = useRouteComputationStore((state) => state.totalTime);
     const status = useRouteComputationStore((state) => state.status);
     const error = useRouteComputationStore((state) => state.error);
-    const resolvedError = status === 'failed'
-        ? (error ?? 'Route optimization failed.')
-        : error;
     const routeLegCount = routes.length;
     const {
         shouldShowResultPanel,
@@ -76,9 +73,7 @@ const Result = () => {
                         </p>
                     </section>
 
-                    {resolvedError && (
-                        <p className="result__message result__message--error">{resolvedError}</p>
-                    )}
+                    {error && <p className="result__message result__message--error">{error}</p>}
                     {isComputing && (
                         <p className="result__message result__message--loading">
                             Optimizing stop order...
