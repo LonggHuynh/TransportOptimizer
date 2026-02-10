@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import {
     Autocomplete,
@@ -9,6 +9,10 @@ import {
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import './RouteForm.scss';
 import { DEFAULT_STOP } from './constants';
+import {
+    DEMO_SCENARIOS,
+    parseDemoScenario,
+} from './demoScenarios';
 import IntermediateStopInput from './IntermediateStopInput';
 import {
     IntermediateStopInputValue,
@@ -69,10 +73,12 @@ const RouteForm = () => {
         fields: stopFields,
         append: appendStop,
         remove: removeStop,
+        replace: replaceStops,
     } = useFieldArray({
         control,
         name: 'stops',
     });
+    const [activeDemoFile, setActiveDemoFile] = useState<string | null>(null);
 
     const sameDestination =
         useWatch({ control, name: 'sameDestination' }) ?? false;
@@ -159,6 +165,75 @@ const RouteForm = () => {
 
     const handleAddStop = () => {
         appendStop({ ...DEFAULT_STOP });
+    };
+
+    const handleLoadDemoScenario = async (fileName: string) => {
+        setActiveDemoFile(fileName);
+        try {
+            const response = await fetch(`/demos/${fileName}.json`);
+            if (!response.ok) {
+                notify.error('Failed to load demo scenario.');
+                return;
+            }
+
+            const parsed = parseDemoScenario(await response.json());
+            if (!parsed) {
+                notify.error('Demo scenario file is invalid.');
+                return;
+            }
+
+            setValue('sameDestination', parsed.sameDestination, {
+                shouldDirty: true,
+            });
+            setValue(
+                'origin',
+                {
+                    value: parsed.origin.label,
+                    coordinate: parsed.origin.coordinate,
+                },
+                { shouldDirty: true },
+            );
+            setValue(
+                'destination',
+                {
+                    value: parsed.destination.label,
+                    coordinate: parsed.destination.coordinate,
+                },
+                { shouldDirty: true },
+            );
+            setValue('departTimeLocal', parsed.departTimeLocal, {
+                shouldDirty: true,
+            });
+            setValue('travelMode', parsed.travelMode, {
+                shouldDirty: true,
+            });
+            replaceStops(
+                parsed.stops.map((stop) => ({
+                    value: stop.label,
+                    coordinate: stop.coordinate,
+                    deadlineTimeLocal: stop.deadlineTimeLocal ?? '',
+                    serviceMinutes:
+                        stop.serviceMinutes === undefined
+                            ? ''
+                            : String(Math.floor(stop.serviceMinutes)),
+                })),
+            );
+
+            handleRememberLocation(parsed.origin.label, parsed.origin.coordinate);
+            handleRememberLocation(
+                parsed.destination.label,
+                parsed.destination.coordinate,
+            );
+            parsed.stops.forEach((stop) =>
+                handleRememberLocation(stop.label, stop.coordinate),
+            );
+
+            notify.success(`Loaded demo case: ${parsed.name}`);
+        } catch {
+            notify.error('Failed to load demo scenario.');
+        } finally {
+            setActiveDemoFile(null);
+        }
     };
 
     const handleSelectOrigin = async (suggestion: GeocodeSuggestion) => {
@@ -285,6 +360,28 @@ const RouteForm = () => {
                     Optimize technician job order with stop deadlines and map
                     preview.
                 </p>
+                <div className="demoScenarioBar">
+                    <span className="demoScenarioBar__title">Demo Cases</span>
+                    <div className="demoScenarioBar__actions">
+                        {DEMO_SCENARIOS.map((scenario) => (
+                            <button
+                                key={scenario.fileName}
+                                type="button"
+                                className="demoScenarioButton"
+                                onClick={() =>
+                                    void handleLoadDemoScenario(
+                                        scenario.fileName,
+                                    )
+                                }
+                                disabled={activeDemoFile !== null}
+                            >
+                                {activeDemoFile === scenario.fileName
+                                    ? 'Loading...'
+                                    : scenario.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
                 <div className="inputLine">
                     <Autocomplete

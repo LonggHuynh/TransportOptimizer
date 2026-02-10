@@ -46,6 +46,52 @@
     font-size: var(--text-body-md);
 }
 
+.demoScenarioBar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    padding: var(--space-10);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-panel-muted);
+}
+
+.demoScenarioBar__title {
+    font-size: var(--text-micro);
+    letter-spacing: var(--tracking-base);
+    color: var(--color-ink-muted);
+}
+
+.demoScenarioBar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+
+.demoScenarioButton {
+    min-height: var(--space-30);
+    padding: 0 var(--space-10);
+    border-radius: var(--radius-sm);
+    border: var(--border-width) solid var(--color-border);
+    background: var(--color-panel);
+    color: var(--color-ink);
+    font-size: var(--text-micro);
+    letter-spacing: var(--tracking-base);
+    box-shadow: none;
+
+    &:hover,
+    &:focus-visible {
+        transform: none;
+        border-color: var(--color-border-strong);
+        background: var(--color-panel-muted);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+
 .inputLine {
     > input {
         height: var(--space-44);
