@@ -4,8 +4,26 @@ using api.Externals.Handlers;
 using api.Middlewares;
 using api.Services;
 using Google.Apis.Auth.OAuth2;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.Configure(options =>
+{
+    options.ActivityTrackingOptions =
+        ActivityTrackingOptions.TraceId
+        | ActivityTrackingOptions.SpanId
+        | ActivityTrackingOptions.ParentId;
+});
+builder.Logging.AddJsonConsole(options =>
+{
+    options.IncludeScopes = true;
+    options.UseUtcTimestamp = true;
+    options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+});
 
 var appOptions = new AppOptions();
 builder.Configuration.Bind(appOptions);
@@ -53,6 +71,31 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
+
+var traceServiceName = builder.Configuration["OTEL_SERVICE_NAME"] ?? "transport-optimizer-backend";
+var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
+var otlpProtocol = builder.Configuration["OTEL_EXPORTER_OTLP_PROTOCOL"];
+builder.Services
+    .AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(traceServiceName))
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation(options => options.RecordException = true)
+            .AddHttpClientInstrumentation(options => options.RecordException = true);
+
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+        {
+            tracing.AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri(otlpEndpoint);
+                if (string.Equals(otlpProtocol, "http/protobuf", StringComparison.OrdinalIgnoreCase))
+                {
+                    options.Protocol = OtlpExportProtocol.HttpProtobuf;
+                }
+            });
+        }
+    });
 
 
 builder.Services.AddScoped<IRouteService, RouteService>();

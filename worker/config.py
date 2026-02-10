@@ -11,3 +11,5 @@ class Settings(BaseSettings):
     celery_broker_url: str | None = None
     celery_result_backend: str | None = None
     celery_queue: str = "route"
+    otel_service_name: str = "transport-optimizer-worker"
+    otel_exporter_otlp_endpoint: str | None = None

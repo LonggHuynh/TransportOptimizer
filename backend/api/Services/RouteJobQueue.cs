@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Text.Json;
 using api.Configuration;
 using api.DTOs;
@@ -50,7 +51,17 @@ public class RouteJobQueue(IConnectionMultiplexerFactory redisFactory, AppOption
         var created = await db.StringSetAsync(jobKey, jobJson, _celeryOptions.JobTtl, When.NotExists);
         if (created)
         {
-            var celeryMessage = CeleryMessageBuilder.Build(_celeryOptions.TaskName, _celeryOptions.Queue, jobId, origin);
+            var currentActivity = Activity.Current;
+            var traceParent = currentActivity?.Id;
+            var traceState = currentActivity?.TraceStateString;
+
+            var celeryMessage = CeleryMessageBuilder.Build(
+                _celeryOptions.TaskName,
+                _celeryOptions.Queue,
+                jobId,
+                origin,
+                traceParent,
+                traceState);
             await db.ListLeftPushAsync(_celeryOptions.Queue, celeryMessage);
         }
 
