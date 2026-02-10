@@ -1,5 +1,9 @@
+import logging
 import time
 from typing import Optional, Protocol
+
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 
 from models import (
     RouteJobPayload,
@@ -8,6 +12,8 @@ from models import (
     STATUS_FAILED,
 )
 from route_solver import compute_route
+
+logger = logging.getLogger(__name__)
 
 
 class JobQueue(Protocol):
@@ -31,12 +37,26 @@ class JobQueue(Protocol):
         ...
 
 
+def _mark_current_span_error(error_message: str, exc: Exception | None = None) -> None:
+    span = trace.get_current_span()
+    span_context = span.get_span_context()
+    if not span_context.is_valid:
+        return
+
+    if exc is not None:
+        span.record_exception(exc)
+    span.set_status(Status(StatusCode.ERROR, error_message))
+
+
 def process_job(queue: JobQueue, job_id: str, result_ttl_seconds: int) -> None:
-    print(f"Processing job {job_id}")
+    logger.info("Processing job %s", job_id)
     try:
         payload = queue.fetch_payload(job_id)
         if not payload:
-            queue.update_status(job_id, STATUS_FAILED, error="Job payload not found.")
+            error = "Job payload not found."
+            _mark_current_span_error(error)
+            logger.error("%s job_id=%s", error, job_id)
+            queue.update_status(job_id, STATUS_FAILED, error=error)
             queue.ack_job(job_id)
             return
 
@@ -52,6 +72,8 @@ def process_job(queue: JobQueue, job_id: str, result_ttl_seconds: int) -> None:
         )
         queue.ack_job(job_id)
     except Exception as exc:
+        _mark_current_span_error(str(exc), exc)
+        logger.exception("Job processing failed job_id=%s", job_id)
         queue.update_status(job_id, STATUS_FAILED, error=str(exc))
         queue.ack_job(job_id)
         time.sleep(0.5)

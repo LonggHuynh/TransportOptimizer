@@ -12,7 +12,13 @@ public static class CeleryMessageBuilder
         DictionaryKeyPolicy = null
     };
 
-    public static string Build(string taskName, string queueName, string jobId, string origin)
+    public static string Build(
+        string taskName,
+        string queueName,
+        string jobId,
+        string origin,
+        string? traceParent = null,
+        string? traceState = null)
     {
         var bodyPayload = new object?[]
         {
@@ -47,6 +53,16 @@ public static class CeleryMessageBuilder
             ["kwargsrepr"] = "{}",
             ["origin"] = origin
         };
+
+        if (!string.IsNullOrWhiteSpace(traceParent))
+        {
+            headers["traceparent"] = traceParent;
+        }
+
+        if (!string.IsNullOrWhiteSpace(traceState))
+        {
+            headers["tracestate"] = traceState;
+        }
 
         var properties = new Dictionary<string, object?>
         {
