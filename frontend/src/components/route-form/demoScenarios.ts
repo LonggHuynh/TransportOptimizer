@@ -29,6 +29,10 @@ export interface DemoScenarioOption {
 
 export const DEMO_SCENARIOS: DemoScenarioOption[] = [
     {
+        fileName: 'helsinki-tampere-multi-stop',
+        label: 'Helsinki-Tampere XL',
+    },
+    {
         fileName: 'sf-peninsula-priority-calls',
         label: 'SF Priority Calls',
     },

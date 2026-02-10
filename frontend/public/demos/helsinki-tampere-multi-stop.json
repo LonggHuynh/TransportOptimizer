@@ -1,0 +1,104 @@
+{
+    "name": "Helsinki to Tampere Multi-Stop Sweep",
+    "description": "Longer dispatch scenario across the Helsinki region up to Tampere with many service points.",
+    "sameDestination": false,
+    "origin": {
+        "label": "Helsinki Central Railway Station, Helsinki, Finland",
+        "coordinate": {
+            "latitude": 60.1719,
+            "longitude": 24.9414
+        }
+    },
+    "destination": {
+        "label": "Tampere Railway Station, Tampere, Finland",
+        "coordinate": {
+            "latitude": 61.4981,
+            "longitude": 23.7736
+        }
+    },
+    "departTimeLocal": "07:15",
+    "travelMode": "driving",
+    "stops": [
+        {
+            "label": "Mall of Tripla, Pasila, Helsinki, Finland",
+            "coordinate": {
+                "latitude": 60.1987,
+                "longitude": 24.9331
+            },
+            "deadlineTimeLocal": "08:00",
+            "serviceMinutes": 15
+        },
+        {
+            "label": "Tapiola Centre, Espoo, Finland",
+            "coordinate": {
+                "latitude": 60.1766,
+                "longitude": 24.8055
+            },
+            "deadlineTimeLocal": "08:40",
+            "serviceMinutes": 20
+        },
+        {
+            "label": "Tikkurila Station, Vantaa, Finland",
+            "coordinate": {
+                "latitude": 60.2934,
+                "longitude": 25.0378
+            },
+            "deadlineTimeLocal": "09:20",
+            "serviceMinutes": 15
+        },
+        {
+            "label": "Porvoo Old Town, Porvoo, Finland",
+            "coordinate": {
+                "latitude": 60.3932,
+                "longitude": 25.6655
+            },
+            "deadlineTimeLocal": "10:40",
+            "serviceMinutes": 25
+        },
+        {
+            "label": "Hyvinkaa Railway Station, Hyvinkaa, Finland",
+            "coordinate": {
+                "latitude": 60.6333,
+                "longitude": 24.859
+            },
+            "deadlineTimeLocal": "11:30",
+            "serviceMinutes": 15
+        },
+        {
+            "label": "Riihimaki Travel Centre, Riihimaki, Finland",
+            "coordinate": {
+                "latitude": 60.737,
+                "longitude": 24.7782
+            },
+            "deadlineTimeLocal": "12:00",
+            "serviceMinutes": 15
+        },
+        {
+            "label": "Hameenlinna Railway Station, Hameenlinna, Finland",
+            "coordinate": {
+                "latitude": 60.9959,
+                "longitude": 24.4643
+            },
+            "deadlineTimeLocal": "12:45",
+            "serviceMinutes": 20
+        },
+        {
+            "label": "Valkeakoski City Center, Valkeakoski, Finland",
+            "coordinate": {
+                "latitude": 61.2642,
+                "longitude": 24.0312
+            },
+            "deadlineTimeLocal": "13:25",
+            "serviceMinutes": 20
+        },
+        {
+            "label": "Nokia City Center, Nokia, Finland",
+            "coordinate": {
+                "latitude": 61.4778,
+                "longitude": 23.5053
+            },
+            "deadlineTimeLocal": "14:10",
+            "serviceMinutes": 15
+        }
+    ]
+}
