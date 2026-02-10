@@ -5,6 +5,7 @@ import { Coordinate } from '../../models/coordinate';
 import { TravelMode } from '../../models/routeOptions';
 import { StopWindow } from '../../models/stopWindow';
 import { useRouteComputationStore } from '../store/useRouteComputationStore';
+import { queryClient } from '../../queryClient';
 
 export interface ComputeRouteQueuedResponse {
     jobId: string;
@@ -37,12 +38,18 @@ const enqueueComputeRoute = async ({
 };
 
 export const useComputePathAndTime = (
-    options: UseMutationOptions<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput> = {},
+    options: UseMutationOptions<
+        ComputeRouteQueuedResponse,
+        AxiosError,
+        ComputeOrderInput
+    > = {},
 ) => {
     const setComputedRouteResult = useRouteComputationStore(
         (state) => state.setComputedRouteResult,
     );
-    const setLastRequest = useRouteComputationStore((state) => state.setLastRequest);
+    const setLastRequest = useRouteComputationStore(
+        (state) => state.setLastRequest,
+    );
     const enqueueMutation = useMutation<
         ComputeRouteQueuedResponse,
         AxiosError,
@@ -63,6 +70,9 @@ export const useComputePathAndTime = (
                 bestRoutes: [],
                 totalTime: null,
             });
+            queryClient.invalidateQueries({
+                queryKey: ['routeJobStatus', data.jobId],
+            });
             options.onSuccess?.(data, variables, context);
         },
         onError: (error, variables, context) => {
@@ -76,5 +86,5 @@ export const useComputePathAndTime = (
         },
     });
 
-    return { enqueueMutation };
+    return enqueueMutation;
 };

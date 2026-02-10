@@ -125,7 +125,6 @@ const IntermediateStopInput = ({
                         className="stopDeadlineInput stopServiceInput"
                         min={0}
                         max={1439}
-                        step={5}
                         placeholder=""
                         value={serviceMinutes}
                         aria-label={`${placeholder} stay for minutes`}

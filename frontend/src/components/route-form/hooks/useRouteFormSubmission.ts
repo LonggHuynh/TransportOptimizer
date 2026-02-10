@@ -28,7 +28,6 @@ interface UseRouteFormSubmissionOptions {
     clearErrors: UseFormClearErrors<RouteFormValues>;
 }
 
-const ROUTE_STATUS_POLL_INTERVAL_MS = 1000;
 
 interface ComputeRouteResult {
     order: number[];
@@ -65,25 +64,25 @@ export const useRouteFormSubmission = ({
     const [activeJobPlaces, setActiveJobPlaces] = useState<Coordinate[]>([]);
     const submitToastIdRef = useRef<Id | null>(null);
 
-    const resolveSubmitToast = useCallback((
-        message: string,
-        tone: 'success' | 'error' = 'success',
-    ) => {
-        if (submitToastIdRef.current) {
-            notify.resolve(submitToastIdRef.current, message, tone);
-            submitToastIdRef.current = null;
-            return;
-        }
+    const resolveSubmitToast = useCallback(
+        (message: string, tone: 'success' | 'error' = 'success') => {
+            if (submitToastIdRef.current) {
+                notify.resolve(submitToastIdRef.current, message, tone);
+                submitToastIdRef.current = null;
+                return;
+            }
 
-        if (tone === 'error') {
-            notify.error(message);
-            return;
-        }
+            if (tone === 'error') {
+                notify.error(message);
+                return;
+            }
 
-        notify.success(message);
-    }, []);
+            notify.success(message);
+        },
+        [],
+    );
 
-    const { enqueueMutation } = useComputePathAndTime({
+    const { mutateAsync: enqueueMutateAsync } = useComputePathAndTime({
         onSuccess: (data, variables) => {
             setActiveJobId(data.jobId);
             setActiveJobPlaces(variables.places);
@@ -97,14 +96,7 @@ export const useRouteFormSubmission = ({
     });
 
     const routeStatusQuery = useRouteJobStatus(activeJobId, {
-        refetchOnWindowFocus: false,
-        refetchInterval: (query) => {
-            const status = query.state.data?.status;
-            if (status === 'completed' || status === 'failed') {
-                return false;
-            }
-            return ROUTE_STATUS_POLL_INTERVAL_MS;
-        },
+
     });
 
     useEffect(() => {
@@ -117,7 +109,10 @@ export const useRouteFormSubmission = ({
             setComputedRouteResult({
                 status: statusResponse.status,
                 error: statusResponse.error,
-                bestRoutes: toBestRoutes(statusResponse.result, activeJobPlaces),
+                bestRoutes: toBestRoutes(
+                    statusResponse.result,
+                    activeJobPlaces,
+                ),
                 totalTime: statusResponse.result.totalTime ?? null,
             });
             resolveSubmitToast('Route optimized.');
@@ -132,7 +127,10 @@ export const useRouteFormSubmission = ({
                 bestRoutes: [],
                 totalTime: null,
             });
-            resolveSubmitToast(statusResponse.error ?? 'Failed to calculate route.', 'error');
+            resolveSubmitToast(
+                statusResponse.error ?? 'Failed to calculate route.',
+                'error',
+            );
             setActiveJobId(null);
             return;
         }
@@ -158,7 +156,9 @@ export const useRouteFormSubmission = ({
 
         setComputedRouteResult({
             status: 'failed',
-            error: routeStatusQuery.error.message || 'Failed to check route status.',
+            error:
+                routeStatusQuery.error.message ||
+                'Failed to check route status.',
             bestRoutes: [],
             totalTime: null,
         });
@@ -172,89 +172,109 @@ export const useRouteFormSubmission = ({
         setComputedRouteResult,
     ]);
 
-    return useCallback(async (values: RouteFormValues): Promise<boolean> => {
-        clearErrors();
-        const validationMessages: string[] = [];
-        const addValidationError = (message: string) => {
-            validationMessages.push(message);
-        };
+    return useCallback(
+        async (values: RouteFormValues): Promise<boolean> => {
+            clearErrors();
+            const validationMessages: string[] = [];
+            const addValidationError = (message: string) => {
+                validationMessages.push(message);
+            };
 
-        const originLabel = values.origin.value.trim();
-        if (!originLabel) {
-            addValidationError('Start location is required');
-        } else if (!values.origin.coordinate) {
-            addValidationError('Start location must be selected from suggestions');
-        }
-
-        const destinationValue = values.sameDestination ? values.origin : values.destination;
-        const destinationLabel = destinationValue.value.trim();
-
-        if (!destinationLabel) {
-            addValidationError('End location is required');
-        } else if (!destinationValue.coordinate) {
-            addValidationError('End location must be selected from suggestions');
-        }
-
-        const routeStartLocal = toLocalDateTimeFromTime(values.departTimeLocal);
-        if (!routeStartLocal) {
-            addValidationError('Depart time is invalid');
-        }
-
-        values.stops.forEach((stop, index) => {
-            if (!stop.value.trim()) {
-                return;
+            const originLabel = values.origin.value.trim();
+            if (!originLabel) {
+                addValidationError('Start location is required');
+            } else if (!values.origin.coordinate) {
+                addValidationError(
+                    'Start location must be selected from suggestions',
+                );
             }
 
-            if (!stop.coordinate) {
-                addValidationError(`Job stop ${index + 1} must be selected from suggestions`);
+            const destinationValue = values.sameDestination
+                ? values.origin
+                : values.destination;
+            const destinationLabel = destinationValue.value.trim();
+
+            if (!destinationLabel) {
+                addValidationError('End location is required');
+            } else if (!destinationValue.coordinate) {
+                addValidationError(
+                    'End location must be selected from suggestions',
+                );
             }
-        });
 
-        const normalizedStops = normalizeIntermediateStops(values.stops, routeStartLocal);
-        const stopWindowsForRequest = toStopWindows(normalizedStops);
-
-        const { places, missingStopNumber } = buildPlacesPayload(
-            values.origin.coordinate,
-            destinationValue.coordinate,
-            normalizedStops,
-        );
-        if (!places) {
-            if (missingStopNumber !== null) {
-                addValidationError(`Job stop ${missingStopNumber} must be selected from suggestions`);
-            } else {
-                addValidationError('Route places are invalid');
+            const routeStartLocal = toLocalDateTimeFromTime(
+                values.departTimeLocal,
+            );
+            if (!routeStartLocal) {
+                addValidationError('Depart time is invalid');
             }
-        }
 
-        const startTimeUtc = toUtcIsoFromLocalTime(values.departTimeLocal);
-        if (!startTimeUtc) {
-            addValidationError('Depart time is invalid');
-        }
+            values.stops.forEach((stop, index) => {
+                if (!stop.value.trim()) {
+                    return;
+                }
 
-        if (validationMessages.length > 0) {
-            notify.error(validationMessages[0]);
-            return false;
-        }
-        if (!places || !startTimeUtc) {
-            notify.error('Route request is invalid');
-            return false;
-        }
+                if (!stop.coordinate) {
+                    addValidationError(
+                        `Job stop ${
+                            index + 1
+                        } must be selected from suggestions`,
+                    );
+                }
+            });
 
-        if (submitToastIdRef.current) {
-            notify.dismiss(submitToastIdRef.current);
-        }
-        submitToastIdRef.current = notify.loading('Optimizing route...');
+            const normalizedStops = normalizeIntermediateStops(
+                values.stops,
+                routeStartLocal,
+            );
+            const stopWindowsForRequest = toStopWindows(normalizedStops);
 
-        try {
-            await enqueueMutation.mutateAsync({
-                places,
-                stopWindows: stopWindowsForRequest,
-                startTimeUtc,
-                travelMode: values.travelMode,
-            } as RouteMutationPayload);
-            return true;
-        } catch {
-            return false;
-        }
-    }, [clearErrors, enqueueMutation, resolveSubmitToast]);
+            const { places, missingStopNumber } = buildPlacesPayload(
+                values.origin.coordinate,
+                destinationValue.coordinate,
+                normalizedStops,
+            );
+            if (!places) {
+                if (missingStopNumber !== null) {
+                    addValidationError(
+                        `Job stop ${missingStopNumber} must be selected from suggestions`,
+                    );
+                } else {
+                    addValidationError('Route places are invalid');
+                }
+            }
+
+            const startTimeUtc = toUtcIsoFromLocalTime(values.departTimeLocal);
+            if (!startTimeUtc) {
+                addValidationError('Depart time is invalid');
+            }
+
+            if (validationMessages.length > 0) {
+                notify.error(validationMessages[0]);
+                return false;
+            }
+            if (!places || !startTimeUtc) {
+                notify.error('Route request is invalid');
+                return false;
+            }
+
+            if (submitToastIdRef.current) {
+                notify.dismiss(submitToastIdRef.current);
+            }
+            submitToastIdRef.current = notify.loading('Optimizing route...');
+
+            try {
+                await enqueueMutateAsync({
+                    places,
+                    stopWindows: stopWindowsForRequest,
+                    startTimeUtc,
+                    travelMode: values.travelMode,
+                } as RouteMutationPayload);
+                return true;
+            } catch {
+                return false;
+            }
+        },
+        [clearErrors, resolveSubmitToast],
+    );
 };

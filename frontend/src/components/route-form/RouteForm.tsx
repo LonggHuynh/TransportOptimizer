@@ -361,7 +361,7 @@ const RouteForm = () => {
                     preview.
                 </p>
                 <div className="demoScenarioBar">
-                    <span className="demoScenarioBar__title">Demo Cases</span>
+                    <span className="demoScenarioBar__title">Examples</span>
                     <div className="demoScenarioBar__actions">
                         {DEMO_SCENARIOS.map((scenario) => (
                             <button

@@ -16,6 +16,8 @@ export interface RouteJobStatusResponse {
     error?: string;
 }
 
+const ROUTE_STATUS_POLL_INTERVAL_MS = 1000;
+
 const fetchRouteStatus = async (
     jobId: string,
 ): Promise<RouteJobStatusResponse> => {
@@ -26,17 +28,36 @@ const fetchRouteStatus = async (
 };
 
 type RouteJobStatusQueryOptions = Omit<
-    UseQueryOptions<RouteJobStatusResponse, AxiosError, RouteJobStatusResponse, [string, string | null]>,
+    UseQueryOptions<
+        RouteJobStatusResponse,
+        AxiosError,
+        RouteJobStatusResponse,
+        [string, string | null]
+    >,
     'queryKey' | 'queryFn'
 >;
 
 export const useRouteJobStatus = (
     jobId: string | null,
     options: RouteJobStatusQueryOptions = {},
-) =>
-    useQuery<RouteJobStatusResponse, AxiosError, RouteJobStatusResponse, [string, string | null]>({
+) => {
+    return useQuery<
+        RouteJobStatusResponse,
+        AxiosError,
+        RouteJobStatusResponse,
+        [string, string | null]
+    >({
         ...options,
+        refetchOnWindowFocus: false,
+        refetchInterval: (query) => {
+            const status = query.state.data?.status;
+            if (status === 'completed' || status === 'failed') {
+                return false;
+            }
+            return ROUTE_STATUS_POLL_INTERVAL_MS;
+        },
         queryKey: ['routeJobStatus', jobId],
         queryFn: () => fetchRouteStatus(jobId!),
         enabled: jobId ? options.enabled : false,
     });
+};

@@ -27,7 +27,6 @@ namespace api.Services
             }
 
             EnsureCoordinateValidity(places);
-            EnsureMatrixElementLimit(places.Length);
 
             var waypoints = places.Select(ToWaypoint).ToList();
             var request = new RoutesComputeRouteMatrixRequest
@@ -171,21 +170,6 @@ namespace api.Services
                     );
                 }
             }
-        }
-
-        private static void EnsureMatrixElementLimit(int locationCount)
-        {
-            var matrixElements = locationCount * locationCount;
-            if (matrixElements <= GoogleMatrixMaxElements)
-            {
-                return;
-            }
-
-            throw new HttpRequestException(
-                $"Too many locations for one optimization request ({locationCount}). Reduce the number of locations and try again.",
-                null,
-                HttpStatusCode.BadRequest
-            );
         }
     }
 }
