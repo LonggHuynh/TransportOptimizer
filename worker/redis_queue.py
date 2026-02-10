@@ -2,7 +2,13 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from models import RouteJobPayload, RouteResultDict
+from models import (
+    RouteJobPayload,
+    RouteResultDict,
+    STATUS_COMPLETED,
+    STATUS_FAILED,
+    STATUS_PROCESSING,
+)
 
 
 class RedisQueue:
@@ -54,9 +60,24 @@ class RedisQueue:
         }
         if error is not None:
             payload["error"] = error
-        self._db.set(self._job_status_key(job_id), json.dumps(payload))
+        status_key = self._job_status_key(job_id)
+        result_key = self._job_result_key(job_id)
+        payload_json = json.dumps(payload)
+
+        if self._is_terminal_status(status) and result_ttl_seconds > 0:
+            self._db.set(status_key, payload_json, ex=result_ttl_seconds)
+        else:
+            self._db.set(status_key, payload_json)
+
         if result is not None:
-            self._db.set(self._job_result_key(job_id), json.dumps(result), ex=result_ttl_seconds)
+            if result_ttl_seconds > 0:
+                self._db.set(result_key, json.dumps(result), ex=result_ttl_seconds)
+            else:
+                self._db.set(result_key, json.dumps(result))
+            return
+
+        if status in {STATUS_PROCESSING, STATUS_FAILED}:
+            self._db.delete(result_key)
 
     def _job_request_key(self, job_id: str) -> str:
         return f"{self._job_key_prefix}{job_id}{self._request_suffix}"
@@ -73,3 +94,7 @@ class RedisQueue:
     @staticmethod
     def _now_iso() -> str:
         return datetime.now(timezone.utc).isoformat()
+
+    @staticmethod
+    def _is_terminal_status(status: str) -> bool:
+        return status in {STATUS_COMPLETED, STATUS_FAILED}
