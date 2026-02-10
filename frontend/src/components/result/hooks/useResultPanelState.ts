@@ -13,11 +13,16 @@ export const useResultPanelState = ({
 }) => {
     const shouldShowResultPanel = Boolean(status || error);
     const hasResult = status === 'completed' && estimatedTime !== null;
+    const hasNoRoute = status === 'completed' && estimatedTime === null;
     const isComputing = status === 'queued' || status === 'processing';
 
     const statusMeta: { label: string; tone: ResultTone } = (() => {
         if (error || status === 'failed') {
             return { label: 'Failed', tone: 'error' };
+        }
+
+        if (hasNoRoute) {
+            return { label: 'No Route', tone: 'error' };
         }
 
         if (isComputing) {
