@@ -8,7 +8,7 @@ from config import Settings
 from celery_app import app
 from redis_client import create_redis_client
 from redis_queue import RedisQueue
-from telemetry import get_tracer
+from telemetry import configure_observability, get_tracer
 from worker_service import process_job
 
 _settings: Settings | None = None
@@ -41,6 +41,7 @@ def _extract_parent_context(task: Task):
 @app.task(name="route.process_job", bind=True)
 def process_route_job(self: Task, job_id: str) -> None:
     settings = _get_settings()
+    configure_observability(settings)
     queue = _get_queue()
     parent_context = _extract_parent_context(self)
 
