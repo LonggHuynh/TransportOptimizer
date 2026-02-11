@@ -101,10 +101,10 @@ jobs:
       - name: Terraform init
         run: terraform -chdir=infra init
 
-      - name: Terraform apply app release
+      - name: Terraform apply
         run: |
           export TF_VAR_backend_image_tag_by_env="{\"${TARGET_ENV}\":\"${BACKEND_TAG}\"}"
           export TF_VAR_worker_image_tag_by_env="{\"${TARGET_ENV}\":\"${WORKER_TAG}\"}"
           export TF_VAR_image_pull_policy_by_env="{\"${TARGET_ENV}\":\"${PULL_POLICY}\"}"
 
-          terraform -chdir=infra apply -auto-approve -target="helm_release.app[\"${TARGET_ENV}\"]"
+          terraform -chdir=infra apply -auto-approve
