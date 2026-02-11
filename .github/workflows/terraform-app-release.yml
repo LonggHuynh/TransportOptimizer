@@ -25,6 +25,14 @@ on:
           - Never
         default: IfNotPresent
         required: true
+      apply_scope:
+        description: "Terraform apply scope"
+        type: choice
+        options:
+          - app
+          - full
+        default: full
+        required: true
   workflow_call:
     inputs:
       environment:
@@ -44,6 +52,11 @@ on:
         type: string
         required: false
         default: IfNotPresent
+      apply_scope:
+        description: "Terraform apply scope (app = helm_release.app target, full = whole stack)"
+        type: string
+        required: false
+        default: full
     secrets:
       TF_API_TOKEN:
         required: true
@@ -68,6 +81,7 @@ jobs:
       BACKEND_TAG: ${{ inputs.backend_tag || github.event.inputs.backend_tag }}
       WORKER_TAG: ${{ inputs.worker_tag || github.event.inputs.worker_tag }}
       PULL_POLICY: ${{ inputs.pull_policy || github.event.inputs.pull_policy }}
+      APPLY_SCOPE: ${{ inputs.apply_scope || github.event.inputs.apply_scope }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -98,6 +112,11 @@ jobs:
             exit 1
           fi
 
+          if [[ ! "${APPLY_SCOPE}" =~ ^(app|full)$ ]]; then
+            echo "Invalid apply_scope value. Use app or full."
+            exit 1
+          fi
+
       - name: Terraform init
         run: terraform -chdir=infra init
 
@@ -125,4 +144,8 @@ jobs:
           export TF_VAR_worker_image_tag_by_env="{\"stage\":\"${worker_stage_tag}\",\"prod\":\"${worker_prod_tag}\"}"
           export TF_VAR_image_pull_policy_by_env="{\"stage\":\"${pull_policy_stage}\",\"prod\":\"${pull_policy_prod}\"}"
 
-          terraform -chdir=infra apply -auto-approve
+          if [[ "${APPLY_SCOPE}" == "app" ]]; then
+            terraform -chdir=infra apply -auto-approve -target="helm_release.app[\"${TARGET_ENV}\"]"
+          else
+            terraform -chdir=infra apply -auto-approve
+          fi
