@@ -46,3 +46,16 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-latest
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+  deploy-worker:
+    name: Deploy worker to target environment
+    needs: build-and-push-worker
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/terraform-app-release.yml
+    with:
+      environment: ${{ github.ref_name }}
+      backend_tag: ${{ format('{0}-latest', github.ref_name) }}
+      worker_tag: ${{ format('sha-{0}', github.sha) }}
+      pull_policy: IfNotPresent
+    secrets:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}

@@ -103,14 +103,20 @@ For direct cluster access, connect to GKE with:
 gcloud container clusters get-credentials transport --region europe-north1 --project pathoptimizer-486102
 ```
 
-Images are published to GHCR from GitHub Actions (`backend.yml`, `worker.yml`) using immutable `sha-<commit>` tags.
+Images are published to GHCR from GitHub Actions (`backend.yml`, `worker.yml`) using:
 
-The recommended release path is the Terraform workflow:
+- `sha-<commit>` immutable tags
+- `<branch>-latest` moving tags (`stage-latest`, `prod-latest`)
 
-1. Trigger `.github/workflows/terraform-app-release.yml`.
-2. Choose `environment` (`stage` or `prod`).
-3. Provide `backend_tag` and `worker_tag` (for example `sha-502f625`).
-4. Use `pull_policy=IfNotPresent` for stage/prod releases (`Always` only for dev-style testing).
+Release behavior:
+
+1. Push to `stage` or `prod` with backend changes:
+   - builds backend image
+   - triggers Terraform targeted apply for `helm_release.app["stage"|"prod"]`
+2. Push to `stage` or `prod` with worker changes:
+   - builds worker image
+   - triggers the same Terraform targeted Helm apply
+3. For manual promotions/rollbacks, trigger `.github/workflows/terraform-app-release.yml` and provide explicit tags.
 
 Required repository secret:
 
