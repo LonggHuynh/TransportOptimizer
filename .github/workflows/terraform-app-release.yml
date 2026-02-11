@@ -1,4 +1,4 @@
-name: Terraform App Release
+name: Terraform Apply
 
 on:
   workflow_dispatch:
@@ -57,7 +57,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy app chart with Terraform
+    name: Run Terraform apply
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || github.event.inputs.environment }}
     env:
@@ -103,8 +103,26 @@ jobs:
 
       - name: Terraform apply
         run: |
-          export TF_VAR_backend_image_tag_by_env="{\"${TARGET_ENV}\":\"${BACKEND_TAG}\"}"
-          export TF_VAR_worker_image_tag_by_env="{\"${TARGET_ENV}\":\"${WORKER_TAG}\"}"
-          export TF_VAR_image_pull_policy_by_env="{\"${TARGET_ENV}\":\"${PULL_POLICY}\"}"
+          # Build full per-env maps so full apply keeps non-target env tags deterministic.
+          backend_stage_tag="stage-latest"
+          backend_prod_tag="prod-latest"
+          worker_stage_tag="stage-latest"
+          worker_prod_tag="prod-latest"
+          pull_policy_stage="IfNotPresent"
+          pull_policy_prod="IfNotPresent"
+
+          if [[ "${TARGET_ENV}" == "stage" ]]; then
+            backend_stage_tag="${BACKEND_TAG}"
+            worker_stage_tag="${WORKER_TAG}"
+            pull_policy_stage="${PULL_POLICY}"
+          else
+            backend_prod_tag="${BACKEND_TAG}"
+            worker_prod_tag="${WORKER_TAG}"
+            pull_policy_prod="${PULL_POLICY}"
+          fi
+
+          export TF_VAR_backend_image_tag_by_env="{\"stage\":\"${backend_stage_tag}\",\"prod\":\"${backend_prod_tag}\"}"
+          export TF_VAR_worker_image_tag_by_env="{\"stage\":\"${worker_stage_tag}\",\"prod\":\"${worker_prod_tag}\"}"
+          export TF_VAR_image_pull_policy_by_env="{\"stage\":\"${pull_policy_stage}\",\"prod\":\"${pull_policy_prod}\"}"
 
           terraform -chdir=infra apply -auto-approve
