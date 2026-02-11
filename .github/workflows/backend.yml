@@ -1,6 +1,7 @@
 name: Backend Deployment
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - stage
@@ -31,6 +32,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set image name
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}-backend" >> $GITHUB_ENV
+
       - name: Build and push backend image
         uses: docker/build-push-action@v4
         with:
@@ -38,5 +42,7 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ghcr.io/longghuynh/transport-backend:latest
-            ghcr.io/longghuynh/transport-backend:sha-${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
