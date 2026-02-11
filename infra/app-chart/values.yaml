@@ -16,8 +16,8 @@ backend:
   enabled: true
   replicaCount: 2
   image:
-    repository: "ghcr.io/longhuynh5713/pathplanner-backend"
-    tag: "latest"
+    repository: "ghcr.io/longhuynh5713/pathplanner-backend:sha-34ee32bd502459c8a15d37fa9c6eb813df400fc2"
+    tag: ""
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
@@ -59,8 +59,8 @@ worker:
   enabled: true
   replicaCount: 1
   image:
-    repository: "ghcr.io/longhuynh5713/pathplanner-worker"
-    tag: "latest"
+    repository: "ghcr.io/longhuynh5713/pathplanner-worker:sha-34ee32bd502459c8a15d37fa9c6eb813df400fc2"
+    tag: ""
     pullPolicy: IfNotPresent
   serviceAccount:
     create: true

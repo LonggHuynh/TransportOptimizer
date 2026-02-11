@@ -104,6 +104,7 @@ resource "helm_release" "app" {
     backend = {
       image = {
         repository = var.backend_image
+        tag        = ""
       }
       service = {
         port          = var.backend_service_port
@@ -133,6 +134,7 @@ resource "helm_release" "app" {
     worker = {
       image = {
         repository = var.worker_image
+        tag        = ""
       }
       serviceAccount = {
         create = true
