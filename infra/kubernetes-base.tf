@@ -87,6 +87,7 @@ resource "helm_release" "app" {
   chart            = "${path.module}/app-chart"
   namespace        = local.k8s_namespace[each.key]
   create_namespace = true
+  timeout          = 1800
 
   values = [yamlencode({
     commonLabels = {

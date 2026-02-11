@@ -35,8 +35,8 @@ services_secondary_cidrs = {
 }
 
 # Images (GHCR)
-backend_image = "ghcr.io/longghuynh/transport-backend:latest"
-worker_image  = "ghcr.io/longghuynh/transport-worker:latest"
+backend_image = "ghcr.io/longhuynh5713/pathplanner-backend:latest"
+worker_image  = "ghcr.io/longhuynh5713/pathplanner-worker:latest"
 
 # GHCR (public) - no pull secret needed
 ghcr_username          = ""
