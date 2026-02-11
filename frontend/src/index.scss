@@ -86,57 +86,57 @@ a {
     user-select: none;
     touch-action: none;
     transition: var(--transition);
-}
 
-.panel-handle::before {
-    content: "";
-    display: block;
-    width: var(--space-50);
-    height: var(--space-2);
-    border-radius: var(--radius-pill);
-    background: var(--color-border-strong);
-}
+    &::before {
+        content: "";
+        display: block;
+        width: var(--space-50);
+        height: var(--space-2);
+        border-radius: var(--radius-pill);
+        background: var(--color-border-strong);
+    }
 
-.panel-handle__label {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-8);
-}
+    &__label {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-8);
+    }
 
-.panel-handle__grip {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    width: var(--space-14);
-    min-height: var(--space-14);
-    border-radius: var(--radius-pill);
-    border: none;
-    color: var(--color-ink-muted);
-    letter-spacing: 1px;
-    font-family: var(--font-mono);
-    font-size: var(--text-tiny);
-    opacity: var(--opacity-muted);
-    line-height: 1;
-}
+    &__grip {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: var(--space-14);
+        min-height: var(--space-14);
+        border-radius: var(--radius-pill);
+        border: none;
+        color: var(--color-ink-muted);
+        letter-spacing: 1px;
+        font-family: var(--font-mono);
+        font-size: var(--text-tiny);
+        opacity: var(--opacity-muted);
+        line-height: 1;
+    }
 
-.panel-handle--compact {
-    padding: var(--space-4) 0;
-    margin-bottom: var(--space-8);
-}
+    &--compact {
+        padding: var(--space-4) 0;
+        margin-bottom: var(--space-8);
+    }
 
-.panel-handle:active {
-    cursor: grabbing;
-}
+    &:active {
+        cursor: grabbing;
+    }
 
-.panel-handle__hint {
-    display: none;
-}
+    &__hint {
+        display: none;
+    }
 
-.react-draggable-dragging .panel-handle {
-    background: transparent;
-    border-color: transparent;
-}
+    .react-draggable-dragging & {
+        background: transparent;
+        border-color: transparent;
 
-.react-draggable-dragging .panel-handle::before {
-    background: var(--color-ink-muted);
+        &::before {
+            background: var(--color-ink-muted);
+        }
+    }
 }
