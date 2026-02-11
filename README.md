@@ -97,19 +97,26 @@ docker compose down
 
 ### Deploy to K8s cluster
 
-You first need to connect to the K8s cluster, e.g.:
+For direct cluster access, connect to GKE with:
 
 ```bash
-aws eks update-kubeconfig --name _your_eks_cluster_name
+gcloud container clusters get-credentials transport --region europe-north1 --project pathoptimizer-486102
 ```
 
-or create your own local cluster, e.g.
+Images are published to GHCR from GitHub Actions (`backend.yml`, `worker.yml`) using immutable `sha-<commit>` tags.
 
-```
-k3d create cluster _your_cluster_name
-```
+The recommended release path is the Terraform workflow:
 
-The k8s cluster will pull the images from DockerHub. After that, apply the k8s files with the environment variables using
+1. Trigger `.github/workflows/terraform-app-release.yml`.
+2. Choose `environment` (`stage` or `prod`).
+3. Provide `backend_tag` and `worker_tag` (for example `sha-502f625`).
+4. Use `pull_policy=IfNotPresent` for stage/prod releases (`Always` only for dev-style testing).
+
+Required repository secret:
+
+- `TF_API_TOKEN`: Terraform Cloud user/team token for workspace access.
+
+Manual Helm deploy is still possible for local experiments:
 
 ```
 kubectl apply -f infra/k8s/namespaces.yaml

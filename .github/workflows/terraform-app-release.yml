@@ -1,0 +1,79 @@
+name: Terraform App Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options:
+          - stage
+          - prod
+        required: true
+      backend_tag:
+        description: "Backend image tag (for example sha-abcdef1234)"
+        required: true
+      worker_tag:
+        description: "Worker image tag (for example sha-abcdef1234)"
+        required: true
+      pull_policy:
+        description: "Kubernetes image pull policy"
+        type: choice
+        options:
+          - IfNotPresent
+          - Always
+          - Never
+        default: IfNotPresent
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-app-release-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy app chart with Terraform
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Validate release inputs
+        shell: bash
+        run: |
+          if [[ ! "${{ github.event.inputs.backend_tag }}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid backend_tag value."
+            exit 1
+          fi
+
+          if [[ ! "${{ github.event.inputs.worker_tag }}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid worker_tag value."
+            exit 1
+          fi
+
+      - name: Terraform init
+        run: terraform -chdir=infra init
+
+      - name: Terraform apply app release
+        env:
+          TARGET_ENV: ${{ github.event.inputs.environment }}
+          BACKEND_TAG: ${{ github.event.inputs.backend_tag }}
+          WORKER_TAG: ${{ github.event.inputs.worker_tag }}
+          PULL_POLICY: ${{ github.event.inputs.pull_policy }}
+        run: |
+          export TF_VAR_backend_image_tag_by_env="{\"${TARGET_ENV}\":\"${BACKEND_TAG}\"}"
+          export TF_VAR_worker_image_tag_by_env="{\"${TARGET_ENV}\":\"${WORKER_TAG}\"}"
+          export TF_VAR_image_pull_policy_by_env="{\"${TARGET_ENV}\":\"${PULL_POLICY}\"}"
+
+          terraform -chdir=infra apply -auto-approve -target="helm_release.app[\"${TARGET_ENV}\"]"

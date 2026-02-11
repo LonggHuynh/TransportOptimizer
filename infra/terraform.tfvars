@@ -9,19 +9,19 @@ cluster_name = "transport"
 gke_mode     = "autopilot" # autopilot | standard
 
 # Network
-vpc_name     = "transport-vpc"
-subnet_name  = "transport-subnet"
-subnet_cidr  = "10.10.0.0/20"
-gke_subnet_name  = "transport-gke-subnet"
-gke_subnet_cidr  = "10.11.0.0/20"
+vpc_name        = "transport-vpc"
+subnet_name     = "transport-subnet"
+subnet_cidr     = "10.10.0.0/20"
+gke_subnet_name = "transport-gke-subnet"
+gke_subnet_cidr = "10.11.0.0/20"
 subnet_cidrs = {
   stage = "10.10.0.0/20"
   prod  = "10.10.16.0/20"
 }
 # If using VPC-native clusters, set secondary ranges
-pods_secondary_range_name     = "pods"
-pods_secondary_cidr           = "10.20.0.0/16"
-gke_pods_secondary_cidr       = "10.22.0.0/16"
+pods_secondary_range_name = "pods"
+pods_secondary_cidr       = "10.20.0.0/16"
+gke_pods_secondary_cidr   = "10.22.0.0/16"
 pods_secondary_cidrs = {
   stage = "10.20.0.0/16"
   prod  = "10.21.0.0/16"
@@ -35,8 +35,14 @@ services_secondary_cidrs = {
 }
 
 # Images (GHCR)
-backend_image = "ghcr.io/longhuynh5713/pathplanner-backend"
-worker_image  = "ghcr.io/longhuynh5713/pathplanner-worker"
+backend_image             = "ghcr.io/longhuynh5713/pathplanner-backend"
+worker_image              = "ghcr.io/longhuynh5713/pathplanner-worker"
+default_image_tag         = "latest"
+default_image_pull_policy = "IfNotPresent"
+image_pull_policy_by_env = {
+  stage = "IfNotPresent"
+  prod  = "IfNotPresent"
+}
 
 # GHCR (public) - no pull secret needed
 ghcr_username          = ""
@@ -68,8 +74,8 @@ redis_k8s_service_enabled     = true
 redis_k8s_service_name        = "redis"
 
 # App config (non-secret values)
-google_maps_api_url                = "https://maps.googleapis.com/maps/api"
-google_maps_tile_map_type          = "roadmap"
-google_maps_tile_size              = 256
+google_maps_api_url       = "https://maps.googleapis.com/maps/api"
+google_maps_tile_map_type = "roadmap"
+google_maps_tile_size     = 256
 
 cors_allowed_origins = ["https://<frontend-domain>"]

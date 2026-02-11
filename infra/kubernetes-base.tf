@@ -26,7 +26,7 @@ locals {
   backend_redis_config_entries = {
     for env in local.environments :
     env => {
-      "Redis__Endpoint"        = local.redis_endpoint_by_env[env]
+      "Redis__Endpoint"       = local.redis_endpoint_by_env[env]
       "Redis__IamAuthEnabled" = tostring(var.redis_auth_mode == "AUTH_MODE_IAM_AUTH")
     }
   }
@@ -34,7 +34,7 @@ locals {
   worker_redis_config_entries = {
     for env in local.environments :
     env => {
-      "REDIS_URL"               = local.redis_endpoint_by_env[env]
+      "REDIS_URL"              = local.redis_endpoint_by_env[env]
       "REDIS_IAM_AUTH_ENABLED" = tostring(var.redis_auth_mode == "AUTH_MODE_IAM_AUTH")
     }
   }
@@ -45,11 +45,11 @@ locals {
   backend_config = {
     for env in local.environments : env => merge(
       {
-        "GoogleMaps__ApiUrl"         = var.google_maps_api_url
-        "GoogleMaps__TileSize"       = tostring(var.google_maps_tile_size)
-        "GoogleMaps__TileMapType"    = var.google_maps_tile_map_type
-        "ASPNETCORE_ENVIRONMENT"     = local.aspnetcore_environment[env]
-        "ASPNETCORE_URLS"            = "http://0.0.0.0:${var.backend_container_port}"
+        "GoogleMaps__ApiUrl"      = var.google_maps_api_url
+        "GoogleMaps__TileSize"    = tostring(var.google_maps_tile_size)
+        "GoogleMaps__TileMapType" = var.google_maps_tile_map_type
+        "ASPNETCORE_ENVIRONMENT"  = local.aspnetcore_environment[env]
+        "ASPNETCORE_URLS"         = "http://0.0.0.0:${var.backend_container_port}"
       },
       local.cors_origin_entries[env],
       local.backend_redis_config_entries[env]
@@ -92,7 +92,7 @@ resource "helm_release" "app" {
   values = [yamlencode({
     commonLabels = {
       "app.kubernetes.io/part-of" = "transport-optimizer"
-      "env"                      = each.key
+      "env"                       = each.key
     }
     imagePullSecrets = local.effective_image_pull_secret_name != "" ? [local.effective_image_pull_secret_name] : []
     imagePullSecret = {
@@ -104,7 +104,8 @@ resource "helm_release" "app" {
     backend = {
       image = {
         repository = var.backend_image
-        tag        = "latest"
+        tag        = lookup(var.backend_image_tag_by_env, each.key, var.default_image_tag)
+        pullPolicy = lookup(var.image_pull_policy_by_env, each.key, var.default_image_pull_policy)
       }
       service = {
         port          = var.backend_service_port
@@ -134,7 +135,8 @@ resource "helm_release" "app" {
     worker = {
       image = {
         repository = var.worker_image
-        tag        = "latest"
+        tag        = lookup(var.worker_image_tag_by_env, each.key, var.default_image_tag)
+        pullPolicy = lookup(var.image_pull_policy_by_env, each.key, var.default_image_pull_policy)
       }
       serviceAccount = {
         create = true
