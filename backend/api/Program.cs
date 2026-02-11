@@ -167,5 +167,6 @@ app.UseHttpsRedirection();
 app.UseCors("CorsPolicy");
 
 app.MapControllers();
+app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
 
 app.Run();
