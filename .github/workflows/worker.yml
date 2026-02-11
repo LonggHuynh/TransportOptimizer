@@ -1,6 +1,7 @@
 name: Worker Deployment
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - stage
