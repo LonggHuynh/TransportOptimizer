@@ -14,12 +14,12 @@ const SUGGESTION_LIMIT = 6;
 
 type GeocodeSuggestionsQueryOptions = Omit<
     UseQueryOptions<
-        GeocodeSuggestion[],
+        unknown,
         AxiosError,
         GeocodeSuggestion[],
         [string, string, string, string]
     >,
-    'queryKey' | 'queryFn' | 'enabled'
+    'queryKey' | 'queryFn' | 'enabled' | 'select'
 >;
 
 interface SuggestionRecord extends Record<string, unknown> {
@@ -65,11 +65,13 @@ const parseSuggestion = (
     }
 
     const rawPlaceId = input.placeId ?? input.place_id;
-    const placeId = typeof rawPlaceId === 'string' && rawPlaceId.trim()
-        ? rawPlaceId.trim()
-        : undefined;
-    const id = placeId
-        ?? (typeof input.id === 'string' && input.id.trim()
+    const placeId =
+        typeof rawPlaceId === 'string' && rawPlaceId.trim()
+            ? rawPlaceId.trim()
+            : undefined;
+    const id =
+        placeId ??
+        (typeof input.id === 'string' && input.id.trim()
             ? input.id.trim()
             : `${label}-${index}`);
 
@@ -142,34 +144,29 @@ export const useGeocodeSuggestions = (
     const centerLatKey = centerLat?.toFixed(4) ?? '';
     const centerLngKey = centerLng?.toFixed(4) ?? '';
 
-    const suggestionQuery = useQuery<
-        GeocodeSuggestion[],
+    return useQuery<
+        unknown,
         AxiosError,
         GeocodeSuggestion[],
         [string, string, string, string]
     >({
-        queryKey: ['geocodeSuggestions', trimmedQuery, centerLatKey, centerLngKey],
+        queryKey: [
+            'geocodeSuggestions',
+            trimmedQuery,
+            centerLatKey,
+            centerLngKey,
+        ],
         queryFn: async ({ signal }) =>
-            parseSuggestions(
-                await fetchSuggestions({
-                    query: trimmedQuery,
-                    signal,
-                    centerLat,
-                    centerLng,
-                }),
-            ),
+            fetchSuggestions({
+                query: trimmedQuery,
+                signal,
+                centerLat,
+                centerLng,
+            }),
+        select: parseSuggestions,
         enabled: canSearch,
         refetchOnWindowFocus: false,
         retry: false,
         ...options,
     });
-
-    return {
-        suggestions: suggestionQuery.data ?? [],
-        loading: canSearch && suggestionQuery.isFetching,
-        error:
-            suggestionQuery.isError && suggestionQuery.error.code !== 'ERR_CANCELED'
-                ? 'Failed to load suggestions'
-                : null,
-    };
 };
