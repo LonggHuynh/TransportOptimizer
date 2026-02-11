@@ -24,16 +24,6 @@ interface SuggestionRecord {
 type SuggestionPayload = string | SuggestionRecord | null | undefined;
 type GeocodeSuggestionsResponse = SuggestionPayload[];
 
-type GeocodeSuggestionsQueryOptions = Omit<
-    UseQueryOptions<
-        GeocodeSuggestionsResponse,
-        AxiosError,
-        GeocodeSuggestion[],
-        [string, string, string, string]
-    >,
-    'queryKey' | 'queryFn' | 'enabled' | 'select'
->;
-
 const isRecord = (value: SuggestionPayload): value is SuggestionRecord =>
     typeof value === 'object' && value !== null;
 
@@ -119,21 +109,30 @@ const fetchSuggestions = async ({
     centerLat?: number;
     centerLng?: number;
 }) => {
-    const response = await apiInstance.get<GeocodeSuggestionsResponse>('geocode/suggest', {
-        params: {
-            query,
-            limit: SUGGESTION_LIMIT,
-            centerLat,
-            centerLng,
+    const response = await apiInstance.get<GeocodeSuggestionsResponse>(
+        'geocode/suggest',
+        {
+            params: {
+                query,
+                limit: SUGGESTION_LIMIT,
+                centerLat,
+                centerLng,
+            },
+            signal,
         },
-        signal,
-    });
+    );
     return response.data;
 };
 
 export const useGeocodeSuggestions = (
     query: string,
-    center?: LatLng | null,
+    center: LatLng | null,
+    options?: UseQueryOptions<
+        GeocodeSuggestionsResponse,
+        AxiosError,
+        GeocodeSuggestion[],
+        [string, string, string, string]
+    >,
 ) => {
     const trimmedQuery = query.trim();
     const canSearch = trimmedQuery.length >= MIN_QUERY_LENGTH;
@@ -149,6 +148,7 @@ export const useGeocodeSuggestions = (
     const centerLngKey = centerLng?.toFixed(4) ?? '';
 
     return useQuery({
+        ...options,
         queryKey: [
             'geocodeSuggestions',
             trimmedQuery,

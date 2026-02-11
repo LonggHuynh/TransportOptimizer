@@ -10,10 +10,7 @@ import Draggable from 'react-draggable';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import './RouteForm.scss';
 import { DEFAULT_STOP } from './constants';
-import {
-    DEMO_SCENARIOS,
-    parseDemoScenario,
-} from './demoScenarios';
+import { DEMO_SCENARIOS, parseDemoScenario } from './demoScenarios';
 import IntermediateStopInput from './IntermediateStopInput';
 import {
     IntermediateStopInputValue,
@@ -221,7 +218,10 @@ const RouteForm = () => {
                 })),
             );
 
-            handleRememberLocation(parsed.origin.label, parsed.origin.coordinate);
+            handleRememberLocation(
+                parsed.origin.label,
+                parsed.origin.coordinate,
+            );
             handleRememberLocation(
                 parsed.destination.label,
                 parsed.destination.coordinate,
@@ -421,10 +421,7 @@ const RouteForm = () => {
                                 );
                             }}
                             onChange={(_, selected) => {
-                                if (
-                                    selected &&
-                                    typeof selected !== 'string'
-                                ) {
+                                if (selected && typeof selected !== 'string') {
                                     handleSelectOriginChange(selected);
                                 }
                             }}
@@ -440,7 +437,8 @@ const RouteForm = () => {
                                         ...params.InputProps,
                                         endAdornment: (
                                             <>
-                                                {originLoading || suggestionLoading ? (
+                                                {originLoading ||
+                                                suggestionLoading ? (
                                                     <CircularProgress
                                                         color="inherit"
                                                         size={16}
@@ -496,9 +494,7 @@ const RouteForm = () => {
                                         selected &&
                                         typeof selected !== 'string'
                                     ) {
-                                        handleSelectDestinationChange(
-                                            selected,
-                                        );
+                                        handleSelectDestinationChange(selected);
                                     }
                                 }}
                                 loading={
@@ -515,13 +511,17 @@ const RouteForm = () => {
                                             ...params.InputProps,
                                             endAdornment: (
                                                 <>
-                                                    {destinationLoading || suggestionLoading ? (
+                                                    {destinationLoading ||
+                                                    suggestionLoading ? (
                                                         <CircularProgress
                                                             color="inherit"
                                                             size={16}
                                                         />
                                                     ) : null}
-                                                    {params.InputProps.endAdornment}
+                                                    {
+                                                        params.InputProps
+                                                            .endAdornment
+                                                    }
                                                 </>
                                             ),
                                         }}
@@ -641,26 +641,35 @@ const RouteForm = () => {
                                         }
                                         serviceMinutes={stop.serviceMinutes}
                                         onChange={(value) => {
-                                            updateStopAtIndex(index, (item) => ({
-                                                ...item,
-                                                value,
-                                                coordinate:
-                                                    item.value === value
-                                                        ? item.coordinate
-                                                        : null,
-                                            }));
+                                            updateStopAtIndex(
+                                                index,
+                                                (item) => ({
+                                                    ...item,
+                                                    value,
+                                                    coordinate:
+                                                        item.value === value
+                                                            ? item.coordinate
+                                                            : null,
+                                                }),
+                                            );
                                         }}
                                         onChangeDeadlineTime={(value) => {
-                                            updateStopAtIndex(index, (item) => ({
-                                                ...item,
-                                                deadlineTimeLocal: value,
-                                            }));
+                                            updateStopAtIndex(
+                                                index,
+                                                (item) => ({
+                                                    ...item,
+                                                    deadlineTimeLocal: value,
+                                                }),
+                                            );
                                         }}
                                         onChangeServiceMinutes={(value) => {
-                                            updateStopAtIndex(index, (item) => ({
-                                                ...item,
-                                                serviceMinutes: value,
-                                            }));
+                                            updateStopAtIndex(
+                                                index,
+                                                (item) => ({
+                                                    ...item,
+                                                    serviceMinutes: value,
+                                                }),
+                                            );
                                         }}
                                         onSelectSuggestion={(suggestion) =>
                                             handleSelectIntermediateChange(

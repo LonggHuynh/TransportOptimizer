@@ -2,7 +2,10 @@ import React from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { Autocomplete, CircularProgress, TextField } from '@mui/material';
-import { GeocodeSuggestion, useGeocodeSuggestions } from '../../hooks/queries/useGeocodeSuggestions';
+import {
+    GeocodeSuggestion,
+    useGeocodeSuggestions,
+} from '../../hooks/queries/useGeocodeSuggestions';
 import { useCenterStore } from '../../hooks/store/useCenterStore';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
 
@@ -35,15 +38,17 @@ const IntermediateStopInput = ({
 }: IntermediateStopInputProps) => {
     const debouncedValue = useDebouncedValue(value, 300);
     const center = useCenterStore((state) => state.center);
-    const { suggestions, loading } = useGeocodeSuggestions(debouncedValue, center);
+    const { data: suggestions = [], isPending: loading } =
+        useGeocodeSuggestions(debouncedValue, center);
 
     const renderSuggestionOption = (
         props: React.HTMLAttributes<HTMLLIElement>,
         option: GeocodeSuggestion,
     ) => {
-        const { key: _key, ...optionProps } = props as React.HTMLAttributes<HTMLLIElement> & {
-            key?: React.Key;
-        };
+        const { key: _key, ...optionProps } =
+            props as React.HTMLAttributes<HTMLLIElement> & {
+                key?: React.Key;
+            };
 
         return (
             <li key={option.id} {...optionProps}>
@@ -84,7 +89,10 @@ const IntermediateStopInput = ({
                                 endAdornment: (
                                     <>
                                         {loading ? (
-                                            <CircularProgress color="inherit" size={16} />
+                                            <CircularProgress
+                                                color="inherit"
+                                                size={16}
+                                            />
                                         ) : null}
                                         {params.InputProps.endAdornment}
                                     </>
@@ -94,7 +102,11 @@ const IntermediateStopInput = ({
                     )}
                 />
                 {hasCoordinate ? (
-                    <button type="button" className="stopIconButton inputLocateButton" onClick={onLocate}>
+                    <button
+                        type="button"
+                        className="stopIconButton inputLocateButton"
+                        onClick={onLocate}
+                    >
                         <LocationOnIcon />
                     </button>
                 ) : null}
