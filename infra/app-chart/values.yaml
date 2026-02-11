@@ -16,7 +16,7 @@ backend:
   enabled: true
   replicaCount: 2
   image:
-    repository: ""
+    repository: "ghcr.io/longhuynh5713/pathplanner-backend:sha-34ee32bd502459c8a15d37fa9c6eb813df400fc2"
     tag: ""
     pullPolicy: IfNotPresent
   service:
@@ -59,7 +59,7 @@ worker:
   enabled: true
   replicaCount: 1
   image:
-    repository: ""
+    repository: "ghcr.io/longhuynh5713/pathplanner-worker:sha-34ee32bd502459c8a15d37fa9c6eb813df400fc2"
     tag: ""
     pullPolicy: IfNotPresent
   serviceAccount:
