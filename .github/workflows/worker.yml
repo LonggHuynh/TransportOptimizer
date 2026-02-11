@@ -32,6 +32,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set image name
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}-worker" >> $GITHUB_ENV
+
       - name: Build and push worker image
         uses: docker/build-push-action@v4
         with:
@@ -39,5 +42,7 @@ jobs:
           file: ./worker/Dockerfile
           push: true
           tags: |
-            ghcr.io/longghuynh/transport-worker:latest
-            ghcr.io/longghuynh/transport-worker:sha-${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
