@@ -14,4 +14,4 @@ RUN pipenv install --system --deploy
 
 COPY . .
 
-CMD ["celery", "-A", "celery_app", "worker", "--loglevel=info"]
+CMD ["python", "main.py"]
