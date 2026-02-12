@@ -1,0 +1,20 @@
+{{- if and .Values.gateway.enabled .Values.backend.enabled .Values.frontend.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ include "transport.gateway.name" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+spec:
+  gatewayClassName: {{ .Values.gateway.className | quote }}
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      {{- if gt (len .Values.gateway.hostnames) 0 }}
+      hostname: {{ index .Values.gateway.hostnames 0 | quote }}
+      {{- end }}
+      allowedRoutes:
+        namespaces:
+          from: Same
+{{- end }}

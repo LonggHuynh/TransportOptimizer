@@ -1,0 +1,141 @@
+name: Terraform App Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options:
+          - stage
+          - prod
+        required: true
+      backend_tag:
+        description: "Backend image tag override (optional, for example sha-abcdef1234)"
+        required: false
+      worker_tag:
+        description: "Worker image tag override (optional, for example sha-abcdef1234)"
+        required: false
+      frontend_tag:
+        description: "Frontend image tag override (optional, for example sha-abcdef1234)"
+        required: false
+      pull_policy:
+        description: "Kubernetes image pull policy"
+        type: choice
+        options:
+          - IfNotPresent
+          - Always
+          - Never
+        default: IfNotPresent
+        required: true
+  workflow_call:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: string
+        required: true
+      backend_tag:
+        description: "Backend image tag override (optional, for example sha-abcdef1234)"
+        type: string
+        required: false
+        default: ""
+      worker_tag:
+        description: "Worker image tag override (optional, for example sha-abcdef1234)"
+        type: string
+        required: false
+        default: ""
+      frontend_tag:
+        description: "Frontend image tag override (optional, for example sha-abcdef1234)"
+        type: string
+        required: false
+        default: ""
+      pull_policy:
+        description: "Kubernetes image pull policy"
+        type: string
+        required: false
+        default: IfNotPresent
+    secrets:
+      TF_API_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-app-release-${{ inputs.environment || github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy app release with Terraform
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || github.event.inputs.environment }}
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TARGET_ENV: ${{ inputs.environment || github.event.inputs.environment }}
+      BACKEND_TAG: ${{ inputs.backend_tag || github.event.inputs.backend_tag }}
+      WORKER_TAG: ${{ inputs.worker_tag || github.event.inputs.worker_tag }}
+      FRONTEND_TAG: ${{ inputs.frontend_tag || github.event.inputs.frontend_tag }}
+      PULL_POLICY: ${{ inputs.pull_policy || github.event.inputs.pull_policy }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Validate release inputs
+        shell: bash
+        run: |
+          if [[ ! "${TARGET_ENV}" =~ ^(stage|prod)$ ]]; then
+            echo "Invalid environment value. Use stage or prod."
+            exit 1
+          fi
+
+          if [[ -z "${BACKEND_TAG}" && -z "${WORKER_TAG}" && -z "${FRONTEND_TAG}" ]]; then
+            echo "At least one of backend_tag, worker_tag, or frontend_tag must be provided."
+            exit 1
+          fi
+
+          if [[ -n "${BACKEND_TAG}" && ! "${BACKEND_TAG}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid backend_tag value."
+            exit 1
+          fi
+
+          if [[ -n "${WORKER_TAG}" && ! "${WORKER_TAG}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid worker_tag value."
+            exit 1
+          fi
+
+          if [[ -n "${FRONTEND_TAG}" && ! "${FRONTEND_TAG}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid frontend_tag value."
+            exit 1
+          fi
+
+          if [[ ! "${PULL_POLICY}" =~ ^(Always|IfNotPresent|Never)$ ]]; then
+            echo "Invalid pull_policy value."
+            exit 1
+          fi
+
+      - name: Terraform init
+        run: terraform -chdir=infra init
+
+      - name: Terraform apply app release
+        run: |
+          if [[ -n "${BACKEND_TAG}" ]]; then
+            export TF_VAR_backend_image_tag_by_env="{\"${TARGET_ENV}\":\"${BACKEND_TAG}\"}"
+          fi
+
+          if [[ -n "${WORKER_TAG}" ]]; then
+            export TF_VAR_worker_image_tag_by_env="{\"${TARGET_ENV}\":\"${WORKER_TAG}\"}"
+          fi
+
+          if [[ -n "${FRONTEND_TAG}" ]]; then
+            export TF_VAR_frontend_image_tag_by_env="{\"${TARGET_ENV}\":\"${FRONTEND_TAG}\"}"
+          fi
+
+          export TF_VAR_image_pull_policy_by_env="{\"${TARGET_ENV}\":\"${PULL_POLICY}\"}"
+
+          terraform -chdir=infra apply -auto-approve -target="helm_release.app[\"${TARGET_ENV}\"]"
