@@ -35,10 +35,18 @@ services_secondary_cidrs = {
 }
 
 # Images (GHCR)
-backend_image             = "ghcr.io/longhuynh5713/pathplanner-backend"
-worker_image              = "ghcr.io/longhuynh5713/pathplanner-worker"
-frontend_image            = "ghcr.io/longhuynh5713/pathplanner-frontend"
-default_image_tag         = "latest"
+backend_image     = "ghcr.io/longhuynh5713/pathplanner-backend"
+worker_image      = "ghcr.io/longhuynh5713/pathplanner-worker"
+frontend_image    = "ghcr.io/longhuynh5713/pathplanner-frontend"
+default_image_tag = "latest"
+backend_image_tag_by_env = {
+  stage = "stage-latest"
+  prod  = "prod-latest"
+}
+worker_image_tag_by_env = {
+  stage = "stage-latest"
+  prod  = "prod-latest"
+}
 default_image_pull_policy = "IfNotPresent"
 image_pull_policy_by_env = {
   stage = "IfNotPresent"
