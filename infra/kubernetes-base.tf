@@ -88,7 +88,7 @@ resource "helm_release" "app" {
   namespace        = local.k8s_namespace[each.key]
   create_namespace = true
   timeout          = 180
-  reuse_values     = true
+  reuse_values     = false
 
   values = [yamlencode({
     commonLabels = {
