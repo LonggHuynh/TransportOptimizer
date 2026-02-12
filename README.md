@@ -112,11 +112,14 @@ Release behavior:
 
 1. Push to `stage` or `prod` with backend changes:
    - builds backend image
-   - triggers Terraform targeted apply for `helm_release.app["stage"|"prod"]`
+   - triggers Terraform app-scope apply for `helm_release.app["stage"|"prod"]`
 2. Push to `stage` or `prod` with worker changes:
    - builds worker image
-   - triggers the same Terraform targeted Helm apply
-3. For manual promotions/rollbacks, trigger `.github/workflows/terraform-app-release.yml` and provide explicit tags.
+   - triggers the same Terraform app-scope apply
+3. Push to `stage` or `prod` with `infra/**` changes:
+   - triggers `.github/workflows/infra-core.yml`
+   - runs Terraform full apply (`apply_scope=full`)
+4. For manual promotions/rollbacks, trigger `.github/workflows/terraform-app-release.yml` and provide explicit tags.
 
 Required repository secret:
 

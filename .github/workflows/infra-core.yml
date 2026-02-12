@@ -1,0 +1,58 @@
+name: Infra Core Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target deployment environment"
+        type: choice
+        options:
+          - stage
+          - prod
+        required: true
+  push:
+    branches:
+      - stage
+      - prod
+    paths:
+      - "infra/**"
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-target-environment:
+    name: Resolve target environment
+    runs-on: ubuntu-latest
+    outputs:
+      target_environment: ${{ steps.resolve.outputs.target_environment }}
+    steps:
+      - name: Resolve target environment
+        id: resolve
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            target_environment="${GITHUB_REF_NAME}"
+          else
+            target_environment="${{ inputs.environment }}"
+          fi
+
+          if [[ ! "${target_environment}" =~ ^(stage|prod)$ ]]; then
+            echo "Invalid target environment: ${target_environment}"
+            exit 1
+          fi
+
+          echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"
+
+  deploy-infra-core:
+    name: Deploy infra core to target environment
+    needs: resolve-target-environment
+    uses: ./.github/workflows/terraform-app-release.yml
+    with:
+      environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
+      backend_tag: ${{ format('{0}-latest', needs.resolve-target-environment.outputs.target_environment) }}
+      worker_tag: ${{ format('{0}-latest', needs.resolve-target-environment.outputs.target_environment) }}
+      pull_policy: IfNotPresent
+      apply_scope: full
+    secrets:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
