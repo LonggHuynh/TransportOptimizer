@@ -174,6 +174,12 @@ variable "worker_image" {
   default     = ""
 }
 
+variable "frontend_image" {
+  type        = string
+  description = "Frontend container image."
+  default     = ""
+}
+
 variable "default_image_tag" {
   type        = string
   description = "Default container image tag used when no environment override is provided."
@@ -189,6 +195,12 @@ variable "backend_image_tag_by_env" {
 variable "worker_image_tag_by_env" {
   type        = map(string)
   description = "Optional worker image tag overrides by environment name."
+  default     = {}
+}
+
+variable "frontend_image_tag_by_env" {
+  type        = map(string)
+  description = "Optional frontend image tag overrides by environment name."
   default     = {}
 }
 
@@ -239,6 +251,24 @@ variable "backend_path_prefix" {
   type        = string
   description = "Backend path prefix for routing."
   default     = "/api"
+}
+
+variable "gateway_enabled" {
+  type        = bool
+  description = "Whether to create Gateway and HTTPRoute resources."
+  default     = true
+}
+
+variable "gateway_class_name" {
+  type        = string
+  description = "GatewayClass name used by Gateway API."
+  default     = "gke-l7-global-external-managed"
+}
+
+variable "gateway_hostnames_by_env" {
+  type        = map(list(string))
+  description = "Optional hostnames by environment for the HTTPRoute and Gateway listener."
+  default     = {}
 }
 
 variable "redis_mode" {

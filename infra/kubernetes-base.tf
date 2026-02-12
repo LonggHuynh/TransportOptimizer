@@ -162,6 +162,23 @@ resource "helm_release" "app" {
         enabled = local.worker_secret_enabled
       }
     }
+    frontend = {
+      image = merge(
+        {
+          repository = var.frontend_image
+          pullPolicy = lookup(var.image_pull_policy_by_env, each.key, var.default_image_pull_policy)
+        },
+        contains(keys(var.frontend_image_tag_by_env), each.key) ? {
+          tag = var.frontend_image_tag_by_env[each.key]
+        } : {}
+      )
+    }
+    gateway = {
+      enabled           = var.gateway_enabled
+      className         = var.gateway_class_name
+      backendPathPrefix = var.backend_path_prefix
+      hostnames         = lookup(var.gateway_hostnames_by_env, each.key, [])
+    }
     redis = {
       enabled     = var.redis_k8s_service_enabled
       serviceName = var.redis_k8s_service_name

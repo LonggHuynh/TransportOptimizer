@@ -103,7 +103,7 @@ For direct cluster access, connect to GKE with:
 gcloud container clusters get-credentials transport --region europe-north1 --project pathoptimizer-486102
 ```
 
-Images are published to GHCR from GitHub Actions (`backend.yml`, `worker.yml`) using:
+Images are published to GHCR from GitHub Actions (`frontend.yml`, `backend.yml`, `worker.yml`) using:
 
 - `sha-<commit>` immutable tags
 - `<branch>-latest` moving tags (`stage-latest`, `prod-latest`)
@@ -116,11 +116,15 @@ Release behavior:
 2. Push to `stage` or `prod` with worker changes:
    - builds worker image
    - triggers the same Terraform app-scope apply
-3. Push to `stage` or `prod` with `infra/**` changes:
+3. Push to `stage` or `prod` with frontend changes:
+   - builds frontend image
+   - triggers the same Terraform app-scope apply
+   - serves frontend from Kubernetes (Nginx) and routes via Gateway API
+4. Push to `stage` or `prod` with `infra/**` changes:
    - triggers `.github/workflows/infra-core.yml`
    - runs Terraform full apply
-4. For manual app promotions/rollbacks, trigger `.github/workflows/terraform-app-release.yml` and provide explicit tags.
-5. For manual full infra apply, trigger `.github/workflows/infra-core.yml`.
+5. For manual app promotions/rollbacks, trigger `.github/workflows/terraform-app-release.yml` and provide explicit tags.
+6. For manual full infra apply, trigger `.github/workflows/infra-core.yml`.
 
 Required repository secret:
 

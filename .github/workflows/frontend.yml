@@ -10,25 +10,17 @@ on:
           - stage
           - prod
         required: true
-      api_url:
-        description: "Optional VITE_API_URL override (defaults to env-specific var or /api)"
-        type: string
-        required: false
   push:
     branches:
       - stage
       - prod
     paths:
       - "frontend/**"
-      - ".github/workflows/frontend.yml"
+      - ".github/workflows/**"
 
 permissions:
   contents: read
-  id-token: write
-
-concurrency:
-  group: frontend-${{ github.event.inputs.environment || github.ref_name }}
-  cancel-in-progress: false
+  packages: write
 
 jobs:
   resolve-target-environment:
@@ -54,103 +46,48 @@ jobs:
 
           echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"
 
-  deploy-frontend:
-    name: Build and deploy frontend to GCS
+  build-and-push-frontend:
+    name: Build and Push Frontend Docker Image to GHCR
     needs: resolve-target-environment
     runs-on: ubuntu-latest
-    environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
-    env:
-      TARGET_ENV: ${{ needs.resolve-target-environment.outputs.target_environment }}
-      PROJECT_ID: ${{ vars.GCP_PROJECT_ID != '' && vars.GCP_PROJECT_ID || 'pathoptimizer-486102' }}
-      FRONTEND_BUCKET_STAGE: ${{ vars.FRONTEND_BUCKET_STAGE }}
-      FRONTEND_BUCKET_PROD: ${{ vars.FRONTEND_BUCKET_PROD }}
-      FRONTEND_URL_MAP_STAGE: ${{ vars.FRONTEND_URL_MAP_STAGE }}
-      FRONTEND_URL_MAP_PROD: ${{ vars.FRONTEND_URL_MAP_PROD }}
-      FRONTEND_API_URL_STAGE: ${{ vars.FRONTEND_API_URL_STAGE }}
-      FRONTEND_API_URL_PROD: ${{ vars.FRONTEND_API_URL_PROD }}
-      INPUT_API_URL: ${{ inputs.api_url || '' }}
-      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-      GCP_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Validate GCP auth configuration
-        shell: bash
-        run: |
-          if [[ -z "${GCP_WORKLOAD_IDENTITY_PROVIDER}" || -z "${GCP_SERVICE_ACCOUNT}" ]]; then
-            if [[ -z "${GCP_SA_KEY}" ]]; then
-              echo "Set either vars.GCP_WORKLOAD_IDENTITY_PROVIDER + vars.GCP_SERVICE_ACCOUNT or secrets.GCP_SA_KEY."
-              exit 1
-            fi
-          fi
+      - name: Set image name
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}-frontend" >> $GITHUB_ENV
 
-      - name: Authenticate to Google Cloud via Workload Identity
-        id: auth-wif
-        if: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && env.GCP_SERVICE_ACCOUNT != '' }}
-        uses: google-github-actions/auth@v2
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v4
         with:
-          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:${{ needs.resolve-target-environment.outputs.target_environment }}-latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
-      - name: Authenticate to Google Cloud via service account key
-        if: ${{ steps.auth-wif.outcome != 'success' }}
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ env.GCP_SA_KEY }}
-
-      - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
-
-      - name: Resolve frontend deploy config
-        id: cfg
-        shell: bash
-        run: |
-          if [[ "${TARGET_ENV}" == "stage" ]]; then
-            bucket="${FRONTEND_BUCKET_STAGE:-transport-frontend-pathoptimizer-486102-stage}"
-            url_map="${FRONTEND_URL_MAP_STAGE:-transport-frontend-stage-url-map}"
-            env_api_url="${FRONTEND_API_URL_STAGE}"
-          else
-            bucket="${FRONTEND_BUCKET_PROD:-transport-frontend-pathoptimizer-486102-prod}"
-            url_map="${FRONTEND_URL_MAP_PROD:-transport-frontend-prod-url-map}"
-            env_api_url="${FRONTEND_API_URL_PROD}"
-          fi
-
-          if [[ -n "${INPUT_API_URL}" ]]; then
-            api_url="${INPUT_API_URL}"
-          elif [[ -n "${env_api_url}" ]]; then
-            api_url="${env_api_url}"
-          else
-            api_url="/api"
-          fi
-
-          echo "bucket=${bucket}" >> "${GITHUB_OUTPUT}"
-          echo "url_map=${url_map}" >> "${GITHUB_OUTPUT}"
-          echo "api_url=${api_url}" >> "${GITHUB_OUTPUT}"
-
-      - name: Install frontend dependencies
-        run: npm ci --prefix frontend
-
-      - name: Build frontend
-        env:
-          VITE_API_URL: ${{ steps.cfg.outputs.api_url }}
-        run: npm run build --prefix frontend
-
-      - name: Sync frontend assets to GCS
-        shell: bash
-        run: |
-          gcloud storage rsync --recursive --delete-unmatched-destination-objects frontend/dist "gs://${{ steps.cfg.outputs.bucket }}"
-          gcloud storage objects update "gs://${{ steps.cfg.outputs.bucket }}/index.html" --cache-control="no-store,max-age=0"
-
-      - name: Invalidate CDN cache
-        run: gcloud compute url-maps invalidate-cdn-cache "${{ steps.cfg.outputs.url_map }}" --path="/*" --global
+  deploy-frontend:
+    name: Deploy frontend to target environment
+    needs:
+      - resolve-target-environment
+      - build-and-push-frontend
+    uses: ./.github/workflows/terraform-app-release.yml
+    with:
+      environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
+      frontend_tag: ${{ format('sha-{0}', github.sha) }}
+      pull_policy: IfNotPresent
+    secrets:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
