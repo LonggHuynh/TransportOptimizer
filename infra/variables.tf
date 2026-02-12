@@ -247,6 +247,18 @@ variable "backend_health_path" {
   default     = "/healthz"
 }
 
+variable "worker_health_path" {
+  type        = string
+  description = "Worker health check path."
+  default     = "/healthz"
+}
+
+variable "worker_health_port" {
+  type        = number
+  description = "Worker health check port."
+  default     = 8081
+}
+
 variable "backend_path_prefix" {
   type        = string
   description = "Backend path prefix for routing."
