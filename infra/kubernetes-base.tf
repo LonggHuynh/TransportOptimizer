@@ -150,6 +150,10 @@ resource "helm_release" "app" {
           tag = var.worker_image_tag_by_env[each.key]
         } : {}
       )
+      health = {
+        path = var.worker_health_path
+        port = var.worker_health_port
+      }
       serviceAccount = {
         create = true
         name   = local.worker_k8s_service_account
