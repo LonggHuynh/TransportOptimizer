@@ -1,4 +1,4 @@
-name: Terraform Apply
+name: Terraform App Release
 
 on:
   workflow_dispatch:
@@ -25,14 +25,6 @@ on:
           - Never
         default: IfNotPresent
         required: true
-      apply_scope:
-        description: "Terraform apply scope"
-        type: choice
-        options:
-          - app
-          - full
-        default: full
-        required: true
   workflow_call:
     inputs:
       environment:
@@ -52,11 +44,6 @@ on:
         type: string
         required: false
         default: IfNotPresent
-      apply_scope:
-        description: "Terraform apply scope (app = helm_release.app target, full = whole stack)"
-        type: string
-        required: false
-        default: full
     secrets:
       TF_API_TOKEN:
         required: true
@@ -70,7 +57,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Run Terraform apply
+    name: Deploy app release with Terraform
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || github.event.inputs.environment }}
     env:
@@ -81,7 +68,6 @@ jobs:
       BACKEND_TAG: ${{ inputs.backend_tag || github.event.inputs.backend_tag }}
       WORKER_TAG: ${{ inputs.worker_tag || github.event.inputs.worker_tag }}
       PULL_POLICY: ${{ inputs.pull_policy || github.event.inputs.pull_policy }}
-      APPLY_SCOPE: ${{ inputs.apply_scope || github.event.inputs.apply_scope }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -112,40 +98,13 @@ jobs:
             exit 1
           fi
 
-          if [[ ! "${APPLY_SCOPE}" =~ ^(app|full)$ ]]; then
-            echo "Invalid apply_scope value. Use app or full."
-            exit 1
-          fi
-
       - name: Terraform init
         run: terraform -chdir=infra init
 
-      - name: Terraform apply
+      - name: Terraform apply app release
         run: |
-          # Build full per-env maps so full apply keeps non-target env tags deterministic.
-          backend_stage_tag="stage-latest"
-          backend_prod_tag="prod-latest"
-          worker_stage_tag="stage-latest"
-          worker_prod_tag="prod-latest"
-          pull_policy_stage="IfNotPresent"
-          pull_policy_prod="IfNotPresent"
+          export TF_VAR_backend_image_tag_by_env="{\"${TARGET_ENV}\":\"${BACKEND_TAG}\"}"
+          export TF_VAR_worker_image_tag_by_env="{\"${TARGET_ENV}\":\"${WORKER_TAG}\"}"
+          export TF_VAR_image_pull_policy_by_env="{\"${TARGET_ENV}\":\"${PULL_POLICY}\"}"
 
-          if [[ "${TARGET_ENV}" == "stage" ]]; then
-            backend_stage_tag="${BACKEND_TAG}"
-            worker_stage_tag="${WORKER_TAG}"
-            pull_policy_stage="${PULL_POLICY}"
-          else
-            backend_prod_tag="${BACKEND_TAG}"
-            worker_prod_tag="${WORKER_TAG}"
-            pull_policy_prod="${PULL_POLICY}"
-          fi
-
-          export TF_VAR_backend_image_tag_by_env="{\"stage\":\"${backend_stage_tag}\",\"prod\":\"${backend_prod_tag}\"}"
-          export TF_VAR_worker_image_tag_by_env="{\"stage\":\"${worker_stage_tag}\",\"prod\":\"${worker_prod_tag}\"}"
-          export TF_VAR_image_pull_policy_by_env="{\"stage\":\"${pull_policy_stage}\",\"prod\":\"${pull_policy_prod}\"}"
-
-          if [[ "${APPLY_SCOPE}" == "app" ]]; then
-            terraform -chdir=infra apply -auto-approve -target="helm_release.app[\"${TARGET_ENV}\"]"
-          else
-            terraform -chdir=infra apply -auto-approve
-          fi
+          terraform -chdir=infra apply -auto-approve -target="helm_release.app[\"${TARGET_ENV}\"]"

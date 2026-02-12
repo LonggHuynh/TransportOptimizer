@@ -118,8 +118,9 @@ Release behavior:
    - triggers the same Terraform app-scope apply
 3. Push to `stage` or `prod` with `infra/**` changes:
    - triggers `.github/workflows/infra-core.yml`
-   - runs Terraform full apply (`apply_scope=full`)
-4. For manual promotions/rollbacks, trigger `.github/workflows/terraform-app-release.yml` and provide explicit tags.
+   - runs Terraform full apply through `.github/workflows/terraform-general.yml`
+4. For manual app promotions/rollbacks, trigger `.github/workflows/terraform-app-release.yml` and provide explicit tags.
+5. For manual full infra apply, trigger `.github/workflows/terraform-general.yml`.
 
 Required repository secret:
 

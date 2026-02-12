@@ -1,0 +1,65 @@
+name: Terraform General Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options:
+          - stage
+          - prod
+        required: true
+  workflow_call:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: string
+        required: true
+    secrets:
+      TF_API_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-general-${{ inputs.environment || github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Run full Terraform apply
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || github.event.inputs.environment }}
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TARGET_ENV: ${{ inputs.environment || github.event.inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Validate inputs
+        shell: bash
+        run: |
+          if [[ ! "${TARGET_ENV}" =~ ^(stage|prod)$ ]]; then
+            echo "Invalid environment value. Use stage or prod."
+            exit 1
+          fi
+
+      - name: Terraform init
+        run: terraform -chdir=infra init
+
+      - name: Terraform apply
+        run: |
+          # Keep app image tags deterministic during full infra applies.
+          export TF_VAR_backend_image_tag_by_env="{\"stage\":\"stage-latest\",\"prod\":\"prod-latest\"}"
+          export TF_VAR_worker_image_tag_by_env="{\"stage\":\"stage-latest\",\"prod\":\"prod-latest\"}"
+          export TF_VAR_image_pull_policy_by_env="{\"stage\":\"IfNotPresent\",\"prod\":\"IfNotPresent\"}"
+
+          terraform -chdir=infra apply -auto-approve

@@ -47,12 +47,8 @@ jobs:
   deploy-infra-core:
     name: Deploy infra core to target environment
     needs: resolve-target-environment
-    uses: ./.github/workflows/terraform-app-release.yml
+    uses: ./.github/workflows/terraform-general.yml
     with:
       environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
-      backend_tag: ${{ format('{0}-latest', needs.resolve-target-environment.outputs.target_environment) }}
-      worker_tag: ${{ format('{0}-latest', needs.resolve-target-environment.outputs.target_environment) }}
-      pull_policy: IfNotPresent
-      apply_scope: full
     secrets:
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
