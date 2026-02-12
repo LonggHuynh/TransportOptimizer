@@ -87,7 +87,6 @@ jobs:
     uses: ./.github/workflows/terraform-app-release.yml
     with:
       environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
-      backend_tag: ${{ format('{0}-latest', needs.resolve-target-environment.outputs.target_environment) }}
       worker_tag: ${{ format('sha-{0}', github.sha) }}
       pull_policy: IfNotPresent
     secrets:

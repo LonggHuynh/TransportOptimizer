@@ -88,7 +88,6 @@ jobs:
     with:
       environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
       backend_tag: ${{ format('sha-{0}', github.sha) }}
-      worker_tag: ${{ format('{0}-latest', needs.resolve-target-environment.outputs.target_environment) }}
       pull_policy: IfNotPresent
     secrets:
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}

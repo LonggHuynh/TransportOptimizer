@@ -88,6 +88,7 @@ resource "helm_release" "app" {
   namespace        = local.k8s_namespace[each.key]
   create_namespace = true
   timeout          = 1800
+  reuse_values     = true
 
   values = [yamlencode({
     commonLabels = {
@@ -102,11 +103,15 @@ resource "helm_release" "app" {
       username = var.ghcr_username
     }
     backend = {
-      image = {
-        repository = var.backend_image
-        tag        = lookup(var.backend_image_tag_by_env, each.key, var.default_image_tag)
-        pullPolicy = lookup(var.image_pull_policy_by_env, each.key, var.default_image_pull_policy)
-      }
+      image = merge(
+        {
+          repository = var.backend_image
+          pullPolicy = lookup(var.image_pull_policy_by_env, each.key, var.default_image_pull_policy)
+        },
+        contains(keys(var.backend_image_tag_by_env), each.key) ? {
+          tag = var.backend_image_tag_by_env[each.key]
+        } : {}
+      )
       service = {
         port          = var.backend_service_port
         containerPort = var.backend_container_port
@@ -133,11 +138,15 @@ resource "helm_release" "app" {
       }
     }
     worker = {
-      image = {
-        repository = var.worker_image
-        tag        = lookup(var.worker_image_tag_by_env, each.key, var.default_image_tag)
-        pullPolicy = lookup(var.image_pull_policy_by_env, each.key, var.default_image_pull_policy)
-      }
+      image = merge(
+        {
+          repository = var.worker_image
+          pullPolicy = lookup(var.image_pull_policy_by_env, each.key, var.default_image_pull_policy)
+        },
+        contains(keys(var.worker_image_tag_by_env), each.key) ? {
+          tag = var.worker_image_tag_by_env[each.key]
+        } : {}
+      )
       serviceAccount = {
         create = true
         name   = local.worker_k8s_service_account

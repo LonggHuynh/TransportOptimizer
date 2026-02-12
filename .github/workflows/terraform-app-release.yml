@@ -11,11 +11,11 @@ on:
           - prod
         required: true
       backend_tag:
-        description: "Backend image tag (for example sha-abcdef1234)"
-        required: true
+        description: "Backend image tag override (optional, for example sha-abcdef1234)"
+        required: false
       worker_tag:
-        description: "Worker image tag (for example sha-abcdef1234)"
-        required: true
+        description: "Worker image tag override (optional, for example sha-abcdef1234)"
+        required: false
       pull_policy:
         description: "Kubernetes image pull policy"
         type: choice
@@ -32,13 +32,15 @@ on:
         type: string
         required: true
       backend_tag:
-        description: "Backend image tag (for example sha-abcdef1234)"
+        description: "Backend image tag override (optional, for example sha-abcdef1234)"
         type: string
-        required: true
+        required: false
+        default: ""
       worker_tag:
-        description: "Worker image tag (for example sha-abcdef1234)"
+        description: "Worker image tag override (optional, for example sha-abcdef1234)"
         type: string
-        required: true
+        required: false
+        default: ""
       pull_policy:
         description: "Kubernetes image pull policy"
         type: string
@@ -83,12 +85,17 @@ jobs:
             exit 1
           fi
 
-          if [[ ! "${BACKEND_TAG}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+          if [[ -z "${BACKEND_TAG}" && -z "${WORKER_TAG}" ]]; then
+            echo "At least one of backend_tag or worker_tag must be provided."
+            exit 1
+          fi
+
+          if [[ -n "${BACKEND_TAG}" && ! "${BACKEND_TAG}" =~ ^[A-Za-z0-9._-]+$ ]]; then
             echo "Invalid backend_tag value."
             exit 1
           fi
 
-          if [[ ! "${WORKER_TAG}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+          if [[ -n "${WORKER_TAG}" && ! "${WORKER_TAG}" =~ ^[A-Za-z0-9._-]+$ ]]; then
             echo "Invalid worker_tag value."
             exit 1
           fi
@@ -103,8 +110,14 @@ jobs:
 
       - name: Terraform apply app release
         run: |
-          export TF_VAR_backend_image_tag_by_env="{\"${TARGET_ENV}\":\"${BACKEND_TAG}\"}"
-          export TF_VAR_worker_image_tag_by_env="{\"${TARGET_ENV}\":\"${WORKER_TAG}\"}"
+          if [[ -n "${BACKEND_TAG}" ]]; then
+            export TF_VAR_backend_image_tag_by_env="{\"${TARGET_ENV}\":\"${BACKEND_TAG}\"}"
+          fi
+
+          if [[ -n "${WORKER_TAG}" ]]; then
+            export TF_VAR_worker_image_tag_by_env="{\"${TARGET_ENV}\":\"${WORKER_TAG}\"}"
+          fi
+
           export TF_VAR_image_pull_policy_by_env="{\"${TARGET_ENV}\":\"${PULL_POLICY}\"}"
 
           terraform -chdir=infra apply -auto-approve -target="helm_release.app[\"${TARGET_ENV}\"]"
