@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet';
+import {
+    MapContainer,
+    TileLayer,
+    Polyline,
+    CircleMarker,
+    useMap,
+} from 'react-leaflet';
 import './Map.scss';
 import { useDirectionsStore } from '../../hooks/store/useDirectionsStore';
 import { useCenterStore } from '../../hooks/store/useCenterStore';
@@ -12,7 +18,9 @@ const readCssToken = (tokenName: string, fallback: string) => {
         return fallback;
     }
 
-    const value = getComputedStyle(document.documentElement).getPropertyValue(tokenName).trim();
+    const value = getComputedStyle(document.documentElement)
+        .getPropertyValue(tokenName)
+        .trim();
     return value || fallback;
 };
 
@@ -37,7 +45,9 @@ const MapViewUpdater = ({
 
     useEffect(() => {
         if (route && route.length > 1) {
-            const bounds = route.map((point) => [point.lat, point.lng] as [number, number]);
+            const bounds = route.map(
+                (point) => [point.lat, point.lng] as [number, number],
+            );
             map.fitBounds(bounds, { padding: [fitPadding, fitPadding] });
             return;
         }
@@ -50,15 +60,26 @@ const MapViewUpdater = ({
 
 const Map = () => {
     const center = useCenterStore((state) => state.center);
-    const directionsResponse = useDirectionsStore((state) => state.directionsResponse);
+    const directionsResponse = useDirectionsStore(
+        (state) => state.directionsResponse,
+    );
     const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
-    const tileUrl = import.meta.env.VITE_TILE_URL || `${apiBaseUrl}/tiles/{z}/{x}/{y}.png`;
+    const tileUrl = `${apiBaseUrl}/tiles/{z}/{x}/{y}.png`;
     const mapTokens = useMemo(
         () => ({
             markerRadius: readCssNumberToken('--map-marker-radius', 6),
-            markerStroke: readCssToken('--color-map-marker-stroke', 'var(--color-accent)'),
-            markerFill: readCssToken('--color-map-marker-fill', 'var(--color-panel)'),
-            routeColor: readCssToken('--color-map-route', 'var(--color-accent)'),
+            markerStroke: readCssToken(
+                '--color-map-marker-stroke',
+                'var(--color-accent)',
+            ),
+            markerFill: readCssToken(
+                '--color-map-marker-fill',
+                'var(--color-panel)',
+            ),
+            routeColor: readCssToken(
+                '--color-map-route',
+                'var(--color-accent)',
+            ),
             routeWeight: readCssNumberToken('--map-route-weight', 4),
             routeOpacity: readCssNumberToken('--map-route-opacity', 0.9),
             fitPadding: readCssNumberToken('--map-fit-padding', 40),
@@ -74,10 +95,7 @@ const Map = () => {
                 zoom={DEFAULT_ZOOM}
                 scrollWheelZoom={true}
             >
-                <TileLayer
-                    url={tileUrl}
-                    attribution="Map data"
-                />
+                <TileLayer url={tileUrl} attribution="Map data" />
                 <CircleMarker
                     center={[center.lat, center.lng]}
                     radius={mapTokens.markerRadius}
@@ -89,7 +107,10 @@ const Map = () => {
                 />
                 {directionsResponse && directionsResponse.length > 1 ? (
                     <Polyline
-                        positions={directionsResponse.map((point) => [point.lat, point.lng])}
+                        positions={directionsResponse.map((point) => [
+                            point.lat,
+                            point.lng,
+                        ])}
                         pathOptions={{
                             color: mapTokens.routeColor,
                             weight: mapTokens.routeWeight,
