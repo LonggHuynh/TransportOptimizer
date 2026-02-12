@@ -166,6 +166,7 @@ resource "helm_release" "app" {
       }
     }
     frontend = {
+      enabled = true
       image = merge(
         {
           repository = var.frontend_image
