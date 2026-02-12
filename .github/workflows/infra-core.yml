@@ -10,18 +10,12 @@ on:
           - stage
           - prod
         required: true
-  push:
-    branches:
-      - stage
-      - prod
-    paths:
-      - "infra/**"
 
 permissions:
   contents: read
 
 concurrency:
-  group: infra-core-${{ github.event.inputs.environment || github.ref_name }}
+  group: infra-core-${{ github.event.inputs.environment }}
   cancel-in-progress: false
 
 jobs:
@@ -35,11 +29,7 @@ jobs:
         id: resolve
         shell: bash
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
-            target_environment="${GITHUB_REF_NAME}"
-          else
-            target_environment="${{ inputs.environment }}"
-          fi
+          target_environment="${{ inputs.environment }}"
 
           if [[ ! "${target_environment}" =~ ^(stage|prod)$ ]]; then
             echo "Invalid target environment: ${target_environment}"
@@ -49,7 +39,7 @@ jobs:
           echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"
 
   deploy-infra-core:
-    name: Run full Terraform apply
+    name: Run manual Terraform apply
     needs: resolve-target-environment
     runs-on: ubuntu-latest
     environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
@@ -68,11 +58,14 @@ jobs:
       - name: Terraform init
         run: terraform -chdir=infra init
 
-      - name: Terraform apply
+      - name: Terraform plan
         run: |
           # Keep app image tags deterministic during full infra applies.
           export TF_VAR_backend_image_tag_by_env="{\"stage\":\"stage-latest\",\"prod\":\"prod-latest\"}"
           export TF_VAR_worker_image_tag_by_env="{\"stage\":\"stage-latest\",\"prod\":\"prod-latest\"}"
           export TF_VAR_image_pull_policy_by_env="{\"stage\":\"IfNotPresent\",\"prod\":\"IfNotPresent\"}"
 
-          terraform -chdir=infra apply -auto-approve
+          terraform -chdir=infra plan -out=tfplan
+
+      - name: Terraform apply
+        run: terraform -chdir=infra apply tfplan
