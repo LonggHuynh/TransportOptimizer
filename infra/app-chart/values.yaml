@@ -16,13 +16,15 @@ backend:
   enabled: true
   replicaCount: 2
   image:
-    repository: "ghcr.io/longhuynh5713/pathplanner-backend:sha-34ee32bd502459c8a15d37fa9c6eb813df400fc2"
-    tag: ""
+    repository: "ghcr.io/longhuynh5713/pathplanner-backend"
+    tag: "latest"
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
     port: 80
     containerPort: 8080
+  health:
+    path: "/healthz"
   serviceAccount:
     create: true
     name: ""
@@ -59,9 +61,12 @@ worker:
   enabled: true
   replicaCount: 1
   image:
-    repository: "ghcr.io/longhuynh5713/pathplanner-worker:sha-34ee32bd502459c8a15d37fa9c6eb813df400fc2"
-    tag: ""
+    repository: "ghcr.io/longhuynh5713/pathplanner-worker"
+    tag: "latest"
     pullPolicy: IfNotPresent
+  health:
+    path: "/healthz"
+    port: 8081
   serviceAccount:
     create: true
     name: ""
@@ -89,6 +94,31 @@ worker:
     maxReplicas: 3
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+
+frontend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: "ghcr.io/longhuynh5713/pathplanner-frontend"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    containerPort: 8080
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+
+gateway:
+  enabled: true
+  className: "gke-l7-global-external-managed"
+  backendPathPrefix: "/api"
+  hostnames: []
 
 redis:
   enabled: false

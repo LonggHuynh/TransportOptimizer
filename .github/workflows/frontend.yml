@@ -1,4 +1,4 @@
-name: Backend Deployment
+name: Frontend Deployment
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
       - stage
       - prod
     paths:
-      - "backend/**"
+      - "frontend/**"
       - ".github/workflows/**"
 
 permissions:
@@ -46,8 +46,8 @@ jobs:
 
           echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"
 
-  build-and-push-backend:
-    name: Build and Push Backend Docker Image to GHCR
+  build-and-push-frontend:
+    name: Build and Push Frontend Docker Image to GHCR
     needs: resolve-target-environment
     runs-on: ubuntu-latest
     steps:
@@ -65,13 +65,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set image name
-        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}-backend" >> $GITHUB_ENV
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}-frontend" >> $GITHUB_ENV
 
-      - name: Build and push backend image
+      - name: Build and push frontend image
         uses: docker/build-push-action@v4
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: ./frontend
+          file: ./frontend/Dockerfile
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
@@ -79,15 +79,15 @@ jobs:
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
-  deploy-backend:
-    name: Deploy backend to target environment
+  deploy-frontend:
+    name: Deploy frontend to target environment
     needs:
       - resolve-target-environment
-      - build-and-push-backend
+      - build-and-push-frontend
     uses: ./.github/workflows/terraform-app-release.yml
     with:
       environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
-      backend_tag: ${{ format('sha-{0}', github.sha) }}
+      frontend_tag: ${{ format('sha-{0}', github.sha) }}
       pull_policy: IfNotPresent
     secrets:
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}

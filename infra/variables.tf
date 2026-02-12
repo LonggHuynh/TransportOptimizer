@@ -174,6 +174,61 @@ variable "worker_image" {
   default     = ""
 }
 
+variable "frontend_image" {
+  type        = string
+  description = "Frontend container image."
+  default     = ""
+}
+
+variable "default_image_tag" {
+  type        = string
+  description = "Default container image tag used when no environment override is provided."
+  default     = "latest"
+}
+
+variable "backend_image_tag_by_env" {
+  type        = map(string)
+  description = "Optional backend image tag overrides by environment name."
+  default     = {}
+}
+
+variable "worker_image_tag_by_env" {
+  type        = map(string)
+  description = "Optional worker image tag overrides by environment name."
+  default     = {}
+}
+
+variable "frontend_image_tag_by_env" {
+  type        = map(string)
+  description = "Optional frontend image tag overrides by environment name."
+  default     = {}
+}
+
+variable "default_image_pull_policy" {
+  type        = string
+  description = "Default image pull policy used when no environment override is provided."
+  default     = "IfNotPresent"
+
+  validation {
+    condition     = contains(["Always", "IfNotPresent", "Never"], var.default_image_pull_policy)
+    error_message = "default_image_pull_policy must be Always, IfNotPresent, or Never."
+  }
+}
+
+variable "image_pull_policy_by_env" {
+  type        = map(string)
+  description = "Optional image pull policy overrides by environment name."
+  default     = {}
+
+  validation {
+    condition = alltrue([
+      for pull_policy in values(var.image_pull_policy_by_env) :
+      contains(["Always", "IfNotPresent", "Never"], pull_policy)
+    ])
+    error_message = "image_pull_policy_by_env values must be Always, IfNotPresent, or Never."
+  }
+}
+
 variable "backend_container_port" {
   type        = number
   description = "Backend container port."
@@ -196,6 +251,24 @@ variable "backend_path_prefix" {
   type        = string
   description = "Backend path prefix for routing."
   default     = "/api"
+}
+
+variable "gateway_enabled" {
+  type        = bool
+  description = "Whether to create Gateway and HTTPRoute resources."
+  default     = true
+}
+
+variable "gateway_class_name" {
+  type        = string
+  description = "GatewayClass name used by Gateway API."
+  default     = "gke-l7-global-external-managed"
+}
+
+variable "gateway_hostnames_by_env" {
+  type        = map(list(string))
+  description = "Optional hostnames by environment for the HTTPRoute and Gateway listener."
+  default     = {}
 }
 
 variable "redis_mode" {

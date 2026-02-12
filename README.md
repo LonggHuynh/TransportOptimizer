@@ -97,19 +97,40 @@ docker compose down
 
 ### Deploy to K8s cluster
 
-You first need to connect to the K8s cluster, e.g.:
+For direct cluster access, connect to GKE with:
 
 ```bash
-aws eks update-kubeconfig --name _your_eks_cluster_name
+gcloud container clusters get-credentials transport --region europe-north1 --project pathoptimizer-486102
 ```
 
-or create your own local cluster, e.g.
+Images are published to GHCR from GitHub Actions (`frontend.yml`, `backend.yml`, `worker.yml`) using:
 
-```
-k3d create cluster _your_cluster_name
-```
+- `sha-<commit>` immutable tags
+- `<branch>-latest` moving tags (`stage-latest`, `prod-latest`)
 
-The k8s cluster will pull the images from DockerHub. After that, apply the k8s files with the environment variables using
+Release behavior:
+
+1. Push to `stage` or `prod` with backend changes:
+   - builds backend image
+   - triggers Terraform app-scope apply for `helm_release.app["stage"|"prod"]`
+2. Push to `stage` or `prod` with worker changes:
+   - builds worker image
+   - triggers the same Terraform app-scope apply
+3. Push to `stage` or `prod` with frontend changes:
+   - builds frontend image
+   - triggers the same Terraform app-scope apply
+   - serves frontend from Kubernetes (Nginx) and routes via Gateway API
+4. Push to `stage` or `prod` with `infra/**` changes:
+   - triggers `.github/workflows/infra-core.yml`
+   - runs Terraform full apply
+5. For manual app promotions/rollbacks, trigger `.github/workflows/terraform-app-release.yml` and provide explicit tags.
+6. For manual full infra apply, trigger `.github/workflows/infra-core.yml`.
+
+Required repository secret:
+
+- `TF_API_TOKEN`: Terraform Cloud user/team token for workspace access.
+
+Manual Helm deploy is still possible for local experiments:
 
 ```
 kubectl apply -f infra/k8s/namespaces.yaml

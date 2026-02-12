@@ -34,6 +34,18 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s-worker" (include "transport.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "transport.frontend.fullname" -}}
+{{- printf "%s-frontend" (include "transport.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "transport.gateway.name" -}}
+{{- printf "%s-gateway" (include "transport.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "transport.httproute.name" -}}
+{{- printf "%s-route" (include "transport.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- define "transport.redis.serviceName" -}}
 {{- if .Values.redis.serviceName -}}
 {{- .Values.redis.serviceName -}}

@@ -10,6 +10,7 @@
 **/.idea
 **/*.*proj.user
 **/*.dbmdl
+**/pathoptimizer-*.json
 **/*.jfm
 **/azds.yaml
 **/bin

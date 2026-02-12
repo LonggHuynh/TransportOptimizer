@@ -36,6 +36,21 @@ spec:
         - name: worker
           image: "{{ .Values.worker.image.repository }}{{- if .Values.worker.image.tag }}:{{ .Values.worker.image.tag }}{{- end }}"
           imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          env:
+            - name: WORKER_HEALTH_PORT
+              value: {{ .Values.worker.health.port | quote }}
+          ports:
+            - name: health
+              containerPort: {{ .Values.worker.health.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.worker.health.path | quote }}
+              port: health
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.worker.health.path | quote }}
+              port: health
           {{- $hasConfig := or .Values.worker.config.enabled .Values.worker.config.existingName }}
           {{- $hasSecret := or .Values.worker.secret.enabled .Values.worker.secret.existingName }}
           {{- if or $hasConfig $hasSecret }}
