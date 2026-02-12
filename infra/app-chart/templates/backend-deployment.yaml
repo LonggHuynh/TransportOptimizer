@@ -49,6 +49,14 @@ spec:
             - name: http
               containerPort: {{ .Values.backend.service.containerPort }}
               protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.backend.health.path | quote }}
+              port: http
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.backend.health.path | quote }}
+              port: http
           {{- $hasConfig := or .Values.backend.config.enabled .Values.backend.config.existingName }}
           {{- $hasSecret := or .Values.backend.secret.enabled .Values.backend.secret.existingName }}
           {{- if or $hasConfig $hasSecret }}

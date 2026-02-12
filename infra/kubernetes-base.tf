@@ -116,6 +116,9 @@ resource "helm_release" "app" {
         port          = var.backend_service_port
         containerPort = var.backend_container_port
       }
+      health = {
+        path = var.backend_health_path
+      }
       serviceAccount = {
         create = true
         name   = local.backend_k8s_service_account

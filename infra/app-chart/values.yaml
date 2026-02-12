@@ -23,6 +23,8 @@ backend:
     type: ClusterIP
     port: 80
     containerPort: 8080
+  health:
+    path: "/healthz"
   serviceAccount:
     create: true
     name: ""
@@ -62,6 +64,9 @@ worker:
     repository: "ghcr.io/longhuynh5713/pathplanner-worker"
     tag: "latest"
     pullPolicy: IfNotPresent
+  health:
+    path: "/healthz"
+    port: 8081
   serviceAccount:
     create: true
     name: ""
