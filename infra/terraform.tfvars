@@ -47,6 +47,10 @@ worker_image_tag_by_env = {
   stage = "stage-latest"
   prod  = "prod-latest"
 }
+frontend_image_tag_by_env = {
+  stage = "stage-latest"
+  prod  = "prod-latest"
+}
 default_image_pull_policy = "IfNotPresent"
 image_pull_policy_by_env = {
   stage = "IfNotPresent"
