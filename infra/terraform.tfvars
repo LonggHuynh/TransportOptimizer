@@ -54,6 +54,8 @@ image_pull_secret_name = ""
 backend_container_port = 8080
 backend_service_port   = 80
 backend_health_path    = "/healthz"
+worker_health_path     = "/healthz"
+worker_health_port     = 8081
 
 # Routing
 backend_path_prefix = "/api"
