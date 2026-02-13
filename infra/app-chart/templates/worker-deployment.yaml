@@ -1,7 +1,7 @@
 {{- if .Values.worker.enabled }}
-{{- $workerHealth := .Values.worker.health | default dict -}}
-{{- $workerHealthPort := $workerHealth.port | default 8081 -}}
-{{- $workerHealthPath := $workerHealth.path | default "/healthz" -}}
+{{- $workerHealth := default (dict) .Values.worker.health -}}
+{{- $workerHealthPath := default "/healthz" (get $workerHealth "path") -}}
+{{- $workerHealthPort := default 8081 (get $workerHealth "port") -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
