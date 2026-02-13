@@ -2,7 +2,7 @@
 project_id = "pathoptimizer-486102"
 region     = "europe-north1"
 
-environments = ["stage", "prod"]
+environments = ["dev", "stage"]
 
 # GKE
 cluster_name = "transport"
@@ -15,23 +15,23 @@ subnet_cidr     = "10.10.0.0/20"
 gke_subnet_name = "transport-gke-subnet"
 gke_subnet_cidr = "10.11.0.0/20"
 subnet_cidrs = {
+  dev   = "10.10.16.0/20"
   stage = "10.10.0.0/20"
-  prod  = "10.10.16.0/20"
 }
 # If using VPC-native clusters, set secondary ranges
 pods_secondary_range_name = "pods"
 pods_secondary_cidr       = "10.20.0.0/16"
 gke_pods_secondary_cidr   = "10.22.0.0/16"
 pods_secondary_cidrs = {
+  dev   = "10.21.0.0/16"
   stage = "10.20.0.0/16"
-  prod  = "10.21.0.0/16"
 }
 services_secondary_range_name = "services"
 services_secondary_cidr       = "10.30.0.0/20"
 gke_services_secondary_cidr   = "10.31.0.0/20"
 services_secondary_cidrs = {
+  dev   = "10.30.16.0/20"
   stage = "10.30.0.0/20"
-  prod  = "10.30.16.0/20"
 }
 
 # Images (GHCR)
@@ -40,21 +40,21 @@ worker_image      = "ghcr.io/longhuynh5713/pathplanner-worker"
 frontend_image    = "ghcr.io/longhuynh5713/pathplanner-frontend"
 default_image_tag = "latest"
 backend_image_tag_by_env = {
+  dev   = "dev-latest"
   stage = "stage-latest"
-  prod  = "prod-latest"
 }
 worker_image_tag_by_env = {
+  dev   = "dev-latest"
   stage = "stage-latest"
-  prod  = "prod-latest"
 }
 frontend_image_tag_by_env = {
+  dev   = "dev-latest"
   stage = "stage-latest"
-  prod  = "prod-latest"
 }
 default_image_pull_policy = "IfNotPresent"
 image_pull_policy_by_env = {
+  dev   = "IfNotPresent"
   stage = "IfNotPresent"
-  prod  = "IfNotPresent"
 }
 
 # GHCR (public) - no pull secret needed
@@ -86,7 +86,6 @@ psc_subnet_cidr               = "10.60.0.0/24"
 redis_psc_connection_limit    = 10
 redis_k8s_service_enabled     = true
 redis_k8s_service_name        = "redis"
-redis_service_port            = 6379
 
 # App config (non-secret values)
 google_maps_api_url       = "https://maps.googleapis.com/maps/api"

@@ -152,7 +152,7 @@ variable "services_secondary_cidrs" {
 
 variable "environments" {
   type        = list(string)
-  description = "Environment names for multi-env infra (e.g. [\"stage\", \"prod\"]). Empty = single env."
+  description = "Environment names for multi-env infra (e.g. [\"dev\", \"stage\"]). Empty = single env."
   default     = []
 }
 
@@ -355,12 +355,6 @@ variable "redis_k8s_service_name" {
     condition     = !var.redis_k8s_service_enabled || var.redis_k8s_service_name != ""
     error_message = "redis_k8s_service_name must be set when redis_k8s_service_enabled is true."
   }
-}
-
-variable "redis_service_port" {
-  type        = number
-  description = "Redis service port used by the app deployment."
-  default     = 6379
 }
 
 variable "google_maps_api_url" {

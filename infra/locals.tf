@@ -1,8 +1,8 @@
 locals {
   workspace_name           = terraform.workspace
   workspace_suffix         = startswith(local.workspace_name, "transport-") ? trimprefix(local.workspace_name, "transport-") : local.workspace_name
-  split_workspace_suffixes = toset(["common", "stage", "prod"])
-  app_workspace_suffixes   = toset(["stage", "prod"])
+  split_workspace_suffixes = toset(["common", "dev", "stage"])
+  app_workspace_suffixes   = toset(["dev", "stage"])
   using_split_workspaces   = contains(local.split_workspace_suffixes, local.workspace_suffix)
   is_common_workspace      = local.workspace_suffix == "common"
   is_env_workspace         = contains(local.app_workspace_suffixes, local.workspace_suffix)
@@ -137,36 +137,30 @@ locals {
 
   aspnetcore_environment = {
     for env in local.environments :
-    env => env == "prod" ? "Production" : env == "stage" ? "Staging" : "Production"
+    env => env == "stage" ? "Staging" : env == "dev" ? "Development" : env == "prod" ? "Production" : "Production"
   }
 
-  backend_service_account_email_by_env = {
+  backend_service_account_email_by_env = local.manage_foundation ? {
     for env in local.environments :
     env => "${local.backend_sa_id[env]}@${var.project_id}.iam.gserviceaccount.com"
-  }
+  } : try(data.terraform_remote_state.common[0].outputs.backend_service_account_emails, {})
 
-  worker_service_account_email_by_env = {
+  worker_service_account_email_by_env = local.manage_foundation ? {
     for env in local.environments :
     env => "${local.worker_sa_id[env]}@${var.project_id}.iam.gserviceaccount.com"
-  }
+  } : try(data.terraform_remote_state.common[0].outputs.worker_service_account_emails, {})
 
   redis_host_by_env = local.manage_foundation ? {
     for env in local.environments :
     env => google_redis_cluster.redis[env].discovery_endpoints[0].address
-    } : {
-    for env in local.environments :
-    env => var.redis_k8s_service_name
-  }
+  } : try(data.terraform_remote_state.common[0].outputs.redis_host_by_env, {})
 
   redis_port_by_env = local.manage_foundation ? {
     for env in local.environments :
     env => google_redis_cluster.redis[env].discovery_endpoints[0].port
-    } : {
-    for env in local.environments :
-    env => var.redis_service_port
-  }
+  } : try(data.terraform_remote_state.common[0].outputs.redis_port_by_env, {})
 
-  redis_endpoint_lookup_supported = local.manage_foundation || var.redis_k8s_service_enabled
+  redis_endpoint_lookup_supported = local.manage_foundation || length(data.terraform_remote_state.common) > 0
 
   redis_app_host_by_env = {
     for env in local.environments :

@@ -1,5 +1,17 @@
 data "google_client_config" "default" {}
 
+data "terraform_remote_state" "common" {
+  count   = local.manage_app && !local.manage_foundation ? 1 : 0
+  backend = "remote"
+
+  config = {
+    organization = "LongHuynhh"
+    workspaces = {
+      name = "transport-common"
+    }
+  }
+}
+
 data "google_container_cluster" "gke" {
   name     = local.manage_foundation ? google_container_cluster.primary[0].name : local.gke_cluster_name
   location = var.region
@@ -91,7 +103,7 @@ resource "helm_release" "app" {
   lifecycle {
     precondition {
       condition     = local.redis_endpoint_lookup_supported
-      error_message = "App-only workspaces require redis_k8s_service_enabled = true."
+      error_message = "App-only workspaces require transport-common workspace outputs."
     }
   }
 
