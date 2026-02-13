@@ -4,12 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Target deployment environment"
+        description: "Infra workspace (common only)"
         type: choice
         options:
           - common
-          - stage
-          - prod
         required: true
 
 permissions:
@@ -32,7 +30,7 @@ jobs:
         run: |
           target_environment="${{ inputs.environment }}"
 
-          if [[ ! "${target_environment}" =~ ^(common|stage|prod)$ ]]; then
+          if [[ "${target_environment}" != "common" ]]; then
             echo "Invalid target environment: ${target_environment}"
             exit 1
           fi
@@ -57,29 +55,10 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform init
-        shell: bash
-        run: |
-          if [[ "${TARGET_ENV}" == "common" ]]; then
-            terraform -chdir=infra/common init
-          else
-            terraform -chdir=infra/env init
-            terraform -chdir=infra/env workspace select "${TARGET_ENV}" || terraform -chdir=infra/env workspace new "${TARGET_ENV}"
-          fi
+        run: terraform -chdir=infra/common init
 
       - name: Terraform plan
-        shell: bash
-        run: |
-          if [[ "${TARGET_ENV}" == "common" ]]; then
-            terraform -chdir=infra/common plan -out=tfplan
-          else
-            terraform -chdir=infra/env plan -var-file="environments/${TARGET_ENV}.tfvars" -out=tfplan
-          fi
+        run: terraform -chdir=infra/common plan -out=tfplan
 
       - name: Terraform apply
-        shell: bash
-        run: |
-          if [[ "${TARGET_ENV}" == "common" ]]; then
-            terraform -chdir=infra/common apply tfplan
-          else
-            terraform -chdir=infra/env apply tfplan
-          fi
+        run: terraform -chdir=infra/common apply tfplan

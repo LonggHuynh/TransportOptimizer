@@ -143,4 +143,4 @@ jobs:
             export TF_VAR_frontend_image_tag="${FRONTEND_TAG}"
           fi
 
-          terraform -chdir=infra/env apply -auto-approve -var-file="environments/${TARGET_ENV}.tfvars"
+          terraform -chdir=infra/env apply -auto-approve -var-file="environments/${TARGET_ENV}.tfvars" -target="module.app.helm_release.app"

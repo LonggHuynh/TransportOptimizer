@@ -32,6 +32,11 @@ Use local workspace `stage` or `prod` when running `infra/env` from CLI.
 2. Apply `infra/env` with `stage` vars.
 3. Apply `infra/env` with `prod` vars.
 
+## CI/CD Behavior
+
+- `Infra Deployment` workflow runs `infra/common` only.
+- `Terraform App Release` workflow runs `infra/env` and targets only `module.app.helm_release.app` (app release only).
+
 ## Commands
 
 ```bash
