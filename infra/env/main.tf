@@ -5,7 +5,7 @@ module "app" {
   region                = var.region
   cluster_name          = var.cluster_name
   gke_cluster_name      = var.gke_cluster_name
-  environment           = "stage"
+  environment           = var.environment
   common_organization   = var.common_organization
   common_workspace_name = var.common_workspace_name
   common_gke_output_key = var.common_gke_output_key

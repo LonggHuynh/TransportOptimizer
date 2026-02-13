@@ -1,30 +1,38 @@
 # Terraform Layout
 
-Terraform is now split into three root directories:
+Terraform is split into two active roots:
 
-1. `infra/common` -> Terraform Cloud workspace `transport-common`
-2. `infra/stage` -> Terraform Cloud workspace `transport-stage`
-3. `infra/prod` -> Terraform Cloud workspace `transport-prod`
+1. `infra/common` -> shared infrastructure (`transport-common`)
+2. `infra/env` -> app infrastructure for both `stage` and `prod`
 
-The previous single-root configuration was moved to `infra/legacy-root` for reference.
+`infra/env` uses one codebase with environment-specific variables (`stage`/`prod`), which is the recommended Terraform pattern to avoid duplicate root code.
+
+The previous single-root configuration is kept in `infra/legacy-root` for reference.
 
 ## What Each Root Manages
 
 - `infra/common`
   - Shared GCP infrastructure: APIs, VPC/subnets/NAT, GKE, Redis, IAM, frontend bucket/LB.
-  - Produces outputs consumed by app roots.
-- `infra/stage`
-  - Helm release for stage app workloads.
+  - Produces outputs consumed by `infra/env`.
+- `infra/env`
+  - Helm release for app workloads.
+  - Environment is selected by tfvars (`environments/stage.tfvars` or `environments/prod.tfvars`).
   - Reads shared outputs from `transport-common` via `data.terraform_remote_state`.
-- `infra/prod`
-  - Helm release for prod app workloads.
-  - Reads shared outputs from `transport-common` via `data.terraform_remote_state`.
+
+## Terraform Cloud Workspaces
+
+- `transport-common`
+- `transport-stage`
+- `transport-prod`
+
+`infra/env/backend.tf` uses `workspaces { prefix = "transport-" }`.
+Use local workspace `stage` or `prod` when running `infra/env` from CLI.
 
 ## Apply Order
 
 1. Apply `infra/common` first.
-2. Apply `infra/stage`.
-3. Apply `infra/prod`.
+2. Apply `infra/env` with `stage` vars.
+3. Apply `infra/env` with `prod` vars.
 
 ## Commands
 
@@ -34,31 +42,37 @@ terraform init
 terraform plan
 terraform apply
 
-cd ../stage
+cd ../env
 terraform init
-terraform plan
-terraform apply
 
-cd ../prod
-terraform init
-terraform plan
-terraform apply
+terraform workspace select stage || terraform workspace new stage
+terraform plan -var-file=environments/stage.tfvars
+terraform apply -var-file=environments/stage.tfvars
+
+terraform workspace select prod || terraform workspace new prod
+terraform plan -var-file=environments/prod.tfvars
+terraform apply -var-file=environments/prod.tfvars
 ```
 
-## Migration From Old Single Workspace
+## Migration From Old Split Stage/Prod Roots
 
-If state/resources still come from the old single-root workflow:
+If you previously used separate directories (`infra/stage`, `infra/prod`), keep the same Terraform Cloud workspace names:
 
-1. Keep/rename old workspace state as `transport-common`.
-2. In `infra/common`, run plan/apply and confirm shared resources are stable.
-3. In `infra/stage` and `infra/prod`, import Helm releases if they already exist:
+- `transport-stage`
+- `transport-prod`
+
+Then run `infra/env` with matching workspace + tfvars pair:
+
+- workspace `stage` + `environments/stage.tfvars`
+- workspace `prod` + `environments/prod.tfvars`
+
+If Helm resources already exist and state is new, import with:
 
 ```bash
-cd infra/stage
-terraform import 'module.app.helm_release.app' transport-stage/transport-optimizer
+cd infra/env
+terraform workspace select stage
+terraform import -var-file=environments/stage.tfvars 'module.app.helm_release.app' transport-stage/transport-optimizer
 
-cd ../prod
-terraform import 'module.app.helm_release.app' transport-prod/transport-optimizer
+terraform workspace select prod
+terraform import -var-file=environments/prod.tfvars 'module.app.helm_release.app' transport-prod/transport-optimizer
 ```
-
-4. Re-run plan in all three roots and confirm no unexpected destroy.

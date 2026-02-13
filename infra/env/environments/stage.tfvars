@@ -1,5 +1,6 @@
-project_id = "pathoptimizer-486102"
-region     = "europe-north1"
+project_id  = "pathoptimizer-486102"
+region      = "europe-north1"
+environment = "stage"
 
 cluster_name     = "transport"
 gke_cluster_name = "transport"
