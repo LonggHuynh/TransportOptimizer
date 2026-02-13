@@ -186,6 +186,11 @@ resource "helm_release" "app" {
       className         = var.gateway_class_name
       backendPathPrefix = var.backend_path_prefix
       hostnames         = lookup(var.gateway_hostnames_by_env, each.key, [])
+      backendHealthCheckPolicy = {
+        enabled     = true
+        name        = "backend-healthz"
+        requestPath = var.backend_health_path
+      }
     }
     redis = {
       enabled     = var.redis_k8s_service_enabled
