@@ -23,7 +23,7 @@ variable "gke_cluster_name" {
 
 variable "environment" {
   type        = string
-  description = "Application environment."
+  description = "Environment name for this app root."
 
   validation {
     condition     = contains(["stage", "prod"], var.environment)
@@ -86,6 +86,11 @@ variable "image_pull_policy" {
   type        = string
   description = "Image pull policy."
   default     = "IfNotPresent"
+
+  validation {
+    condition     = contains(["Always", "IfNotPresent", "Never"], var.image_pull_policy)
+    error_message = "image_pull_policy must be Always, IfNotPresent, or Never."
+  }
 }
 
 variable "backend_container_port" {

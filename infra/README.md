@@ -7,8 +7,6 @@ Terraform is split into two active roots:
 
 `infra/env` uses one codebase with environment-specific variables (`stage`/`prod`), which is the recommended Terraform pattern to avoid duplicate root code.
 
-The previous single-root configuration is kept in `infra/legacy-root` for reference.
-
 ## What Each Root Manages
 
 - `infra/common`
@@ -16,7 +14,7 @@ The previous single-root configuration is kept in `infra/legacy-root` for refere
   - Produces outputs consumed by `infra/env`.
 - `infra/env`
   - Helm release for app workloads.
-  - Environment is selected by tfvars (`environments/stage.tfvars` or `environments/prod.tfvars`).
+  - Environment is selected by workspace (`stage`/`prod`) or tfvars (`environments/stage.tfvars` or `environments/prod.tfvars`).
   - Reads shared outputs from `transport-common` via `data.terraform_remote_state`.
 
 ## Terraform Cloud Workspaces
@@ -71,8 +69,10 @@ If Helm resources already exist and state is new, import with:
 ```bash
 cd infra/env
 terraform workspace select stage
-terraform import -var-file=environments/stage.tfvars 'module.app.helm_release.app' transport-stage/transport-optimizer
+terraform import -var-file=environments/stage.tfvars 'helm_release.app' transport-stage/transport-optimizer
 
 terraform workspace select prod
-terraform import -var-file=environments/prod.tfvars 'module.app.helm_release.app' transport-prod/transport-optimizer
+terraform import -var-file=environments/prod.tfvars 'helm_release.app' transport-prod/transport-optimizer
 ```
+
+Legacy single-root Terraform files have been removed from this repository.

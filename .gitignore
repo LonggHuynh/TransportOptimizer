@@ -10,4 +10,6 @@ infra/.terraform/
 infra/.terraform.lock.hcl
 infra/*.tfstate
 infra/*.tfstate.*
+*.auto.tfvars
+*.auto.tfvars.json
 backend/pathoptimizer-*.json
