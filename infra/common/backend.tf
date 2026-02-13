@@ -3,7 +3,7 @@ terraform {
     organization = "LongHuynhh"
 
     workspaces {
-      name = "transport"
+      name = "transport-common"
     }
   }
 }

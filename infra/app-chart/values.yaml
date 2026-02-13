@@ -119,6 +119,10 @@ gateway:
   className: "gke-l7-global-external-managed"
   backendPathPrefix: "/api"
   hostnames: []
+  backendHealthCheckPolicy:
+    enabled: true
+    name: "backend-healthz"
+    requestPath: "/healthz"
 
 redis:
   enabled: false

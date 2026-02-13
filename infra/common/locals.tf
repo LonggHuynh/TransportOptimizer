@@ -1,9 +1,12 @@
 locals {
-  use_env_suffix = length(var.environments) > 0
-  environments   = local.use_env_suffix ? var.environments : ["default"]
+  manage_foundation       = true
+  use_env_suffix          = length(var.environments) > 0
+  environments            = local.use_env_suffix ? var.environments : ["default"]
+  foundation_environments = toset(local.environments)
+
   gke_environment = var.gke_environment
-  gke_env_suffix = local.gke_environment != "" ? "-${local.gke_environment}" : ""
-  gke_output_key = local.gke_environment != "" ? local.gke_environment : "gke"
+  gke_env_suffix  = local.gke_environment != "" ? "-${local.gke_environment}" : ""
+  gke_output_key  = local.gke_environment != "" ? local.gke_environment : "gke"
 
   env_suffix = {
     for env in local.environments : env => local.use_env_suffix ? "-${env}" : ""
@@ -15,7 +18,7 @@ locals {
   }
 
   gke_name_prefix = lower(replace("${var.cluster_name}${local.gke_env_suffix}", "_", "-"))
-  gke_vpc_name = "${var.vpc_name}${local.gke_env_suffix}"
+  gke_vpc_name    = "${var.vpc_name}${local.gke_env_suffix}"
 
   subnet_name = {
     for env in local.environments :
@@ -28,6 +31,7 @@ locals {
     for env in local.environments :
     env => "${var.cluster_name}${local.env_suffix[env]}"
   }
+
   gke_cluster_name = "${var.cluster_name}${local.gke_env_suffix}"
 
   frontend_lb_base = {
@@ -97,7 +101,7 @@ locals {
     env => lookup(var.services_secondary_cidrs, env, var.services_secondary_cidr)
   }
 
-  multi_env = length(var.environments) > 1
+  multi_env = length(local.environments) > 1
 
   subnet_cidrs_ok = !local.multi_env || (
     alltrue([for env in local.environments : contains(keys(var.subnet_cidrs), env)]) &&
@@ -121,33 +125,4 @@ locals {
 
   backend_k8s_service_account = "backend"
   worker_k8s_service_account  = "worker"
-
-  aspnetcore_environment = {
-    for env in local.environments :
-    env => env == "prod" ? "Production" : env == "stage" ? "Staging" : "Production"
-  }
-
-  redis_host_by_env = {
-    for env in local.environments :
-    env => google_redis_cluster.redis[env].discovery_endpoints[0].address
-  }
-
-  redis_port_by_env = {
-    for env in local.environments :
-    env => google_redis_cluster.redis[env].discovery_endpoints[0].port
-  }
-
-  redis_app_host_by_env = {
-    for env in local.environments :
-    env => var.redis_k8s_service_enabled ? var.redis_k8s_service_name : local.redis_host_by_env[env]
-  }
-
-  redis_endpoint_by_env = {
-    for env in local.environments :
-    env => "${local.redis_app_host_by_env[env]}:${local.redis_port_by_env[env]}"
-  }
-
-  ghcr_credentials_provided        = var.ghcr_username != "" && var.ghcr_token != ""
-  effective_image_pull_secret_name = var.image_pull_secret_name != "" ? var.image_pull_secret_name : (local.ghcr_credentials_provided ? "ghcr" : "")
-  google_maps_api_key_provided     = var.google_maps_api_key != ""
 }

@@ -1,21 +1,20 @@
-name: Infra Core Deployment
+name: Infra Deployment
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Target deployment environment"
+        description: "Infra workspace (common only)"
         type: choice
         options:
-          - stage
-          - prod
+          - common
         required: true
 
 permissions:
   contents: read
 
 concurrency:
-  group: infra-core-${{ github.event.inputs.environment }}
+  group: infra-deploy-${{ github.event.inputs.environment }}
   cancel-in-progress: false
 
 jobs:
@@ -31,14 +30,14 @@ jobs:
         run: |
           target_environment="${{ inputs.environment }}"
 
-          if [[ ! "${target_environment}" =~ ^(stage|prod)$ ]]; then
+          if [[ "${target_environment}" != "common" ]]; then
             echo "Invalid target environment: ${target_environment}"
             exit 1
           fi
 
           echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"
 
-  deploy-infra-core:
+  deploy-infra:
     name: Run manual Terraform apply
     needs: resolve-target-environment
     runs-on: ubuntu-latest
@@ -56,16 +55,10 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform init
-        run: terraform -chdir=infra init
+        run: terraform -chdir=infra/common init
 
       - name: Terraform plan
-        run: |
-          # Keep app image tags deterministic during full infra applies.
-          export TF_VAR_backend_image_tag_by_env="{\"stage\":\"stage-latest\",\"prod\":\"prod-latest\"}"
-          export TF_VAR_worker_image_tag_by_env="{\"stage\":\"stage-latest\",\"prod\":\"prod-latest\"}"
-          export TF_VAR_image_pull_policy_by_env="{\"stage\":\"IfNotPresent\",\"prod\":\"IfNotPresent\"}"
-
-          terraform -chdir=infra plan -out=tfplan
+        run: terraform -chdir=infra/common plan -out=tfplan
 
       - name: Terraform apply
-        run: terraform -chdir=infra apply tfplan
+        run: terraform -chdir=infra/common apply tfplan
