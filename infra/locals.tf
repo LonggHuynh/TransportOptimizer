@@ -1,9 +1,22 @@
 locals {
-  use_env_suffix = length(var.environments) > 0
-  environments   = local.use_env_suffix ? var.environments : ["default"]
-  gke_environment = var.gke_environment
-  gke_env_suffix = local.gke_environment != "" ? "-${local.gke_environment}" : ""
-  gke_output_key = local.gke_environment != "" ? local.gke_environment : "gke"
+  workspace_name           = terraform.workspace
+  workspace_suffix         = startswith(local.workspace_name, "transport-") ? trimprefix(local.workspace_name, "transport-") : local.workspace_name
+  split_workspace_suffixes = toset(["common", "stage", "prod"])
+  app_workspace_suffixes   = toset(["stage", "prod"])
+  using_split_workspaces   = contains(local.split_workspace_suffixes, local.workspace_suffix)
+  is_common_workspace      = local.workspace_suffix == "common"
+  is_env_workspace         = contains(local.app_workspace_suffixes, local.workspace_suffix)
+  manage_foundation        = local.is_common_workspace || !local.using_split_workspaces
+  manage_app               = local.is_env_workspace || !local.using_split_workspaces
+  configured_environments  = length(var.environments) > 0 ? var.environments : ["default"]
+  workspace_environments   = local.is_env_workspace ? [local.workspace_suffix] : local.configured_environments
+  use_env_suffix           = length(local.workspace_environments) > 0
+  environments             = local.use_env_suffix ? local.workspace_environments : ["default"]
+  foundation_environments  = local.manage_foundation ? toset(local.environments) : toset([])
+  application_environments = local.manage_app ? toset(local.environments) : toset([])
+  gke_environment          = var.gke_environment
+  gke_env_suffix           = local.gke_environment != "" ? "-${local.gke_environment}" : ""
+  gke_output_key           = local.gke_environment != "" ? local.gke_environment : "gke"
 
   env_suffix = {
     for env in local.environments : env => local.use_env_suffix ? "-${env}" : ""
@@ -15,7 +28,7 @@ locals {
   }
 
   gke_name_prefix = lower(replace("${var.cluster_name}${local.gke_env_suffix}", "_", "-"))
-  gke_vpc_name = "${var.vpc_name}${local.gke_env_suffix}"
+  gke_vpc_name    = "${var.vpc_name}${local.gke_env_suffix}"
 
   subnet_name = {
     for env in local.environments :
@@ -97,7 +110,7 @@ locals {
     env => lookup(var.services_secondary_cidrs, env, var.services_secondary_cidr)
   }
 
-  multi_env = length(var.environments) > 1
+  multi_env = length(local.environments) > 1
 
   subnet_cidrs_ok = !local.multi_env || (
     alltrue([for env in local.environments : contains(keys(var.subnet_cidrs), env)]) &&
@@ -127,15 +140,33 @@ locals {
     env => env == "prod" ? "Production" : env == "stage" ? "Staging" : "Production"
   }
 
-  redis_host_by_env = {
+  backend_service_account_email_by_env = {
     for env in local.environments :
-    env => google_redis_cluster.redis[env].discovery_endpoints[0].address
+    env => "${local.backend_sa_id[env]}@${var.project_id}.iam.gserviceaccount.com"
   }
 
-  redis_port_by_env = {
+  worker_service_account_email_by_env = {
+    for env in local.environments :
+    env => "${local.worker_sa_id[env]}@${var.project_id}.iam.gserviceaccount.com"
+  }
+
+  redis_host_by_env = local.manage_foundation ? {
+    for env in local.environments :
+    env => google_redis_cluster.redis[env].discovery_endpoints[0].address
+    } : {
+    for env in local.environments :
+    env => var.redis_k8s_service_name
+  }
+
+  redis_port_by_env = local.manage_foundation ? {
     for env in local.environments :
     env => google_redis_cluster.redis[env].discovery_endpoints[0].port
+    } : {
+    for env in local.environments :
+    env => var.redis_service_port
   }
+
+  redis_endpoint_lookup_supported = local.manage_foundation || var.redis_k8s_service_enabled
 
   redis_app_host_by_env = {
     for env in local.environments :

@@ -86,6 +86,7 @@ psc_subnet_cidr               = "10.60.0.0/24"
 redis_psc_connection_limit    = 10
 redis_k8s_service_enabled     = true
 redis_k8s_service_name        = "redis"
+redis_service_port            = 6379
 
 # App config (non-secret values)
 google_maps_api_url       = "https://maps.googleapis.com/maps/api"

@@ -357,6 +357,12 @@ variable "redis_k8s_service_name" {
   }
 }
 
+variable "redis_service_port" {
+  type        = number
+  description = "Redis service port used by the app deployment."
+  default     = 6379
+}
+
 variable "google_maps_api_url" {
   type        = string
   description = "Google Maps API base URL."

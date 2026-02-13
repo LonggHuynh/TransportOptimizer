@@ -1,10 +1,8 @@
 data "google_client_config" "default" {}
 
 data "google_container_cluster" "gke" {
-  name     = google_container_cluster.primary.name
+  name     = local.manage_foundation ? google_container_cluster.primary[0].name : local.gke_cluster_name
   location = var.region
-
-  depends_on = [google_container_cluster.primary]
 }
 
 provider "helm" {
@@ -81,7 +79,7 @@ locals {
 }
 
 resource "helm_release" "app" {
-  for_each = toset(local.environments)
+  for_each = local.application_environments
 
   name             = "transport-optimizer"
   chart            = "${path.module}/app-chart"
@@ -89,6 +87,13 @@ resource "helm_release" "app" {
   create_namespace = true
   timeout          = 180
   reuse_values     = false
+
+  lifecycle {
+    precondition {
+      condition     = local.redis_endpoint_lookup_supported
+      error_message = "App-only workspaces require redis_k8s_service_enabled = true."
+    }
+  }
 
   values = [yamlencode({
     commonLabels = {
@@ -123,7 +128,7 @@ resource "helm_release" "app" {
         create = true
         name   = local.backend_k8s_service_account
         annotations = {
-          "iam.gke.io/gcp-service-account" = google_service_account.backend[each.key].email
+          "iam.gke.io/gcp-service-account" = local.backend_service_account_email_by_env[each.key]
         }
       }
       config = {
@@ -154,7 +159,7 @@ resource "helm_release" "app" {
         create = true
         name   = local.worker_k8s_service_account
         annotations = {
-          "iam.gke.io/gcp-service-account" = google_service_account.worker[each.key].email
+          "iam.gke.io/gcp-service-account" = local.worker_service_account_email_by_env[each.key]
         }
       }
       config = {
