@@ -9,7 +9,7 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: transport-dev
+  name: transport-prod
   labels:
     app.kubernetes.io/part-of: transport-optimizer
-    env: dev
+    env: prod

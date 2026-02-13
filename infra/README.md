@@ -1,78 +1,64 @@
-# Terraform Workspaces
+# Terraform Layout
 
-This stack is split across three Terraform Cloud workspaces:
+Terraform is now split into three root directories:
 
-1. `transport-common`
-2. `transport-dev`
-3. `transport-stage`
+1. `infra/common` -> Terraform Cloud workspace `transport-common`
+2. `infra/stage` -> Terraform Cloud workspace `transport-stage`
+3. `infra/prod` -> Terraform Cloud workspace `transport-prod`
 
-`infra/backend.tf` uses `workspaces { prefix = "transport-" }`, so local CLI workspace names map as:
+The previous single-root configuration was moved to `infra/legacy-root` for reference.
 
-- `common` -> `transport-common`
-- `dev` -> `transport-dev`
-- `stage` -> `transport-stage`
+## What Each Root Manages
 
-## Behavior by Workspace
-
-- `transport-common`: manages shared GCP infrastructure (APIs, VPC/subnets, NAT, GKE, Redis, IAM, frontend bucket/LB).
-- `transport-dev`: manages only Helm app release for `dev`.
-- `transport-stage`: manages only Helm app release for `stage`.
-- Stage/dev workspaces link to shared outputs via `data.terraform_remote_state.common`.
+- `infra/common`
+  - Shared GCP infrastructure: APIs, VPC/subnets/NAT, GKE, Redis, IAM, frontend bucket/LB.
+  - Produces outputs consumed by app roots.
+- `infra/stage`
+  - Helm release for stage app workloads.
+  - Reads shared outputs from `transport-common` via `data.terraform_remote_state`.
+- `infra/prod`
+  - Helm release for prod app workloads.
+  - Reads shared outputs from `transport-common` via `data.terraform_remote_state`.
 
 ## Apply Order
 
-1. Apply `transport-common` first.
-2. Apply `transport-dev`.
-3. Apply `transport-stage`.
+1. Apply `infra/common` first.
+2. Apply `infra/stage`.
+3. Apply `infra/prod`.
 
-## Migration From Old `transport` Workspace
-
-If your existing state is in a single workspace named `transport`, migrate state before first apply with this layout.
-
-1. Rename Terraform Cloud workspace `transport` -> `transport-common` (keeps existing state/history).
-2. In local CLI, switch to `common` workspace.
-3. Remove legacy Helm release resources from `transport-common` state only (no cluster delete):
+## Commands
 
 ```bash
-cd infra
+cd infra/common
 terraform init
-terraform workspace select common
-terraform state rm 'helm_release.app["stage"]'
-terraform state rm 'helm_release.app["prod"]'
-```
-
-4. Create/select `stage` workspace and import stage Helm release:
-
-```bash
-terraform workspace select stage || terraform workspace new stage
-terraform import 'helm_release.app["stage"]' transport-stage/transport-optimizer
-```
-
-5. Create/select `dev` workspace. If no existing dev release exists yet, `terraform apply` will create it:
-
-```bash
-terraform workspace select dev || terraform workspace new dev
 terraform plan
 terraform apply
-```
 
-6. Run `terraform plan` in each workspace (`common`, `dev`, `stage`) and confirm no unexpected create/destroy.
-
-## CLI Examples
-
-```bash
-cd infra
+cd ../stage
 terraform init
-
-terraform workspace select common || terraform workspace new common
 terraform plan
 terraform apply
 
-terraform workspace select dev || terraform workspace new dev
-terraform plan
-terraform apply
-
-terraform workspace select stage || terraform workspace new stage
+cd ../prod
+terraform init
 terraform plan
 terraform apply
 ```
+
+## Migration From Old Single Workspace
+
+If state/resources still come from the old single-root workflow:
+
+1. Keep/rename old workspace state as `transport-common`.
+2. In `infra/common`, run plan/apply and confirm shared resources are stable.
+3. In `infra/stage` and `infra/prod`, import Helm releases if they already exist:
+
+```bash
+cd infra/stage
+terraform import 'module.app.helm_release.app' transport-stage/transport-optimizer
+
+cd ../prod
+terraform import 'module.app.helm_release.app' transport-prod/transport-optimizer
+```
+
+4. Re-run plan in all three roots and confirm no unexpected destroy.
