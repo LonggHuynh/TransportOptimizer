@@ -21,6 +21,16 @@ variable "gke_cluster_name" {
   default     = "transport"
 }
 
+variable "environment" {
+  type        = string
+  description = "Application environment."
+
+  validation {
+    condition     = contains(["stage", "prod"], var.environment)
+    error_message = "environment must be stage or prod."
+  }
+}
+
 variable "common_organization" {
   type        = string
   description = "Terraform Cloud organization name for common state."
@@ -57,19 +67,19 @@ variable "frontend_image" {
 variable "backend_image_tag" {
   type        = string
   description = "Backend image tag."
-  default     = "stage-latest"
+  default     = "latest"
 }
 
 variable "worker_image_tag" {
   type        = string
   description = "Worker image tag."
-  default     = "stage-latest"
+  default     = "latest"
 }
 
 variable "frontend_image_tag" {
   type        = string
   description = "Frontend image tag."
-  default     = "stage-latest"
+  default     = "latest"
 }
 
 variable "image_pull_policy" {
