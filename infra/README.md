@@ -7,8 +7,6 @@ Terraform is split into two active roots:
 
 `infra/env` uses one codebase with environment-specific variables (`stage`/`prod`), which is the recommended Terraform pattern to avoid duplicate root code.
 
-The previous single-root configuration is kept in `infra/legacy-root` for reference.
-
 ## What Each Root Manages
 
 - `infra/common`
@@ -76,3 +74,5 @@ terraform import -var-file=environments/stage.tfvars 'module.app.helm_release.ap
 terraform workspace select prod
 terraform import -var-file=environments/prod.tfvars 'module.app.helm_release.app' transport-prod/transport-optimizer
 ```
+
+Legacy single-root Terraform files have been removed from this repository.
