@@ -16,7 +16,6 @@ namespace api.Configuration
 
         public void ApplyEnvironmentOverrides(IHostEnvironment environment)
         {
-            GoogleMaps.ApplyEnvironmentOverrides();
             ApplyGoogleApplicationCredentials(environment);
         }
 
@@ -66,7 +65,6 @@ namespace api.Configuration
     public class GoogleMapsOptions
     {
         public string[] ServiceAccountScopes { get; set; } = ["https://www.googleapis.com/auth/cloud-platform"];
-        public string? QuotaProject { get; set; }
         public string TilesApiUrl { get; set; } = "https://tile.googleapis.com/v1";
         public string PlacesApiUrl { get; set; } = "https://places.googleapis.com/v1";
         public string RoutesApiUrl { get; set; } = "https://routes.googleapis.com";
@@ -74,19 +72,6 @@ namespace api.Configuration
         public string TileMapType { get; set; } = "roadmap";
         public string TileLanguage { get; set; } = "en-US";
         public string TileRegion { get; set; } = "US";
-
-        public void ApplyEnvironmentOverrides()
-        {
-            var quotaProject = FirstNonEmpty(
-                QuotaProject,
-                Environment.GetEnvironmentVariable("GOOGLE_CLOUD_QUOTA_PROJECT"),
-                Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT")
-            );
-            QuotaProject = string.IsNullOrWhiteSpace(quotaProject) ? null : quotaProject.Trim();
-        }
-
-        private static string? FirstNonEmpty(params string?[] values)
-            => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
     }
 
     public class CorsSettingsOptions

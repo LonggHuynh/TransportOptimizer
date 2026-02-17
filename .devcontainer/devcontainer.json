@@ -30,7 +30,6 @@
         "PIPENV_VENV_IN_PROJECT": "1"
     },
     "remoteEnv": {
-        "GOOGLE_CLOUD_QUOTA_PROJECT": "${localEnv:GOOGLE_CLOUD_QUOTA_PROJECT}",
         "GOOGLE_MAPS_API_KEY": "${localEnv:GOOGLE_MAPS_API_KEY}",
         "GOOGLE_APPLICATION_CREDENTIALS_JSON_B64": "${localEnv:GOOGLE_APPLICATION_CREDENTIALS_JSON_B64}",
         "GOOGLE_APPLICATION_CREDENTIALS": "/workspaces/TransportOptimizer/.secrets/gcp-sa.json"

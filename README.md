@@ -32,7 +32,6 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 | ----------------------------- | ---------------------------------------------------------------------------- |
 | `CorsSettings:AllowedOrigins` | Origins for CORS settings in the backend. No cors needed for the deployment. |
 | `GoogleMaps:ServiceAccountScopes:0` | OAuth scope item. Default is `https://www.googleapis.com/auth/cloud-platform`. |
-| `GoogleMaps:QuotaProject` | Optional billing/quota project ID sent as `X-Goog-User-Project`. |
 | `GoogleMaps:TilesApiUrl` | Tiles base URL (default: `https://tile.googleapis.com/v1`). |
 | `GoogleMaps:PlacesApiUrl` | Places base URL (default: `https://places.googleapis.com/v1`). |
 | `GoogleMaps:RoutesApiUrl` | Routes base URL (default: `https://routes.googleapis.com`). |
@@ -149,6 +148,4 @@ helm upgrade --install transport-optimizer infra/app-chart --namespace transport
 5. Store the key securely on the backend host (for example `/secrets/google-maps-sa.json`).
 6. Configure backend env vars:
 `GOOGLE_APPLICATION_CREDENTIALS=/secrets/google-maps-sa.json`
-and optionally set app config
-`GoogleMaps:QuotaProject=<your-gcp-project-id>`.
 7. Restart backend and verify `/api/tiles/{z}/{x}/{y}.png` and route/geocode flows.
