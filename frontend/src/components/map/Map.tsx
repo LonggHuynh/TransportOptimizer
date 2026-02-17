@@ -7,17 +7,13 @@ import { RouteLine } from '../../models/map';
 
 const DEFAULT_ZOOM = 13;
 
-const readCssToken = (tokenName: string, fallback: string) => {
+const readCssNumberToken = (tokenName: string, fallback: number) => {
     if (typeof window === 'undefined') {
         return fallback;
     }
 
-    const value = getComputedStyle(document.documentElement).getPropertyValue(tokenName).trim();
-    return value || fallback;
-};
-
-const readCssNumberToken = (tokenName: string, fallback: number) => {
-    const value = Number.parseFloat(readCssToken(tokenName, `${fallback}`));
+    const cssValue = getComputedStyle(document.documentElement).getPropertyValue(tokenName).trim();
+    const value = Number.parseFloat(cssValue);
     if (!Number.isFinite(value)) {
         return fallback;
     }
@@ -56,11 +52,6 @@ const Map = () => {
     const mapTokens = useMemo(
         () => ({
             markerRadius: readCssNumberToken('--map-marker-radius', 6),
-            markerStroke: readCssToken('--color-map-marker-stroke', 'var(--color-accent)'),
-            markerFill: readCssToken('--color-map-marker-fill', 'var(--color-panel)'),
-            routeColor: readCssToken('--color-map-route', 'var(--color-accent)'),
-            routeWeight: readCssNumberToken('--map-route-weight', 4),
-            routeOpacity: readCssNumberToken('--map-route-opacity', 0.9),
             fitPadding: readCssNumberToken('--map-fit-padding', 40),
         }),
         [],
@@ -82,18 +73,14 @@ const Map = () => {
                     center={[center.lat, center.lng]}
                     radius={mapTokens.markerRadius}
                     pathOptions={{
-                        color: mapTokens.markerStroke,
-                        fillColor: mapTokens.markerFill,
-                        fillOpacity: 1,
+                        className: 'mapCenterMarker',
                     }}
                 />
                 {directionsResponse && directionsResponse.length > 1 ? (
                     <Polyline
                         positions={directionsResponse.map((point) => [point.lat, point.lng])}
                         pathOptions={{
-                            color: mapTokens.routeColor,
-                            weight: mapTokens.routeWeight,
-                            opacity: mapTokens.routeOpacity,
+                            className: 'mapRoute',
                         }}
                     />
                 ) : null}
