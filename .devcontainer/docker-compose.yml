@@ -1,6 +1,10 @@
 services:
   devcontainer:
     image: mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+    depends_on:
+      - redis
+      - jaeger
+      - otel-collector
     volumes:
       - .:/workspaces/TransportOptimizer:cached
     working_dir: /workspaces/TransportOptimizer
