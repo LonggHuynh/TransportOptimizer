@@ -9,6 +9,7 @@ interface DirectionsState {
 
 export const useDirectionsStore = create<DirectionsState>((set) => ({
     directionsResponse: null,
-    setDirectionsResponse: (response: RouteLine | null) => set({ directionsResponse: response }),
+    setDirectionsResponse: (response: RouteLine | null) =>
+        set({ directionsResponse: response }),
     clearDirections: () => set({ directionsResponse: null }),
 }));

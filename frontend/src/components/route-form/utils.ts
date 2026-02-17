@@ -1,6 +1,9 @@
 import { StopWindow } from '../../models/stopWindow';
 import { Coordinate } from '../../models/coordinate';
-import { IntermediateStopInputValue, NormalizedIntermediateStop } from './types';
+import {
+    IntermediateStopInputValue,
+    NormalizedIntermediateStop,
+} from './types';
 
 export const toLocalDateTimeFromTime = (timeLocal: string): Date | null => {
     if (!timeLocal.trim()) {
@@ -12,7 +15,8 @@ export const toLocalDateTimeFromTime = (timeLocal: string): Date | null => {
     const minutes = Number(minutesText);
 
     const hasValidHours = Number.isInteger(hours) && hours >= 0 && hours <= 23;
-    const hasValidMinutes = Number.isInteger(minutes) && minutes >= 0 && minutes <= 59;
+    const hasValidMinutes =
+        Number.isInteger(minutes) && minutes >= 0 && minutes <= 59;
     if (!hasValidHours || !hasValidMinutes) {
         return null;
     }
@@ -43,7 +47,8 @@ const toStopDeadlineDateTimeOnOrAfterStart = (
     const minutes = Number(minutesText);
 
     const hasValidHours = Number.isInteger(hours) && hours >= 0 && hours <= 23;
-    const hasValidMinutes = Number.isInteger(minutes) && minutes >= 0 && minutes <= 59;
+    const hasValidMinutes =
+        Number.isInteger(minutes) && minutes >= 0 && minutes <= 59;
     if (!hasValidHours || !hasValidMinutes) {
         return null;
     }
@@ -71,7 +76,9 @@ export const toStopDeadlineTimeLocalValue = (
         return '';
     }
 
-    const deadlineDate = new Date(routeStartLocal.getTime() + Math.floor(deadlineMinutes) * 60_000);
+    const deadlineDate = new Date(
+        routeStartLocal.getTime() + Math.floor(deadlineMinutes) * 60_000,
+    );
     return toTimeLocalValue(deadlineDate);
 };
 
@@ -79,42 +86,49 @@ export const normalizeIntermediateStops = (
     intermediateInputs: IntermediateStopInputValue[],
     routeStartLocal: Date | null,
 ): NormalizedIntermediateStop[] =>
-    intermediateInputs.reduce<NormalizedIntermediateStop[]>((acc, item, index) => {
-        const label = item.value.trim();
-        if (!label) {
-            return acc;
-        }
-
-        let parsedDeadline: number | null = null;
-        const deadlineDateTime = toStopDeadlineDateTimeOnOrAfterStart(
-            routeStartLocal,
-            item.deadlineTimeLocal,
-        );
-        if (deadlineDateTime && routeStartLocal) {
-            const diffMinutes = Math.floor(
-                (deadlineDateTime.getTime() - routeStartLocal.getTime()) / 60_000,
-            );
-            if (diffMinutes > 0) {
-                parsedDeadline = Math.min(1439, diffMinutes);
+    intermediateInputs.reduce<NormalizedIntermediateStop[]>(
+        (acc, item, index) => {
+            const label = item.value.trim();
+            if (!label) {
+                return acc;
             }
-        }
 
-        const rawServiceMinutes = Number(item.serviceMinutes);
-        const parsedServiceMinutes = Number.isFinite(rawServiceMinutes) && rawServiceMinutes > 0
-            ? Math.min(1439, Math.floor(rawServiceMinutes))
-            : 0;
+            let parsedDeadline: number | null = null;
+            const deadlineDateTime = toStopDeadlineDateTimeOnOrAfterStart(
+                routeStartLocal,
+                item.deadlineTimeLocal,
+            );
+            if (deadlineDateTime && routeStartLocal) {
+                const diffMinutes = Math.floor(
+                    (deadlineDateTime.getTime() - routeStartLocal.getTime()) /
+                        60_000,
+                );
+                if (diffMinutes > 0) {
+                    parsedDeadline = Math.min(1439, diffMinutes);
+                }
+            }
 
-        acc.push({
-            label,
-            coordinate: item.coordinate,
-            index,
-            deadlineMinutes: parsedDeadline,
-            serviceMinutes: parsedServiceMinutes,
-        });
-        return acc;
-    }, []);
+            const rawServiceMinutes = Number(item.serviceMinutes);
+            const parsedServiceMinutes =
+                Number.isFinite(rawServiceMinutes) && rawServiceMinutes > 0
+                    ? Math.min(1439, Math.floor(rawServiceMinutes))
+                    : 0;
 
-export const toStopWindows = (normalizedStops: NormalizedIntermediateStop[]): StopWindow[] =>
+            acc.push({
+                label,
+                coordinate: item.coordinate,
+                index,
+                deadlineMinutes: parsedDeadline,
+                serviceMinutes: parsedServiceMinutes,
+            });
+            return acc;
+        },
+        [],
+    );
+
+export const toStopWindows = (
+    normalizedStops: NormalizedIntermediateStop[],
+): StopWindow[] =>
     normalizedStops.flatMap((item, index) => {
         const hasWindow = item.deadlineMinutes !== null;
         const hasService = item.serviceMinutes > 0;
@@ -122,12 +136,14 @@ export const toStopWindows = (normalizedStops: NormalizedIntermediateStop[]): St
             return [];
         }
 
-        return [{
-            stopIndex: index + 1,
-            windowStartMinutes: 0,
-            windowEndMinutes: item.deadlineMinutes ?? 1439,
-            serviceMinutes: item.serviceMinutes,
-        }];
+        return [
+            {
+                stopIndex: index + 1,
+                windowStartMinutes: 0,
+                windowEndMinutes: item.deadlineMinutes ?? 1439,
+                serviceMinutes: item.serviceMinutes,
+            },
+        ];
     });
 
 export const buildPlacesPayload = (
@@ -158,7 +174,11 @@ export const buildPlacesPayload = (
     }
 
     return {
-        places: [originCoordinate, ...intermediatePlaces, destinationCoordinate],
+        places: [
+            originCoordinate,
+            ...intermediatePlaces,
+            destinationCoordinate,
+        ],
         missingStopNumber: null,
     };
 };

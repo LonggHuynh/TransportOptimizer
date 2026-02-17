@@ -23,8 +23,12 @@ const RouteDetails = ({
     const [from, to] = route;
     const fromKey = toCoordinateKey(from);
     const toKey = toCoordinateKey(to);
-    const fromLabel = useLocationLabelsStore((state) => state.labelsByCoordinate[fromKey]);
-    const toLabel = useLocationLabelsStore((state) => state.labelsByCoordinate[toKey]);
+    const fromLabel = useLocationLabelsStore(
+        (state) => state.labelsByCoordinate[fromKey],
+    );
+    const toLabel = useLocationLabelsStore(
+        (state) => state.labelsByCoordinate[toKey],
+    );
 
     const displayFrom = fromLabel ?? fromKey;
     const displayTo = toLabel ?? toKey;

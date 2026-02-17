@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import {
     MapContainer,
     TileLayer,
@@ -12,25 +12,8 @@ import { useCenterStore } from '../../hooks/store/useCenterStore';
 import { RouteLine } from '../../models/map';
 
 const DEFAULT_ZOOM = 13;
-
-const readCssToken = (tokenName: string, fallback: string) => {
-    if (typeof window === 'undefined') {
-        return fallback;
-    }
-
-    const value = getComputedStyle(document.documentElement)
-        .getPropertyValue(tokenName)
-        .trim();
-    return value || fallback;
-};
-
-const readCssNumberToken = (tokenName: string, fallback: number) => {
-    const value = Number.parseFloat(readCssToken(tokenName, `${fallback}`));
-    if (!Number.isFinite(value)) {
-        return fallback;
-    }
-    return value;
-};
+const MARKER_RADIUS = 6;
+const FIT_PADDING = 40;
 
 const MapViewUpdater = ({
     center,
@@ -64,28 +47,8 @@ const Map = () => {
         (state) => state.directionsResponse,
     );
     const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
-    const tileUrl = `${apiBaseUrl}/tiles/{z}/{x}/{y}.png`;
-    const mapTokens = useMemo(
-        () => ({
-            markerRadius: readCssNumberToken('--map-marker-radius', 6),
-            markerStroke: readCssToken(
-                '--color-map-marker-stroke',
-                'var(--color-accent)',
-            ),
-            markerFill: readCssToken(
-                '--color-map-marker-fill',
-                'var(--color-panel)',
-            ),
-            routeColor: readCssToken(
-                '--color-map-route',
-                'var(--color-accent)',
-            ),
-            routeWeight: readCssNumberToken('--map-route-weight', 4),
-            routeOpacity: readCssNumberToken('--map-route-opacity', 0.9),
-            fitPadding: readCssNumberToken('--map-fit-padding', 40),
-        }),
-        [],
-    );
+    const tileUrl =
+        import.meta.env.VITE_TILE_URL || `${apiBaseUrl}/tiles/{z}/{x}/{y}.png`;
 
     return (
         <div className="mapContainer">
@@ -98,11 +61,9 @@ const Map = () => {
                 <TileLayer url={tileUrl} attribution="Map data" />
                 <CircleMarker
                     center={[center.lat, center.lng]}
-                    radius={mapTokens.markerRadius}
+                    radius={MARKER_RADIUS}
                     pathOptions={{
-                        color: mapTokens.markerStroke,
-                        fillColor: mapTokens.markerFill,
-                        fillOpacity: 1,
+                        className: 'mapCenterMarker',
                     }}
                 />
                 {directionsResponse && directionsResponse.length > 1 ? (
@@ -112,16 +73,14 @@ const Map = () => {
                             point.lng,
                         ])}
                         pathOptions={{
-                            color: mapTokens.routeColor,
-                            weight: mapTokens.routeWeight,
-                            opacity: mapTokens.routeOpacity,
+                            className: 'mapRoute',
                         }}
                     />
                 ) : null}
                 <MapViewUpdater
                     center={center}
                     route={directionsResponse}
-                    fitPadding={mapTokens.fitPadding}
+                    fitPadding={FIT_PADDING}
                 />
             </MapContainer>
         </div>

@@ -44,26 +44,25 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null;
 
 const isCoordinate = (value: unknown): value is Coordinate =>
-    isRecord(value)
-    && typeof value.latitude === 'number'
-    && typeof value.longitude === 'number';
+    isRecord(value) &&
+    typeof value.latitude === 'number' &&
+    typeof value.longitude === 'number';
 
 const isLocation = (value: unknown): value is DemoLocation =>
-    isRecord(value)
-    && typeof value.label === 'string'
-    && value.label.trim().length > 0
-    && isCoordinate(value.coordinate);
+    isRecord(value) &&
+    typeof value.label === 'string' &&
+    value.label.trim().length > 0 &&
+    isCoordinate(value.coordinate);
 
 const isTravelMode = (value: unknown): value is TravelMode =>
-    typeof value === 'string'
-    && TRAVEL_MODES.some((mode) => mode === value);
+    typeof value === 'string' && TRAVEL_MODES.some((mode) => mode === value);
 
 const isRequiredTimeLocal = (value: unknown): value is string =>
     typeof value === 'string' && TIME_LOCAL_PATTERN.test(value);
 
 const isDeadlineTimeLocal = (value: unknown): value is string =>
-    typeof value === 'string'
-    && (value.length === 0 || TIME_LOCAL_PATTERN.test(value));
+    typeof value === 'string' &&
+    (value.length === 0 || TIME_LOCAL_PATTERN.test(value));
 
 const isDemoStop = (value: unknown): value is DemoStop => {
     if (!isLocation(value)) {
@@ -74,14 +73,14 @@ const isDemoStop = (value: unknown): value is DemoStop => {
         return true;
     }
 
-    const deadlineIsValid = !('deadlineTimeLocal' in value)
-        || isDeadlineTimeLocal(value.deadlineTimeLocal);
-    const serviceIsValid = !('serviceMinutes' in value)
-        || (
-            typeof value.serviceMinutes === 'number'
-            && Number.isFinite(value.serviceMinutes)
-            && value.serviceMinutes >= 0
-        );
+    const deadlineIsValid =
+        !('deadlineTimeLocal' in value) ||
+        isDeadlineTimeLocal(value.deadlineTimeLocal);
+    const serviceIsValid =
+        !('serviceMinutes' in value) ||
+        (typeof value.serviceMinutes === 'number' &&
+            Number.isFinite(value.serviceMinutes) &&
+            value.serviceMinutes >= 0);
 
     return deadlineIsValid && serviceIsValid;
 };

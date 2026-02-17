@@ -1,5 +1,5 @@
 terraform {
-  backend "remote" {
+  cloud {
     organization = "LongHuynhh"
 
     workspaces {
