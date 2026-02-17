@@ -39,11 +39,7 @@
     "forwardPorts": [
         3000,
         5259,
-        7077,
-        6379,
-        16686,
-        4317,
-        4318
+        7077
     ],
     "portsAttributes": {
         "3000": {
@@ -55,19 +51,6 @@
         },
         "7077": {
             "label": "Backend API (HTTPS)"
-        },
-        "6379": {
-            "label": "Redis"
-        },
-        "16686": {
-            "label": "Jaeger UI",
-            "onAutoForward": "openBrowser"
-        },
-        "4317": {
-            "label": "OTLP gRPC"
-        },
-        "4318": {
-            "label": "OTLP HTTP"
         }
     },
     "customizations": {
