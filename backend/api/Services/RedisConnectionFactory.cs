@@ -11,9 +11,6 @@ public interface IConnectionMultiplexerFactory
 
 public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsyncDisposable
 {
-    private static readonly TimeSpan IamRefreshInterval = TimeSpan.FromMinutes(45);
-    private static readonly string[] IamScopes = ["https://www.googleapis.com/auth/cloud-platform"];
-
     private readonly RedisOptions _options;
     private readonly IGoogleCredentialFactory _googleCredentialFactory;
     private readonly SemaphoreSlim _mutex = new(1, 1);
@@ -22,7 +19,7 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
 
     public RedisConnectionFactory(AppOptions appOptions, IGoogleCredentialFactory googleCredentialFactory)
     {
-        _options = appOptions.Redis ?? throw new ArgumentException("Redis settings are missing.");
+        _options = appOptions.Redis;
         _googleCredentialFactory = googleCredentialFactory;
     }
 
@@ -46,7 +43,9 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
             var next = await ConnectAsync();
             var previous = _cached;
             _cached = next;
-            _refreshAfter = _options.IamAuthEnabled ? DateTimeOffset.UtcNow + IamRefreshInterval : DateTimeOffset.MaxValue;
+            _refreshAfter = _options.IamAuthEnabled
+                ? DateTimeOffset.UtcNow + _options.GetIamRefreshInterval()
+                : DateTimeOffset.MaxValue;
 
             if (previous != null)
             {
@@ -79,14 +78,14 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
 
         var config = ConfigurationOptions.Parse(endpoint);
         config.Password = token;
-        config.AbortOnConnectFail = false;
+        config.AbortOnConnectFail = _options.AbortOnConnectFail;
 
         return await ConnectionMultiplexer.ConnectAsync(config);
     }
 
     private async Task<string> GetAccessTokenAsync()
     {
-        var credential = _googleCredentialFactory.GetCredential(IamScopes);
+        var credential = _googleCredentialFactory.GetCredential(_options.GetIamScopes());
         var token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: default);
         if (string.IsNullOrWhiteSpace(token))
         {

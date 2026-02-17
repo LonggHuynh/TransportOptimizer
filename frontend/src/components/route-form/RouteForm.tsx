@@ -96,9 +96,9 @@ const RouteForm = () => {
 
     const debouncedOrigin = useDebouncedValue(origin.value, 300);
     const debouncedDestination = useDebouncedValue(destination.value, 300);
-    const { data: originSuggestions = [], isPending: originLoading } =
+    const { data: originSuggestions = [], isLoading: originLoading } =
         useGeocodeSuggestions(debouncedOrigin, center);
-    const { data: destinationSuggestions = [], isPending: destinationLoading } =
+    const { data: destinationSuggestions = [], isLoading: destinationLoading } =
         useGeocodeSuggestions(debouncedDestination, center);
     const geocodeLookup = useGeocodeLookup();
 
