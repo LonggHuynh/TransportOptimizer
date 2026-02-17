@@ -7,6 +7,11 @@ namespace api.Configuration
         public RedisOptions Redis { get; set; } = new();
         public CeleryOptions Celery { get; set; } = new();
         public OpenTelemetryOptions OpenTelemetry { get; set; } = new();
+
+        public void ApplyEnvironmentOverrides()
+        {
+            GoogleMaps.ApplyEnvironmentOverrides();
+        }
     }
 
     public class GoogleMapsOptions
@@ -20,6 +25,19 @@ namespace api.Configuration
         public string TileMapType { get; set; } = "roadmap";
         public string TileLanguage { get; set; } = "en-US";
         public string TileRegion { get; set; } = "US";
+
+        public void ApplyEnvironmentOverrides()
+        {
+            var quotaProject = FirstNonEmpty(
+                QuotaProject,
+                Environment.GetEnvironmentVariable("GOOGLE_CLOUD_QUOTA_PROJECT"),
+                Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT")
+            );
+            QuotaProject = string.IsNullOrWhiteSpace(quotaProject) ? null : quotaProject.Trim();
+        }
+
+        private static string? FirstNonEmpty(params string?[] values)
+            => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
     }
 
     public class CorsSettingsOptions
@@ -74,5 +92,35 @@ namespace api.Configuration
         public string ServiceName { get; set; } = "transport-optimizer-backend";
         public string? OtlpEndpoint { get; set; }
         public string OtlpProtocol { get; set; } = "http/protobuf";
+
+        public string GetServiceName()
+            => NormalizeOrDefault(
+                Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME"),
+                ServiceName
+            );
+
+        public string? GetOtlpEndpoint()
+            => NormalizeOrNull(
+                Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+                ?? OtlpEndpoint
+            );
+
+        public string GetOtlpProtocol()
+            => NormalizeOrDefault(
+                Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL"),
+                OtlpProtocol
+            );
+
+        private static string NormalizeOrDefault(string? value, string fallback)
+        {
+            var normalized = value?.Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
+        }
+
+        private static string? NormalizeOrNull(string? value)
+        {
+            var normalized = value?.Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+        }
     }
 }

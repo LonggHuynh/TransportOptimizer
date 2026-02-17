@@ -27,16 +27,7 @@ builder.Logging.AddJsonConsole(options =>
 
 var appOptions = new AppOptions();
 builder.Configuration.Bind(appOptions);
-
-var quotaProject =
-    appOptions.GoogleMaps.QuotaProject
-    ?? Environment.GetEnvironmentVariable("GOOGLE_CLOUD_QUOTA_PROJECT")
-    ?? Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT");
-
-if (!string.IsNullOrWhiteSpace(quotaProject))
-{
-    appOptions.GoogleMaps.QuotaProject = quotaProject.Trim();
-}
+appOptions.ApplyEnvironmentOverrides();
 
 var configuredCredentialPath = builder.Configuration["GOOGLE_APPLICATION_CREDENTIALS"]?.Trim();
 if (
@@ -83,15 +74,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 
-var traceServiceName =
-    Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME")
-    ?? appOptions.OpenTelemetry.ServiceName;
-var otlpEndpoint =
-    Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
-    ?? appOptions.OpenTelemetry.OtlpEndpoint;
-var otlpProtocol =
-    Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL")
-    ?? appOptions.OpenTelemetry.OtlpProtocol;
+var traceServiceName = appOptions.OpenTelemetry.GetServiceName();
+var otlpEndpoint = appOptions.OpenTelemetry.GetOtlpEndpoint();
+var otlpProtocol = appOptions.OpenTelemetry.GetOtlpProtocol();
 builder.Services
     .AddOpenTelemetry()
     .ConfigureResource(resource => resource.AddService(traceServiceName))
