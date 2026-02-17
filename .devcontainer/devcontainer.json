@@ -29,7 +29,13 @@
     "containerEnv": {
         "PIPENV_VENV_IN_PROJECT": "1"
     },
+    "remoteEnv": {
+        "GOOGLE_MAPS_API_KEY": "${localEnv:GOOGLE_MAPS_API_KEY}",
+        "GOOGLE_APPLICATION_CREDENTIALS_JSON_B64": "${localEnv:GOOGLE_APPLICATION_CREDENTIALS_JSON_B64}",
+        "GOOGLE_APPLICATION_CREDENTIALS": "/workspaces/TransportOptimizer/.secrets/gcp-sa.json"
+    },
     "postCreateCommand": "bash .devcontainer/post-create.sh",
+    "postStartCommand": "mkdir -p /workspaces/TransportOptimizer/.secrets && if [ -n \"$GOOGLE_APPLICATION_CREDENTIALS_JSON_B64\" ]; then echo \"$GOOGLE_APPLICATION_CREDENTIALS_JSON_B64\" | base64 -d > /workspaces/TransportOptimizer/.secrets/gcp-sa.json && chmod 600 /workspaces/TransportOptimizer/.secrets/gcp-sa.json; fi",
     "forwardPorts": [
         3000,
         5259,
