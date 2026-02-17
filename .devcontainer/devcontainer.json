@@ -29,23 +29,23 @@
     },
     "postCreateCommand": "bash .devcontainer/post-create.sh",
     "forwardPorts": [
-        5173,
-        5000,
-        5001,
+        3000,
+        5259,
+        7077,
         6379,
         16686,
         4317,
         4318
     ],
     "portsAttributes": {
-        "5173": {
+        "3000": {
             "label": "Frontend (Vite)",
             "onAutoForward": "openBrowser"
         },
-        "5000": {
+        "5259": {
             "label": "Backend API (HTTP)"
         },
-        "5001": {
+        "7077": {
             "label": "Backend API (HTTPS)"
         },
         "6379": {

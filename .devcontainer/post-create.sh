@@ -7,6 +7,9 @@ if [ -s "/usr/local/share/nvm/nvm.sh" ]; then
     nvm use 20 >/dev/null
 fi
 
+echo "Installing Codex CLI..."
+npm install -g @openai/codex
+
 echo "Installing frontend dependencies..."
 pushd frontend >/dev/null
 npm install
