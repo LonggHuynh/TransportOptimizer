@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet';
 import './Map.scss';
 import { useDirectionsStore } from '../../hooks/store/useDirectionsStore';
@@ -6,19 +6,8 @@ import { useCenterStore } from '../../hooks/store/useCenterStore';
 import { RouteLine } from '../../models/map';
 
 const DEFAULT_ZOOM = 13;
-
-const readCssNumberToken = (tokenName: string, fallback: number) => {
-    if (typeof window === 'undefined') {
-        return fallback;
-    }
-
-    const cssValue = getComputedStyle(document.documentElement).getPropertyValue(tokenName).trim();
-    const value = Number.parseFloat(cssValue);
-    if (!Number.isFinite(value)) {
-        return fallback;
-    }
-    return value;
-};
+const MARKER_RADIUS = 6;
+const FIT_PADDING = 40;
 
 const MapViewUpdater = ({
     center,
@@ -49,13 +38,6 @@ const Map = () => {
     const directionsResponse = useDirectionsStore((state) => state.directionsResponse);
     const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
     const tileUrl = import.meta.env.VITE_TILE_URL || `${apiBaseUrl}/tiles/{z}/{x}/{y}.png`;
-    const mapTokens = useMemo(
-        () => ({
-            markerRadius: readCssNumberToken('--map-marker-radius', 6),
-            fitPadding: readCssNumberToken('--map-fit-padding', 40),
-        }),
-        [],
-    );
 
     return (
         <div className="mapContainer">
@@ -71,7 +53,7 @@ const Map = () => {
                 />
                 <CircleMarker
                     center={[center.lat, center.lng]}
-                    radius={mapTokens.markerRadius}
+                    radius={MARKER_RADIUS}
                     pathOptions={{
                         className: 'mapCenterMarker',
                     }}
@@ -87,7 +69,7 @@ const Map = () => {
                 <MapViewUpdater
                     center={center}
                     route={directionsResponse}
-                    fitPadding={mapTokens.fitPadding}
+                    fitPadding={FIT_PADDING}
                 />
             </MapContainer>
         </div>
