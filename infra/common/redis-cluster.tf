@@ -1,21 +1,25 @@
 resource "google_compute_subnetwork" "psc" {
+  count = local.manage_foundation ? 1 : 0
+
   name          = "${local.gke_name_prefix}-psc"
   ip_cidr_range = var.psc_subnet_cidr
   region        = var.region
-  network       = google_compute_network.vpc.id
+  network       = google_compute_network.vpc[0].id
   purpose       = "PRIVATE"
 
   depends_on = [google_project_service.required]
 }
 
 resource "google_network_connectivity_service_connection_policy" "redis" {
+  count = local.manage_foundation ? 1 : 0
+
   name          = "${local.gke_name_prefix}-redis-scp"
   location      = var.region
   service_class = "gcp-memorystore-redis"
-  network       = google_compute_network.vpc.id
+  network       = google_compute_network.vpc[0].id
 
   psc_config {
-    subnetworks = [google_compute_subnetwork.psc.id]
+    subnetworks = [google_compute_subnetwork.psc[0].id]
     limit       = var.redis_psc_connection_limit
   }
 
@@ -23,7 +27,7 @@ resource "google_network_connectivity_service_connection_policy" "redis" {
 }
 
 resource "google_redis_cluster" "redis" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   name                    = "${local.name_prefix[each.key]}-redis"
   region                  = var.region
@@ -34,7 +38,7 @@ resource "google_redis_cluster" "redis" {
   transit_encryption_mode = var.redis_transit_encryption_mode
 
   psc_configs {
-    network = google_compute_network.vpc.id
+    network = google_compute_network.vpc[0].id
   }
 
   # Pin the API default explicitly to avoid immutable-field drift across applies.
@@ -49,5 +53,5 @@ resource "google_redis_cluster" "redis" {
     delete = "60m"
   }
 
-  depends_on = [google_network_connectivity_service_connection_policy.redis]
+  depends_on = [google_network_connectivity_service_connection_policy.redis[0]]
 }

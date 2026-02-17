@@ -1,5 +1,5 @@
 resource "google_storage_bucket" "frontend" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   name                        = local.frontend_bucket_name[each.key]
   location                    = var.region
@@ -25,7 +25,7 @@ resource "google_storage_bucket" "frontend" {
 }
 
 resource "google_storage_bucket_iam_member" "frontend_public_read" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   bucket = google_storage_bucket.frontend[each.key].name
   role   = "roles/storage.objectViewer"
@@ -33,7 +33,7 @@ resource "google_storage_bucket_iam_member" "frontend_public_read" {
 }
 
 resource "google_compute_backend_bucket" "frontend" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   name        = local.frontend_backend_bucket_name[each.key]
   bucket_name = google_storage_bucket.frontend[each.key].name
@@ -41,21 +41,21 @@ resource "google_compute_backend_bucket" "frontend" {
 }
 
 resource "google_compute_url_map" "frontend" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   name            = local.frontend_url_map_name[each.key]
   default_service = google_compute_backend_bucket.frontend[each.key].self_link
 }
 
 resource "google_compute_target_http_proxy" "frontend" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   name    = local.frontend_http_proxy_name[each.key]
   url_map = google_compute_url_map.frontend[each.key].self_link
 }
 
 resource "google_compute_global_address" "frontend" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   name = local.frontend_ip_name[each.key]
 
@@ -63,7 +63,7 @@ resource "google_compute_global_address" "frontend" {
 }
 
 resource "google_compute_global_forwarding_rule" "frontend" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   name                  = local.frontend_forwarding_rule_name[each.key]
   load_balancing_scheme = "EXTERNAL"

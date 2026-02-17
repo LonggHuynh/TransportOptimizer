@@ -1,4 +1,7 @@
 {{- if .Values.worker.enabled }}
+{{- $workerHealth := default (dict) .Values.worker.health -}}
+{{- $workerHealthPath := default "/healthz" (get $workerHealth "path") -}}
+{{- $workerHealthPort := default 8081 (get $workerHealth "port") -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,6 +39,21 @@ spec:
         - name: worker
           image: "{{ .Values.worker.image.repository }}{{- if .Values.worker.image.tag }}:{{ .Values.worker.image.tag }}{{- end }}"
           imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          env:
+            - name: WORKER_HEALTH_PORT
+              value: {{ $workerHealthPort | quote }}
+          ports:
+            - name: health
+              containerPort: {{ $workerHealthPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ $workerHealthPath | quote }}
+              port: health
+          readinessProbe:
+            httpGet:
+              path: {{ $workerHealthPath | quote }}
+              port: health
           {{- $hasConfig := or .Values.worker.config.enabled .Values.worker.config.existingName }}
           {{- $hasSecret := or .Values.worker.secret.enabled .Values.worker.secret.existingName }}
           {{- if or $hasConfig $hasSecret }}

@@ -1,5 +1,11 @@
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet';
+import {
+    MapContainer,
+    TileLayer,
+    Polyline,
+    CircleMarker,
+    useMap,
+} from 'react-leaflet';
 import './Map.scss';
 import { useDirectionsStore } from '../../hooks/store/useDirectionsStore';
 import { useCenterStore } from '../../hooks/store/useCenterStore';
@@ -22,7 +28,9 @@ const MapViewUpdater = ({
 
     useEffect(() => {
         if (route && route.length > 1) {
-            const bounds = route.map((point) => [point.lat, point.lng] as [number, number]);
+            const bounds = route.map(
+                (point) => [point.lat, point.lng] as [number, number],
+            );
             map.fitBounds(bounds, { padding: [fitPadding, fitPadding] });
             return;
         }
@@ -35,9 +43,12 @@ const MapViewUpdater = ({
 
 const Map = () => {
     const center = useCenterStore((state) => state.center);
-    const directionsResponse = useDirectionsStore((state) => state.directionsResponse);
+    const directionsResponse = useDirectionsStore(
+        (state) => state.directionsResponse,
+    );
     const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
-    const tileUrl = import.meta.env.VITE_TILE_URL || `${apiBaseUrl}/tiles/{z}/{x}/{y}.png`;
+    const tileUrl =
+        import.meta.env.VITE_TILE_URL || `${apiBaseUrl}/tiles/{z}/{x}/{y}.png`;
 
     return (
         <div className="mapContainer">
@@ -47,10 +58,7 @@ const Map = () => {
                 zoom={DEFAULT_ZOOM}
                 scrollWheelZoom={true}
             >
-                <TileLayer
-                    url={tileUrl}
-                    attribution="Map data"
-                />
+                <TileLayer url={tileUrl} attribution="Map data" />
                 <CircleMarker
                     center={[center.lat, center.lng]}
                     radius={MARKER_RADIUS}
@@ -60,7 +68,10 @@ const Map = () => {
                 />
                 {directionsResponse && directionsResponse.length > 1 ? (
                     <Polyline
-                        positions={directionsResponse.map((point) => [point.lat, point.lng])}
+                        positions={directionsResponse.map((point) => [
+                            point.lat,
+                            point.lng,
+                        ])}
                         pathOptions={{
                             className: 'mapRoute',
                         }}
