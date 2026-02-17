@@ -2,10 +2,11 @@ namespace api.Configuration
 {
     public class AppOptions
     {
-        public GoogleMapsOptions? GoogleMaps { get; set; }
-        public CorsSettingsOptions? CorsSettings { get; set; }
-        public RedisOptions? Redis { get; set; }
-        public CeleryOptions? Celery { get; set; }
+        public GoogleMapsOptions GoogleMaps { get; set; } = new();
+        public CorsSettingsOptions CorsSettings { get; set; } = new();
+        public RedisOptions Redis { get; set; } = new();
+        public CeleryOptions Celery { get; set; } = new();
+        public OpenTelemetryOptions OpenTelemetry { get; set; } = new();
     }
 
     public class GoogleMapsOptions
@@ -31,6 +32,9 @@ namespace api.Configuration
         public string? ConnectionString { get; set; }
         public string? Endpoint { get; set; }
         public bool IamAuthEnabled { get; set; }
+        public TimeSpan IamRefreshInterval { get; set; } = TimeSpan.FromMinutes(45);
+        public string[] IamScopes { get; set; } = ["https://www.googleapis.com/auth/cloud-platform"];
+        public bool AbortOnConnectFail { get; set; }
 
         public string GetEndpoint()
         {
@@ -42,6 +46,20 @@ namespace api.Configuration
 
             return endpoint;
         }
+
+        public TimeSpan GetIamRefreshInterval()
+            => IamRefreshInterval > TimeSpan.Zero ? IamRefreshInterval : TimeSpan.FromMinutes(45);
+
+        public string[] GetIamScopes()
+        {
+            var scopes = IamScopes
+                .Select(scope => scope?.Trim())
+                .Where(scope => !string.IsNullOrWhiteSpace(scope))
+                .Select(scope => scope!)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            return scopes.Length > 0 ? scopes : ["https://www.googleapis.com/auth/cloud-platform"];
+        }
     }
 
     public class CeleryOptions
@@ -49,5 +67,12 @@ namespace api.Configuration
         public string Queue { get; set; } = "route";
         public string TaskName { get; set; } = "route.process_job";
         public TimeSpan JobTtl { get; set; } = TimeSpan.FromMinutes(5);
+    }
+
+    public class OpenTelemetryOptions
+    {
+        public string ServiceName { get; set; } = "transport-optimizer-backend";
+        public string? OtlpEndpoint { get; set; }
+        public string OtlpProtocol { get; set; } = "http/protobuf";
     }
 }

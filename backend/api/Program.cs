@@ -29,17 +29,28 @@ var appOptions = new AppOptions();
 builder.Configuration.Bind(appOptions);
 
 var quotaProject =
-    appOptions.GoogleMaps?.QuotaProject
+    appOptions.GoogleMaps.QuotaProject
     ?? Environment.GetEnvironmentVariable("GOOGLE_CLOUD_QUOTA_PROJECT")
     ?? Environment.GetEnvironmentVariable("GOOGLE_CLOUD_PROJECT");
 
 if (!string.IsNullOrWhiteSpace(quotaProject))
 {
-    appOptions.GoogleMaps ??= new GoogleMapsOptions();
     appOptions.GoogleMaps.QuotaProject = quotaProject.Trim();
 }
 
-if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS")) && builder.Environment.IsDevelopment())
+var configuredCredentialPath = builder.Configuration["GOOGLE_APPLICATION_CREDENTIALS"]?.Trim();
+if (
+    string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS"))
+    && !string.IsNullOrWhiteSpace(configuredCredentialPath)
+)
+{
+    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", configuredCredentialPath);
+}
+
+if (
+    string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS"))
+    && builder.Environment.IsDevelopment()
+)
 {
     var backendRootPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, ".."));
     var localCredentialPath = Directory.EnumerateFiles(backendRootPath, "pathoptimizer-*.json")
@@ -72,9 +83,15 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 
-var traceServiceName = builder.Configuration["OTEL_SERVICE_NAME"] ?? "transport-optimizer-backend";
-var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
-var otlpProtocol = builder.Configuration["OTEL_EXPORTER_OTLP_PROTOCOL"];
+var traceServiceName =
+    Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME")
+    ?? appOptions.OpenTelemetry.ServiceName;
+var otlpEndpoint =
+    Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+    ?? appOptions.OpenTelemetry.OtlpEndpoint;
+var otlpProtocol =
+    Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL")
+    ?? appOptions.OpenTelemetry.OtlpProtocol;
 builder.Services
     .AddOpenTelemetry()
     .ConfigureResource(resource => resource.AddService(traceServiceName))
@@ -112,7 +129,7 @@ builder.Services.AddTransient<GoogleMapsAuthHandler>();
 builder.Services.AddTransient<GoogleMapsErrorHandler>();
 builder.Services.AddHttpClient<IGoogleTilesClient, GoogleTilesClient>(client =>
 {
-    var apiUrl = appOptions.GoogleMaps?.TilesApiUrl ?? "https://tile.googleapis.com/v1";
+    var apiUrl = appOptions.GoogleMaps.TilesApiUrl;
     var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
     client.BaseAddress = new Uri(normalizedApiUrl);
     client.DefaultRequestHeaders.Add("Accept", "*/*");
@@ -122,7 +139,7 @@ builder.Services.AddHttpClient<IGoogleTilesClient, GoogleTilesClient>(client =>
 
 builder.Services.AddHttpClient<IGooglePlacesClient, GooglePlacesClient>(client =>
 {
-    var apiUrl = appOptions.GoogleMaps?.PlacesApiUrl ?? "https://places.googleapis.com/v1";
+    var apiUrl = appOptions.GoogleMaps.PlacesApiUrl;
     var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
     client.BaseAddress = new Uri(normalizedApiUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -132,7 +149,7 @@ builder.Services.AddHttpClient<IGooglePlacesClient, GooglePlacesClient>(client =
 
 builder.Services.AddHttpClient<IGoogleRoutesClient, GoogleRoutesClient>(client =>
 {
-    var apiUrl = appOptions.GoogleMaps?.RoutesApiUrl ?? "https://routes.googleapis.com";
+    var apiUrl = appOptions.GoogleMaps.RoutesApiUrl;
     var normalizedApiUrl = apiUrl.EndsWith('/') ? apiUrl : $"{apiUrl}/";
     client.BaseAddress = new Uri(normalizedApiUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -140,7 +157,7 @@ builder.Services.AddHttpClient<IGoogleRoutesClient, GoogleRoutesClient>(client =
 .AddHttpMessageHandler<GoogleMapsAuthHandler>()
 .AddHttpMessageHandler<GoogleMapsErrorHandler>();
 
-var allowedOrigins = appOptions.CorsSettings?.AllowedOrigins ?? [];
+var allowedOrigins = appOptions.CorsSettings.AllowedOrigins ?? [];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", builder =>
