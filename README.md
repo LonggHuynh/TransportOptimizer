@@ -17,6 +17,15 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 
 ![Alt text](TransportEKSArchitecture.png "EKS Architecture")
 
+## Terraform Diagram Automation (Draw.io MCP)
+
+Use the repository skill and prompts to generate Draw.io diagrams directly from Terraform:
+
+- Workflow docs: `infra/diagrams/README.md`
+- Skill: `.agents/drawio-gcp-terraform/SKILL.md`
+- Prompt templates: `infra/diagrams/prompts/`
+- Extracted graph artifacts: `infra/diagrams/specs/`
+
 ## Variables
 
 ### Frontend Build Environment Variables

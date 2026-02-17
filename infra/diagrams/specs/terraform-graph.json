@@ -1,0 +1,498 @@
+{
+  "generated_at_utc": "2026-02-17T23:04:03+00:00",
+  "root": "/workspaces/TransportOptimizer/infra",
+  "node_count": 28,
+  "edge_count": 36,
+  "nodes": [
+    {
+      "kind": "resource",
+      "address": "google_project_service.required",
+      "type": "google_project_service",
+      "name": "required",
+      "category": "platform",
+      "service": "Project API",
+      "scope": "unspecified",
+      "file": "common/apis.tf",
+      "line": 18
+    },
+    {
+      "kind": "resource",
+      "address": "google_storage_bucket.frontend",
+      "type": "google_storage_bucket",
+      "name": "frontend",
+      "category": "storage",
+      "service": "Cloud Storage Bucket",
+      "scope": "per-environment",
+      "file": "common/frontend-cdn.tf",
+      "line": 1
+    },
+    {
+      "kind": "resource",
+      "address": "google_storage_bucket_iam_member.frontend_public_read",
+      "type": "google_storage_bucket_iam_member",
+      "name": "frontend_public_read",
+      "category": "storage",
+      "service": "Cloud Storage IAM",
+      "scope": "per-environment",
+      "file": "common/frontend-cdn.tf",
+      "line": 27
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_backend_bucket.frontend",
+      "type": "google_compute_backend_bucket",
+      "name": "frontend",
+      "category": "networking",
+      "service": "Backend Bucket",
+      "scope": "per-environment",
+      "file": "common/frontend-cdn.tf",
+      "line": 35
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_url_map.frontend",
+      "type": "google_compute_url_map",
+      "name": "frontend",
+      "category": "networking",
+      "service": "URL Map",
+      "scope": "per-environment",
+      "file": "common/frontend-cdn.tf",
+      "line": 43
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_target_http_proxy.frontend",
+      "type": "google_compute_target_http_proxy",
+      "name": "frontend",
+      "category": "networking",
+      "service": "HTTP Proxy",
+      "scope": "per-environment",
+      "file": "common/frontend-cdn.tf",
+      "line": 50
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_global_address.frontend",
+      "type": "google_compute_global_address",
+      "name": "frontend",
+      "category": "networking",
+      "service": "Global Address",
+      "scope": "per-environment",
+      "file": "common/frontend-cdn.tf",
+      "line": 57
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_global_forwarding_rule.frontend",
+      "type": "google_compute_global_forwarding_rule",
+      "name": "frontend",
+      "category": "networking",
+      "service": "Global Forwarding Rule",
+      "scope": "per-environment",
+      "file": "common/frontend-cdn.tf",
+      "line": 65
+    },
+    {
+      "kind": "resource",
+      "address": "google_container_cluster.primary",
+      "type": "google_container_cluster",
+      "name": "primary",
+      "category": "compute",
+      "service": "GKE Cluster",
+      "scope": "shared-foundation",
+      "file": "common/gke.tf",
+      "line": 1
+    },
+    {
+      "kind": "resource",
+      "address": "google_service_account.backend",
+      "type": "google_service_account",
+      "name": "backend",
+      "category": "security-identity",
+      "service": "Service Account",
+      "scope": "per-environment",
+      "file": "common/iam.tf",
+      "line": 1
+    },
+    {
+      "kind": "resource",
+      "address": "google_service_account.worker",
+      "type": "google_service_account",
+      "name": "worker",
+      "category": "security-identity",
+      "service": "Service Account",
+      "scope": "per-environment",
+      "file": "common/iam.tf",
+      "line": 10
+    },
+    {
+      "kind": "resource",
+      "address": "google_project_iam_member.backend_secret_access",
+      "type": "google_project_iam_member",
+      "name": "backend_secret_access",
+      "category": "security-identity",
+      "service": "Project IAM Binding",
+      "scope": "per-environment",
+      "file": "common/iam.tf",
+      "line": 19
+    },
+    {
+      "kind": "resource",
+      "address": "google_project_iam_member.worker_secret_access",
+      "type": "google_project_iam_member",
+      "name": "worker_secret_access",
+      "category": "security-identity",
+      "service": "Project IAM Binding",
+      "scope": "per-environment",
+      "file": "common/iam.tf",
+      "line": 27
+    },
+    {
+      "kind": "resource",
+      "address": "google_project_iam_member.backend_redis_access",
+      "type": "google_project_iam_member",
+      "name": "backend_redis_access",
+      "category": "security-identity",
+      "service": "Project IAM Binding",
+      "scope": "per-environment",
+      "file": "common/iam.tf",
+      "line": 35
+    },
+    {
+      "kind": "resource",
+      "address": "google_project_iam_member.worker_redis_access",
+      "type": "google_project_iam_member",
+      "name": "worker_redis_access",
+      "category": "security-identity",
+      "service": "Project IAM Binding",
+      "scope": "per-environment",
+      "file": "common/iam.tf",
+      "line": 43
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_network.vpc",
+      "type": "google_compute_network",
+      "name": "vpc",
+      "category": "networking",
+      "service": "VPC Network",
+      "scope": "shared-foundation",
+      "file": "common/network.tf",
+      "line": 1
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_subnetwork.primary",
+      "type": "google_compute_subnetwork",
+      "name": "primary",
+      "category": "networking",
+      "service": "Subnetwork",
+      "scope": "per-environment",
+      "file": "common/network.tf",
+      "line": 11
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_subnetwork.gke",
+      "type": "google_compute_subnetwork",
+      "name": "gke",
+      "category": "networking",
+      "service": "Subnetwork",
+      "scope": "shared-foundation",
+      "file": "common/network.tf",
+      "line": 46
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_router.nat_router",
+      "type": "google_compute_router",
+      "name": "nat_router",
+      "category": "networking",
+      "service": "Cloud Router",
+      "scope": "shared-foundation",
+      "file": "common/network.tf",
+      "line": 66
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_router_nat.nat",
+      "type": "google_compute_router_nat",
+      "name": "nat",
+      "category": "networking",
+      "service": "Cloud NAT",
+      "scope": "per-environment",
+      "file": "common/network.tf",
+      "line": 74
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_router_nat.gke",
+      "type": "google_compute_router_nat",
+      "name": "gke",
+      "category": "networking",
+      "service": "Cloud NAT",
+      "scope": "shared-foundation",
+      "file": "common/network.tf",
+      "line": 94
+    },
+    {
+      "kind": "resource",
+      "address": "google_compute_subnetwork.psc",
+      "type": "google_compute_subnetwork",
+      "name": "psc",
+      "category": "networking",
+      "service": "Subnetwork",
+      "scope": "shared-foundation",
+      "file": "common/redis-cluster.tf",
+      "line": 1
+    },
+    {
+      "kind": "resource",
+      "address": "google_network_connectivity_service_connection_policy.redis",
+      "type": "google_network_connectivity_service_connection_policy",
+      "name": "redis",
+      "category": "networking",
+      "service": "PSC Service Connection Policy",
+      "scope": "shared-foundation",
+      "file": "common/redis-cluster.tf",
+      "line": 13
+    },
+    {
+      "kind": "resource",
+      "address": "google_redis_cluster.redis",
+      "type": "google_redis_cluster",
+      "name": "redis",
+      "category": "database-cache",
+      "service": "Memorystore Redis Cluster",
+      "scope": "per-environment",
+      "file": "common/redis-cluster.tf",
+      "line": 29
+    },
+    {
+      "kind": "resource",
+      "address": "google_service_account_iam_member.backend_workload_identity",
+      "type": "google_service_account_iam_member",
+      "name": "backend_workload_identity",
+      "category": "security-identity",
+      "service": "Service Account IAM Binding",
+      "scope": "per-environment",
+      "file": "common/workload-identity.tf",
+      "line": 1
+    },
+    {
+      "kind": "resource",
+      "address": "google_service_account_iam_member.worker_workload_identity",
+      "type": "google_service_account_iam_member",
+      "name": "worker_workload_identity",
+      "category": "security-identity",
+      "service": "Service Account IAM Binding",
+      "scope": "per-environment",
+      "file": "common/workload-identity.tf",
+      "line": 11
+    },
+    {
+      "kind": "module",
+      "address": "module.app",
+      "type": "module",
+      "name": "app",
+      "category": "module",
+      "service": "Terraform Module (app)",
+      "scope": "single-environment",
+      "file": "env/main.tf",
+      "line": 1
+    },
+    {
+      "kind": "resource",
+      "address": "helm_release.app",
+      "type": "helm_release",
+      "name": "app",
+      "category": "kubernetes-app",
+      "service": "Helm Release",
+      "scope": "single-environment",
+      "file": "modules/app/main.tf",
+      "line": 112
+    }
+  ],
+  "edges": [
+    {
+      "from_address": "google_compute_backend_bucket.frontend",
+      "to_address": "google_compute_url_map.frontend",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_global_address.frontend",
+      "to_address": "google_compute_global_forwarding_rule.frontend",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_network.vpc",
+      "to_address": "google_compute_router.nat_router",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_network.vpc",
+      "to_address": "google_compute_subnetwork.gke",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_network.vpc",
+      "to_address": "google_compute_subnetwork.primary",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_network.vpc",
+      "to_address": "google_compute_subnetwork.psc",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_network.vpc",
+      "to_address": "google_container_cluster.primary",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_network.vpc",
+      "to_address": "google_network_connectivity_service_connection_policy.redis",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_network.vpc",
+      "to_address": "google_redis_cluster.redis",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_router.nat_router",
+      "to_address": "google_compute_router_nat.gke",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_router.nat_router",
+      "to_address": "google_compute_router_nat.nat",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_subnetwork.gke",
+      "to_address": "google_compute_router_nat.gke",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_subnetwork.gke",
+      "to_address": "google_container_cluster.primary",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_subnetwork.primary",
+      "to_address": "google_compute_router_nat.nat",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_subnetwork.psc",
+      "to_address": "google_network_connectivity_service_connection_policy.redis",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_target_http_proxy.frontend",
+      "to_address": "google_compute_global_forwarding_rule.frontend",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_compute_url_map.frontend",
+      "to_address": "google_compute_target_http_proxy.frontend",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_container_cluster.primary",
+      "to_address": "google_service_account_iam_member.backend_workload_identity",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_container_cluster.primary",
+      "to_address": "google_service_account_iam_member.worker_workload_identity",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_network_connectivity_service_connection_policy.redis",
+      "to_address": "google_redis_cluster.redis",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_project_service.required",
+      "to_address": "google_compute_global_address.frontend",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_project_service.required",
+      "to_address": "google_compute_network.vpc",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_project_service.required",
+      "to_address": "google_compute_subnetwork.psc",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_project_service.required",
+      "to_address": "google_container_cluster.primary",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_project_service.required",
+      "to_address": "google_network_connectivity_service_connection_policy.redis",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_project_service.required",
+      "to_address": "google_service_account.backend",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_project_service.required",
+      "to_address": "google_service_account.worker",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_project_service.required",
+      "to_address": "google_storage_bucket.frontend",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_service_account.backend",
+      "to_address": "google_project_iam_member.backend_redis_access",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_service_account.backend",
+      "to_address": "google_project_iam_member.backend_secret_access",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_service_account.backend",
+      "to_address": "google_service_account_iam_member.backend_workload_identity",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_service_account.worker",
+      "to_address": "google_project_iam_member.worker_redis_access",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_service_account.worker",
+      "to_address": "google_project_iam_member.worker_secret_access",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_service_account.worker",
+      "to_address": "google_service_account_iam_member.worker_workload_identity",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_storage_bucket.frontend",
+      "to_address": "google_compute_backend_bucket.frontend",
+      "relation": "references"
+    },
+    {
+      "from_address": "google_storage_bucket.frontend",
+      "to_address": "google_storage_bucket_iam_member.frontend_public_read",
+      "relation": "references"
+    }
+  ]
+}
