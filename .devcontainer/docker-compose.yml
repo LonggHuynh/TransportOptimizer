@@ -1,0 +1,7 @@
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+    volumes:
+      - .:/workspaces/TransportOptimizer:cached
+    working_dir: /workspaces/TransportOptimizer
+    command: sleep infinity
