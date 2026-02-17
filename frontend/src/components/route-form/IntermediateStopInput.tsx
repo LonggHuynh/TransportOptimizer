@@ -7,7 +7,7 @@ import {
     useGeocodeSuggestions,
 } from '../../hooks/queries/useGeocodeSuggestions';
 import { useCenterStore } from '../../hooks/store/useCenterStore';
-import { useDebouncedValue } from './hooks/useDebouncedValue';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 
 interface IntermediateStopInputProps {
     value: string;
