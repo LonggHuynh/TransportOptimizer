@@ -17,9 +17,9 @@ dotnet restore backend/backend.sln
 
 echo "Installing worker dependencies..."
 pushd worker >/dev/null
-if ! command -v pipenv >/dev/null 2>&1; then
-    echo "pipenv was not found in PATH. Ensure the Python feature installed it."
-    exit 1
+if [ -d ".venv" ] && [ ! -x ".venv/bin/python" ]; then
+    echo "Removing stale worker/.venv (missing interpreter)..."
+    rm -rf ".venv"
 fi
 pipenv install
 popd >/dev/null
