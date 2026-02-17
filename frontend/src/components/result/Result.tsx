@@ -26,7 +26,8 @@ const Result = () => {
         estimatedTime,
         routeLegCount,
     });
-    const { isRecalculating, handleDoneAndRecalculate } = useRouteRecalculation();
+    const { isRecalculating, handleDoneAndRecalculate } =
+        useRouteRecalculation();
     const resultPanelRef = useRef<HTMLDivElement>(null);
 
     if (!shouldShowResultPanel) {
@@ -47,7 +48,12 @@ const Result = () => {
                 <div className="result">
                     <div className="panel-handle panel-handle--compact">
                         <span className="panel-handle__label">
-                            <span className="panel-handle__grip" aria-hidden="true">::</span>
+                            <span
+                                className="panel-handle__grip"
+                                aria-hidden="true"
+                            >
+                                ::
+                            </span>
                             Optimization Results
                         </span>
                         <span className="panel-handle__hint">Drag</span>
@@ -64,7 +70,9 @@ const Result = () => {
                     </header>
 
                     <section className="result__metric" aria-live="polite">
-                        <p className="result__metric-label">Estimated Drive Time</p>
+                        <p className="result__metric-label">
+                            Estimated Drive Time
+                        </p>
                         <p className="result__metric-value">{duration}</p>
                         <p className="result__metric-note">
                             {routeLegCount > 0
@@ -73,14 +81,20 @@ const Result = () => {
                         </p>
                     </section>
 
-                    {error && <p className="result__message result__message--error">{error}</p>}
+                    {error && (
+                        <p className="result__message result__message--error">
+                            {error}
+                        </p>
+                    )}
                     {isComputing && (
                         <p className="result__message result__message--loading">
                             Optimizing stop order...
                         </p>
                     )}
                     {!isComputing && status === 'completed' && !hasResult && (
-                        <p className="result__message">No feasible route found.</p>
+                        <p className="result__message">
+                            No feasible route found.
+                        </p>
                     )}
 
                     {hasResult && (
@@ -91,7 +105,8 @@ const Result = () => {
                             </div>
                             {routeLegCount > 1 && (
                                 <p className="result__routes-hint">
-                                    Use <strong>Done &amp; recalc</strong> on the current leg when a stop is completed.
+                                    Use <strong>Done &amp; recalc</strong> on
+                                    the current leg when a stop is completed.
                                 </p>
                             )}
                             <div className="result__route-list">
@@ -99,8 +114,12 @@ const Result = () => {
                                     <RouteDetails
                                         route={route}
                                         index={index + 1}
-                                        canMarkDone={index === 0 && routeLegCount > 1}
-                                        onMarkDone={() => handleDoneAndRecalculate(index)}
+                                        canMarkDone={
+                                            index === 0 && routeLegCount > 1
+                                        }
+                                        onMarkDone={() =>
+                                            handleDoneAndRecalculate(index)
+                                        }
                                         isRecalculating={isRecalculating}
                                         key={`${toCoordinateKey(route[0])}-${toCoordinateKey(route[1])}-${index}`}
                                     />

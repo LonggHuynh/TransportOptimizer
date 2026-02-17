@@ -105,8 +105,8 @@
     .route-details {
         grid-template-columns: auto minmax(0, 1fr);
         grid-template-areas:
-            "index path"
-            "actions actions";
+            'index path'
+            'actions actions';
         row-gap: var(--space-8);
 
         &__index {

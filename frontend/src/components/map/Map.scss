@@ -9,7 +9,7 @@
         filter: none;
 
         &::after {
-            content: "";
+            content: '';
             position: absolute;
             inset: 0;
             background: var(--map-overlay);

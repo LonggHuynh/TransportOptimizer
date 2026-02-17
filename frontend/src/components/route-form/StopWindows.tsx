@@ -37,9 +37,13 @@ const StopWindows = () => {
     const [selectedStop, setSelectedStop] = useState(0);
     const [windowStart, setWindowStart] = useState(DEFAULT_START_TIME);
     const [windowEnd, setWindowEnd] = useState(DEFAULT_END_TIME);
-    const intermediateList = useIntermediateListStore((state) => state.intermediateList);
+    const intermediateList = useIntermediateListStore(
+        (state) => state.intermediateList,
+    );
     const stopWindows = useStopWindowsStore((state) => state.stopWindows);
-    const upsertStopWindow = useStopWindowsStore((state) => state.upsertStopWindow);
+    const upsertStopWindow = useStopWindowsStore(
+        (state) => state.upsertStopWindow,
+    );
 
     useEffect(() => {
         if (selectedStop >= intermediateList.length) {
@@ -52,7 +56,9 @@ const StopWindows = () => {
             return;
         }
 
-        const existing = stopWindows.find((item) => item.stopIndex === selectedStop + 1);
+        const existing = stopWindows.find(
+            (item) => item.stopIndex === selectedStop + 1,
+        );
         if (!existing) {
             setWindowStart(DEFAULT_START_TIME);
             setWindowEnd(DEFAULT_END_TIME);
@@ -95,7 +101,9 @@ const StopWindows = () => {
                 <div className="stopWindowsInline__editor">
                     <select
                         value={selectedStop}
-                        onChange={(e) => setSelectedStop(Number(e.target.value))}
+                        onChange={(e) =>
+                            setSelectedStop(Number(e.target.value))
+                        }
                     >
                         {intermediateList.map((item, index) => (
                             <option key={index} value={index}>
@@ -131,7 +139,10 @@ const StopWindows = () => {
             {stopWindows.length > 0 && (
                 <div className="stopWindowsInline__list">
                     {stopWindows.map((stopWindow) => (
-                        <StopWindowTag key={stopWindow.stopIndex} stopWindow={stopWindow} />
+                        <StopWindowTag
+                            key={stopWindow.stopIndex}
+                            stopWindow={stopWindow}
+                        />
                     ))}
                 </div>
             )}

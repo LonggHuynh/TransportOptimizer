@@ -21,7 +21,7 @@ export const useStopWindowsStore = create<StopWindowsState>((set) => ({
     upsertStopWindow: (stopWindow) =>
         set((state) => {
             const existingIndex = state.stopWindows.findIndex(
-                (window) => window.stopIndex === stopWindow.stopIndex
+                (window) => window.stopIndex === stopWindow.stopIndex,
             );
 
             if (existingIndex === -1) {

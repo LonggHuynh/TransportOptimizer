@@ -39,13 +39,21 @@ const fetchDirections = async (
 };
 
 export const useDisplayDirections = (
-    options: UseMutationOptions<RouteLine | null, AxiosError, DisplayDirectionsVariables> = {},
+    options: UseMutationOptions<
+        RouteLine | null,
+        AxiosError,
+        DisplayDirectionsVariables
+    > = {},
 ) => {
     const setDirectionsResponse = useDirectionsStore(
         (state) => state.setDirectionsResponse,
     );
 
-    return useMutation<RouteLine | null, AxiosError, DisplayDirectionsVariables>({
+    return useMutation<
+        RouteLine | null,
+        AxiosError,
+        DisplayDirectionsVariables
+    >({
         ...options,
         mutationFn: async ({ from, to }: DisplayDirectionsVariables) =>
             fetchDirections(from, to),

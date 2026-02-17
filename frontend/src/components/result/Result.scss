@@ -4,8 +4,16 @@
     max-height: calc(100vh - var(--space-64));
     overflow: hidden;
     background:
-        radial-gradient(circle at 96% -8%, var(--color-panel-gradient-radial), transparent 52%),
-        linear-gradient(160deg, var(--color-panel-gradient-start) 0%, var(--color-panel-gradient-end) 100%);
+        radial-gradient(
+            circle at 96% -8%,
+            var(--color-panel-gradient-radial),
+            transparent 52%
+        ),
+        linear-gradient(
+            160deg,
+            var(--color-panel-gradient-start) 0%,
+            var(--color-panel-gradient-end) 100%
+        );
     border: var(--border-width) solid var(--color-border-strong);
     padding: var(--space-20) var(--space-22);
     display: flex;
@@ -14,7 +22,8 @@
     box-shadow: var(--shadow-md);
     border-radius: var(--radius-2xl);
     pointer-events: auto;
-    animation: floatIn var(--duration-enter) var(--delay-enter) var(--easing-enter) both;
+    animation: floatIn var(--duration-enter) var(--delay-enter)
+        var(--easing-enter) both;
 
     &__header {
         display: grid;
