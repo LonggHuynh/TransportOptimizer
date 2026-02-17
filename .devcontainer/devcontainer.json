@@ -39,7 +39,8 @@
     "forwardPorts": [
         3000,
         5259,
-        7077
+        7077,
+        16686
     ],
     "portsAttributes": {
         "3000": {
@@ -51,6 +52,10 @@
         },
         "7077": {
             "label": "Backend API (HTTPS)"
+        },
+        "16686": {
+            "label": "Jaeger UI (Traces)",
+            "onAutoForward": "openBrowser"
         }
     },
     "customizations": {
