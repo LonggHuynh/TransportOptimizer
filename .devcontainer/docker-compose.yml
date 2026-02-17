@@ -5,6 +5,10 @@ services:
       - redis
       - jaeger
       - otel-collector
+    ports:
+      - "3000:3000"
+      - "5259:5259"
+      - "7077:7077"
     volumes:
       - ..:/workspaces/TransportOptimizer:cached
     working_dir: /workspaces/TransportOptimizer
