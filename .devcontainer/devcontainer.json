@@ -1,9 +1,6 @@
 {
     "name": "TransportOptimizer Dev",
-    "dockerComposeFile": [
-        "../docker-compose.yml",
-        "docker-compose.yml"
-    ],
+    "dockerComposeFile": "docker-compose.yml",
     "service": "devcontainer",
     "workspaceFolder": "/workspaces/TransportOptimizer",
     "runServices": [

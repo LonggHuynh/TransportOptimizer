@@ -6,6 +6,29 @@ services:
       - jaeger
       - otel-collector
     volumes:
-      - .:/workspaces/TransportOptimizer:cached
+      - ..:/workspaces/TransportOptimizer:cached
     working_dir: /workspaces/TransportOptimizer
     command: sleep infinity
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ../infra/observability/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    depends_on:
+      - jaeger
+    ports:
+      - "4317:4317"
+      - "4318:4318"
