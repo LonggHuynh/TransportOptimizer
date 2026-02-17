@@ -54,18 +54,18 @@
     border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-panel-muted);
-}
 
-.demoScenarioBar__title {
-    font-size: var(--text-micro);
-    letter-spacing: var(--tracking-base);
-    color: var(--color-ink-muted);
-}
+    &__title {
+        font-size: var(--text-micro);
+        letter-spacing: var(--tracking-base);
+        color: var(--color-ink-muted);
+    }
 
-.demoScenarioBar__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-8);
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-8);
+    }
 }
 
 .demoScenarioButton {
@@ -219,35 +219,37 @@
     gap: var(--space-10);
 }
 
-.travelOptionField {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-}
-
-.travelOptionLabel {
-    font-size: var(--text-micro);
-    color: var(--color-ink-muted);
-    letter-spacing: var(--tracking-base);
-}
-
-.travelOptionInput {
-    height: var(--space-40);
-    border-radius: var(--radius-md);
-    border: var(--border-width) solid var(--color-border);
-    background: var(--color-input-bg);
-    color: var(--color-ink);
-    padding: 0 var(--space-12);
-    font-size: var(--text-body);
-
-    &:focus {
-        border-color: var(--color-border-strong);
-        box-shadow: var(--focus-ring);
+.travelOption {
+    &Field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
     }
-}
 
-.travelOptionSelect {
-    padding-right: var(--space-28);
+    &Label {
+        font-size: var(--text-micro);
+        color: var(--color-ink-muted);
+        letter-spacing: var(--tracking-base);
+    }
+
+    &Input {
+        height: var(--space-40);
+        border-radius: var(--radius-md);
+        border: var(--border-width) solid var(--color-border);
+        background: var(--color-input-bg);
+        color: var(--color-ink);
+        padding: 0 var(--space-12);
+        font-size: var(--text-body);
+
+        &:focus {
+            border-color: var(--color-border-strong);
+            box-shadow: var(--focus-ring);
+        }
+    }
+
+    &Select {
+        padding-right: var(--space-28);
+    }
 }
 
 .route-autocomplete {
@@ -315,7 +317,7 @@
         font-size: var(--text-body-md);
         padding: var(--space-8) var(--space-12);
 
-        &[aria-selected="true"],
+        &[aria-selected='true'],
         &.Mui-focused {
             background: var(--color-panel-muted);
         }
@@ -439,7 +441,7 @@
             margin: 0;
         }
 
-        &[type="number"] {
+        &[type='number'] {
             -moz-appearance: textfield;
             appearance: textfield;
         }

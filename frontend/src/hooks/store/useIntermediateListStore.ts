@@ -5,7 +5,9 @@ interface IntermediateListState {
     setIntermediateList: (places: string[]) => void;
 }
 
-export const useIntermediateListStore = create<IntermediateListState>((set) => ({
-    intermediateList: [],
-    setIntermediateList: (places) => set({ intermediateList: places }),
-}));
+export const useIntermediateListStore = create<IntermediateListState>(
+    (set) => ({
+        intermediateList: [],
+        setIntermediateList: (places) => set({ intermediateList: places }),
+    }),
+);

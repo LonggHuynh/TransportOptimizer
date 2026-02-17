@@ -1,4 +1,4 @@
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { QueryOptions, useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { apiInstance } from '../../api';
 import { LatLng } from '../../models/map';
@@ -12,30 +12,23 @@ export interface GeocodeSuggestion {
 const MIN_QUERY_LENGTH = 3;
 const SUGGESTION_LIMIT = 6;
 
-type GeocodeSuggestionsQueryOptions = Omit<
-    UseQueryOptions<
-        GeocodeSuggestion[],
-        AxiosError,
-        GeocodeSuggestion[],
-        [string, string, string, string]
-    >,
-    'queryKey' | 'queryFn' | 'enabled'
->;
-
-interface SuggestionRecord extends Record<string, unknown> {
-    id?: unknown;
-    label?: unknown;
-    placeId?: unknown;
-    place_id?: unknown;
-    description?: unknown;
-    text?: unknown;
+interface SuggestionRecord {
+    id?: string | null;
+    label?: string | null;
+    placeId?: string | null;
+    place_id?: string | null;
+    description?: string | null;
+    text?: string | null;
 }
 
-const isRecord = (value: unknown): value is SuggestionRecord =>
+type SuggestionPayload = string | SuggestionRecord | null | undefined;
+type GeocodeSuggestionsResponse = SuggestionPayload[];
+
+const isRecord = (value: SuggestionPayload): value is SuggestionRecord =>
     typeof value === 'object' && value !== null;
 
 const parseSuggestion = (
-    input: unknown,
+    input: SuggestionPayload,
     index: number,
 ): GeocodeSuggestion | null => {
     if (typeof input === 'string') {
@@ -65,11 +58,13 @@ const parseSuggestion = (
     }
 
     const rawPlaceId = input.placeId ?? input.place_id;
-    const placeId = typeof rawPlaceId === 'string' && rawPlaceId.trim()
-        ? rawPlaceId.trim()
-        : undefined;
-    const id = placeId
-        ?? (typeof input.id === 'string' && input.id.trim()
+    const placeId =
+        typeof rawPlaceId === 'string' && rawPlaceId.trim()
+            ? rawPlaceId.trim()
+            : undefined;
+    const id =
+        placeId ??
+        (typeof input.id === 'string' && input.id.trim()
             ? input.id.trim()
             : `${label}-${index}`);
 
@@ -80,7 +75,9 @@ const parseSuggestion = (
     };
 };
 
-const parseSuggestions = (data: unknown): GeocodeSuggestion[] => {
+const parseSuggestions = (
+    data: GeocodeSuggestionsResponse | null | undefined,
+): GeocodeSuggestion[] => {
     const payload = Array.isArray(data) ? data : [];
     const dedupe = new Map<string, GeocodeSuggestion>();
 
@@ -112,22 +109,30 @@ const fetchSuggestions = async ({
     centerLat?: number;
     centerLng?: number;
 }) => {
-    const response = await apiInstance.get<unknown>('geocode/suggest', {
-        params: {
-            query,
-            limit: SUGGESTION_LIMIT,
-            centerLat,
-            centerLng,
+    const response = await apiInstance.get<GeocodeSuggestionsResponse>(
+        'geocode/suggest',
+        {
+            params: {
+                query,
+                limit: SUGGESTION_LIMIT,
+                centerLat,
+                centerLng,
+            },
+            signal,
         },
-        signal,
-    });
+    );
     return response.data;
 };
 
 export const useGeocodeSuggestions = (
     query: string,
-    center?: LatLng | null,
-    options: GeocodeSuggestionsQueryOptions = {},
+    center: LatLng | null,
+    options?: UseQueryOptions<
+        GeocodeSuggestionsResponse,
+        AxiosError,
+        GeocodeSuggestion[],
+        [string, string, string, string]
+    >,
 ) => {
     const trimmedQuery = query.trim();
     const canSearch = trimmedQuery.length >= MIN_QUERY_LENGTH;
@@ -142,34 +147,24 @@ export const useGeocodeSuggestions = (
     const centerLatKey = centerLat?.toFixed(4) ?? '';
     const centerLngKey = centerLng?.toFixed(4) ?? '';
 
-    const suggestionQuery = useQuery<
-        GeocodeSuggestion[],
-        AxiosError,
-        GeocodeSuggestion[],
-        [string, string, string, string]
-    >({
-        queryKey: ['geocodeSuggestions', trimmedQuery, centerLatKey, centerLngKey],
+    return useQuery({
+        ...options,
+        queryKey: [
+            'geocodeSuggestions',
+            trimmedQuery,
+            centerLatKey,
+            centerLngKey,
+        ],
         queryFn: async ({ signal }) =>
-            parseSuggestions(
-                await fetchSuggestions({
-                    query: trimmedQuery,
-                    signal,
-                    centerLat,
-                    centerLng,
-                }),
-            ),
+            fetchSuggestions({
+                query: trimmedQuery,
+                signal,
+                centerLat,
+                centerLng,
+            }),
+        select: parseSuggestions,
         enabled: canSearch,
         refetchOnWindowFocus: false,
         retry: false,
-        ...options,
     });
-
-    return {
-        suggestions: suggestionQuery.data ?? [],
-        loading: canSearch && suggestionQuery.isFetching,
-        error:
-            suggestionQuery.isError && suggestionQuery.error.code !== 'ERR_CANCELED'
-                ? 'Failed to load suggestions'
-                : null,
-    };
 };

@@ -38,14 +38,22 @@ const enqueueComputeRoute = async ({
 };
 
 export const useRecalculateRoute = (
-    options: UseMutationOptions<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput> = {},
+    options: UseMutationOptions<
+        ComputeRouteQueuedResponse,
+        AxiosError,
+        ComputeOrderInput
+    > = {},
 ) => {
     const routes = useRouteComputationStore((state) => state.bestRoutes);
     const estimatedTime = useRouteComputationStore((state) => state.totalTime);
     const setComputedRouteResult = useRouteComputationStore(
         (state) => state.setComputedRouteResult,
     );
-    return useMutation<ComputeRouteQueuedResponse, AxiosError, ComputeOrderInput>({
+    return useMutation<
+        ComputeRouteQueuedResponse,
+        AxiosError,
+        ComputeOrderInput
+    >({
         ...options,
         mutationFn: enqueueComputeRoute,
         onSuccess: (data, variables, context) => {

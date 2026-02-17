@@ -58,7 +58,7 @@ $space-scale: (
     72: 72px,
     160: 160px,
     340: 340px,
-    380: 380px
+    380: 380px,
 );
 
 $radius-scale: (
@@ -67,9 +67,9 @@ $radius-scale: (
     md: 12px,
     lg: 14px,
     xl: 16px,
-    "2xl": 22px,
+    '2xl': 22px,
     pill: 999px,
-    round: 50%
+    round: 50%,
 );
 
 $text-scale: (
@@ -85,12 +85,13 @@ $text-scale: (
     button: 1rem,
     title-sm: 1.1rem,
     title-lg: 2rem,
-    icon: 1.18rem
+    icon: 1.18rem,
 );
 
 :root {
     --font-sans: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+    --font-mono:
+        'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
 
     --color-ink: #{$ink};
     --color-ink-muted: #{$ink-muted};

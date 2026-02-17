@@ -28,7 +28,6 @@ interface UseRouteFormSubmissionOptions {
     clearErrors: UseFormClearErrors<RouteFormValues>;
 }
 
-
 interface ComputeRouteResult {
     order: number[];
     totalTime: number | null;

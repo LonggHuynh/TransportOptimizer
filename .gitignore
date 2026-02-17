@@ -8,6 +8,11 @@ __pycache__/
 .gcloud/
 infra/.terraform/
 infra/.terraform.lock.hcl
+infra/**/.terraform/
+infra/**/.terraform.lock.hcl
 infra/*.tfstate
 infra/*.tfstate.*
+*.auto.tfvars
+*.auto.tfvars.json
+infra/.gitignore
 backend/pathoptimizer-*.json

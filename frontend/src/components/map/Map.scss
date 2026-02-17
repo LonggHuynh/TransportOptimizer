@@ -1,22 +1,36 @@
-.mapContainer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: var(--z-map);
-    filter: none;
-}
+.map {
+    &Container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: var(--z-map);
+        filter: none;
 
-.mapLeaflet {
-    width: 100%;
-    height: 100%;
-}
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--map-overlay);
+            pointer-events: none;
+        }
+    }
 
-.mapContainer::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--map-overlay);
-    pointer-events: none;
+    &Leaflet {
+        width: 100%;
+        height: 100%;
+    }
+
+    &CenterMarker {
+        stroke: var(--color-map-marker-stroke);
+        fill: var(--color-map-marker-fill);
+        fill-opacity: 1;
+    }
+
+    &Route {
+        stroke: var(--color-map-route);
+        stroke-width: calc(var(--map-route-weight) * 1px);
+        stroke-opacity: var(--map-route-opacity);
+    }
 }
