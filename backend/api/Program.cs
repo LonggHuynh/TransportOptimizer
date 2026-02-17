@@ -27,31 +27,7 @@ builder.Logging.AddJsonConsole(options =>
 
 var appOptions = new AppOptions();
 builder.Configuration.Bind(appOptions);
-appOptions.ApplyEnvironmentOverrides();
-
-var configuredCredentialPath = builder.Configuration["GOOGLE_APPLICATION_CREDENTIALS"]?.Trim();
-if (
-    string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS"))
-    && !string.IsNullOrWhiteSpace(configuredCredentialPath)
-)
-{
-    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", configuredCredentialPath);
-}
-
-if (
-    string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS"))
-    && builder.Environment.IsDevelopment()
-)
-{
-    var backendRootPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, ".."));
-    var localCredentialPath = Directory.EnumerateFiles(backendRootPath, "pathoptimizer-*.json")
-        .FirstOrDefault();
-
-    if (!string.IsNullOrWhiteSpace(localCredentialPath))
-    {
-        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", localCredentialPath);
-    }
-}
+appOptions.ApplyEnvironmentOverrides(builder.Environment);
 
 builder.Services.AddSingleton(appOptions);
 builder.Services.AddSingleton<GoogleCredential>(_ =>

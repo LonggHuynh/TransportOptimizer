@@ -1,16 +1,65 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+
 namespace api.Configuration
 {
     public class AppOptions
     {
+        [ConfigurationKeyName("GOOGLE_APPLICATION_CREDENTIALS")]
+        public string? GoogleApplicationCredentials { get; set; } = "../../.secrets/gcp-sa.json";
+
         public GoogleMapsOptions GoogleMaps { get; set; } = new();
         public CorsSettingsOptions CorsSettings { get; set; } = new();
         public RedisOptions Redis { get; set; } = new();
         public CeleryOptions Celery { get; set; } = new();
         public OpenTelemetryOptions OpenTelemetry { get; set; } = new();
 
-        public void ApplyEnvironmentOverrides()
+        public void ApplyEnvironmentOverrides(IHostEnvironment environment)
         {
             GoogleMaps.ApplyEnvironmentOverrides();
+            ApplyGoogleApplicationCredentials(environment);
+        }
+
+        private void ApplyGoogleApplicationCredentials(IHostEnvironment environment)
+        {
+            var existingCredentialPath = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+            if (!string.IsNullOrWhiteSpace(existingCredentialPath))
+            {
+                return;
+            }
+
+            var configuredCredentialPath = NormalizePath(GoogleApplicationCredentials, environment.ContentRootPath);
+            if (!string.IsNullOrWhiteSpace(configuredCredentialPath))
+            {
+                Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", configuredCredentialPath);
+                return;
+            }
+
+            if (!environment.IsDevelopment())
+            {
+                return;
+            }
+
+            var defaultDevCredentialPath = Path.GetFullPath(
+                Path.Combine(environment.ContentRootPath, "..", "..", ".secrets", "gcp-sa.json")
+            );
+            if (File.Exists(defaultDevCredentialPath))
+            {
+                Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", defaultDevCredentialPath);
+            }
+        }
+
+        private static string? NormalizePath(string? configuredPath, string contentRootPath)
+        {
+            var normalized = configuredPath?.Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            return Path.IsPathRooted(normalized)
+                ? normalized
+                : Path.GetFullPath(Path.Combine(contentRootPath, normalized));
         }
     }
 
