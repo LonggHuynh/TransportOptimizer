@@ -54,7 +54,7 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 Start local dependencies:
 
 ```bash
-docker compose up -d redis jaeger otel-collector
+docker compose -f .devcontainer/docker-compose.yml up -d redis jaeger otel-collector
 ```
 
 Use these env vars for local backend and worker:
@@ -86,13 +86,13 @@ http://localhost:16686
 Start local dependencies (Redis + observability stack):
 
 ```bash
-docker compose up -d
+docker compose -f .devcontainer/docker-compose.yml up -d redis jaeger otel-collector
 ```
 
 To shutdown
 
 ```bash
-docker compose down
+docker compose -f .devcontainer/docker-compose.yml down
 ```
 
 ### Deploy to K8s cluster
