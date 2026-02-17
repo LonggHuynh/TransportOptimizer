@@ -8,4 +8,4 @@ args = ["-y", "@google-cloud/gcloud-mcp"]
 
 [mcp_servers.drawio]
 command = "npx"
-args = ["-y", "drawio-mcp-server@latest"]
+args = ["@drawio/mcp"]
