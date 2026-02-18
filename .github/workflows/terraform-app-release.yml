@@ -28,6 +28,14 @@ on:
           - Never
         default: IfNotPresent
         required: true
+      tfc_organization:
+        description: "HCP Terraform/Terraform Enterprise organization"
+        required: false
+        default: LongHuynhh
+      tfc_hostname:
+        description: "HCP Terraform/Terraform Enterprise hostname"
+        required: false
+        default: app.terraform.io
   workflow_call:
     inputs:
       environment:
@@ -54,6 +62,16 @@ on:
         type: string
         required: false
         default: IfNotPresent
+      tfc_organization:
+        description: "HCP Terraform/Terraform Enterprise organization"
+        type: string
+        required: false
+        default: LongHuynhh
+      tfc_hostname:
+        description: "HCP Terraform/Terraform Enterprise hostname"
+        type: string
+        required: false
+        default: app.terraform.io
     secrets:
       TF_API_TOKEN:
         required: true
@@ -73,13 +91,15 @@ jobs:
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
-      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
       TF_WORKSPACE: ${{ inputs.environment || github.event.inputs.environment }}
       TARGET_ENV: ${{ inputs.environment || github.event.inputs.environment }}
       BACKEND_TAG: ${{ inputs.backend_tag || github.event.inputs.backend_tag }}
       WORKER_TAG: ${{ inputs.worker_tag || github.event.inputs.worker_tag }}
       FRONTEND_TAG: ${{ inputs.frontend_tag || github.event.inputs.frontend_tag }}
       PULL_POLICY: ${{ inputs.pull_policy || github.event.inputs.pull_policy }}
+      TFC_ORGANIZATION: ${{ inputs.tfc_organization || github.event.inputs.tfc_organization }}
+      TFC_HOSTNAME: ${{ inputs.tfc_hostname || github.event.inputs.tfc_hostname }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -120,24 +140,69 @@ jobs:
             exit 1
           fi
 
-      - name: Terraform init
-        run: terraform -chdir=infra/env init -reconfigure -input=false
+          if [[ -z "${TFC_ORGANIZATION}" || ! "${TFC_ORGANIZATION}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid tfc_organization value."
+            exit 1
+          fi
 
-      - name: Terraform apply app release
+          if [[ -z "${TFC_HOSTNAME}" || ! "${TFC_HOSTNAME}" =~ ^[A-Za-z0-9.-]+$ ]]; then
+            echo "Invalid tfc_hostname value."
+            exit 1
+          fi
+
+      - name: Configure Terraform credentials
+        shell: bash
         run: |
-          export TF_VAR_environment="${TARGET_ENV}"
-          export TF_VAR_image_pull_policy="${PULL_POLICY}"
+          mkdir -p "${HOME}/.terraform.d"
+          cat > "${HOME}/.terraform.d/credentials.tfrc.json" <<EOF
+          {
+            "credentials": {
+              "${TFC_HOSTNAME}": {
+                "token": "${TF_API_TOKEN}"
+              }
+            }
+          }
+          EOF
+
+      - name: Preselect Terraform workspace
+        shell: bash
+        run: |
+          mkdir -p infra/env/.terraform
+          printf '%s' "${TARGET_ENV}" > infra/env/.terraform/environment
+
+      - name: Terraform init
+        run: terraform -chdir=infra/env init -reconfigure -input=false -backend-config="organization=${TFC_ORGANIZATION}" -backend-config="hostname=${TFC_HOSTNAME}"
+
+      - name: Prepare Terraform variable file
+        shell: bash
+        run: |
+          auto_tfvars_path="infra/env/${TARGET_ENV}.auto.tfvars"
+          cp "infra/env/environments/${TARGET_ENV}.tfvars" "${auto_tfvars_path}"
+
+          upsert_tfvar() {
+            key="$1"
+            value="$2"
+
+            if grep -Eq "^${key}[[:space:]]*=" "${auto_tfvars_path}"; then
+              sed -E -i "s|^${key}[[:space:]]*=.*$|${key} = \"${value}\"|" "${auto_tfvars_path}"
+            else
+              echo "${key} = \"${value}\"" >> "${auto_tfvars_path}"
+            fi
+          }
+
+          upsert_tfvar "image_pull_policy" "${PULL_POLICY}"
 
           if [[ -n "${BACKEND_TAG}" ]]; then
-            export TF_VAR_backend_image_tag="${BACKEND_TAG}"
+            upsert_tfvar "backend_image_tag" "${BACKEND_TAG}"
           fi
 
           if [[ -n "${WORKER_TAG}" ]]; then
-            export TF_VAR_worker_image_tag="${WORKER_TAG}"
+            upsert_tfvar "worker_image_tag" "${WORKER_TAG}"
           fi
 
           if [[ -n "${FRONTEND_TAG}" ]]; then
-            export TF_VAR_frontend_image_tag="${FRONTEND_TAG}"
+            upsert_tfvar "frontend_image_tag" "${FRONTEND_TAG}"
           fi
 
-          terraform -chdir=infra/env apply -auto-approve -var-file="environments/${TARGET_ENV}.tfvars" -target="module.app.helm_release.app"
+      - name: Terraform apply app release
+        run: terraform -chdir=infra/env apply -auto-approve -target="module.app.helm_release.app"
