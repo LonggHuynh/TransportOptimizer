@@ -23,7 +23,7 @@ variable "gke_cluster_name" {
 
 variable "environment" {
   type        = string
-  description = "Application environment."
+  description = "Environment name for this app root."
 
   validation {
     condition     = contains(["stage", "prod"], var.environment)
@@ -86,6 +86,11 @@ variable "image_pull_policy" {
   type        = string
   description = "Image pull policy."
   default     = "IfNotPresent"
+
+  validation {
+    condition     = contains(["Always", "IfNotPresent", "Never"], var.image_pull_policy)
+    error_message = "image_pull_policy must be Always, IfNotPresent, or Never."
+  }
 }
 
 variable "backend_container_port" {
@@ -170,37 +175,6 @@ variable "cors_allowed_origins" {
   type        = list(string)
   description = "Allowed CORS origins."
   default     = []
-}
-
-variable "google_maps_api_key" {
-  type        = string
-  description = "Google Maps API key."
-  default     = ""
-  sensitive   = true
-}
-
-variable "secret_manager_enabled" {
-  type        = bool
-  description = "Enable Secret Manager sync via CSI."
-  default     = false
-}
-
-variable "backend_secret_name" {
-  type        = string
-  description = "Kubernetes secret name from Secret Manager sync."
-  default     = "backend-secrets"
-}
-
-variable "backend_secret_provider_class" {
-  type        = string
-  description = "SecretProviderClass name."
-  default     = "backend-secrets"
-}
-
-variable "backend_secret_mount_path" {
-  type        = string
-  description = "Secret mount path."
-  default     = "/var/secrets"
 }
 
 variable "worker_result_ttl_seconds" {

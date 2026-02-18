@@ -42,18 +42,3 @@ output "redis_port_by_env" {
   value       = { for env, redis in google_redis_cluster.redis : env => redis.discovery_endpoints[0].port }
   description = "Redis port discovery endpoints by environment."
 }
-
-output "frontend_bucket_names" {
-  value       = { for env, bucket in google_storage_bucket.frontend : env => bucket.name }
-  description = "Frontend GCS bucket names by environment."
-}
-
-output "frontend_lb_ips" {
-  value       = { for env, address in google_compute_global_address.frontend : env => address.address }
-  description = "Global HTTP load balancer IPs for frontend by environment."
-}
-
-output "frontend_http_urls" {
-  value       = { for env, address in google_compute_global_address.frontend : env => "http://${address.address}" }
-  description = "Frontend HTTP URLs (no TLS yet) by environment."
-}

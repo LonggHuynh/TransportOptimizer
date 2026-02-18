@@ -1,43 +1,31 @@
-# Terraform Layout
+# Terraform Guide
 
-Terraform is split into two active roots:
+Terraform is split into two roots:
 
-1. `infra/common` -> shared infrastructure (`transport-common`)
-2. `infra/env` -> app infrastructure for both `stage` and `prod`
+1. `infra/common`: shared platform infrastructure in workspace `transport-common`
+2. `infra/env`: application deployment for `stage` and `prod` using one codebase
 
-`infra/env` uses one codebase with environment-specific variables (`stage`/`prod`), which is the recommended Terraform pattern to avoid duplicate root code.
+## Ownership
 
-## What Each Root Manages
+- `infra/common` manages shared GCP resources (APIs, VPC/subnets/NAT, shared GKE, Redis, IAM/workload identity).
+- `infra/env` deploys the app Helm chart to GKE.
+- App release state is owned by `module.app.helm_release.app` only.
 
-- `infra/common`
-  - Shared GCP infrastructure: APIs, VPC/subnets/NAT, GKE, Redis, IAM, frontend bucket/LB.
-  - Produces outputs consumed by `infra/env`.
-- `infra/env`
-  - Helm release for app workloads.
-  - Environment is selected by tfvars (`environments/stage.tfvars` or `environments/prod.tfvars`).
-  - Reads shared outputs from `transport-common` via `data.terraform_remote_state`.
+## Backend and Workspaces
 
-## Terraform Cloud Workspaces
-
-- `transport-common`
-- `transport-stage`
-- `transport-prod`
-
-`infra/env/backend.tf` uses `workspaces { prefix = "transport-" }`.
-Use local workspace `stage` or `prod` when running `infra/env` from CLI.
+- `infra/common` uses Terraform Cloud/HCP Terraform with fixed workspace name `transport-common`.
+- `infra/env` uses `backend "remote"` with workspace prefix `transport-`.
+- Local CLI workspace names must be `stage` or `prod`, which map to:
+  - `stage` -> `transport-stage`
+  - `prod` -> `transport-prod`
 
 ## Apply Order
 
-1. Apply `infra/common` first.
-2. Apply `infra/env` with `stage` vars.
-3. Apply `infra/env` with `prod` vars.
+1. Apply `infra/common`.
+2. Apply `infra/env` for `stage`.
+3. Apply `infra/env` for `prod`.
 
-## CI/CD Behavior
-
-- `Infra Deployment` workflow runs `infra/common` only.
-- `Terraform App Release` workflow runs `infra/env` and targets only `module.app.helm_release.app` (app release only).
-
-## Commands
+## CLI Commands
 
 ```bash
 cd infra/common
@@ -46,7 +34,7 @@ terraform plan
 terraform apply
 
 cd ../env
-terraform init
+terraform init -reconfigure
 
 terraform workspace select stage || terraform workspace new stage
 terraform plan -var-file=environments/stage.tfvars
@@ -57,19 +45,25 @@ terraform plan -var-file=environments/prod.tfvars
 terraform apply -var-file=environments/prod.tfvars
 ```
 
-## Migration From Old Split Stage/Prod Roots
+## CI/CD
 
-If you previously used separate directories (`infra/stage`, `infra/prod`), keep the same Terraform Cloud workspace names:
+- `.github/workflows/infra-core.yml`
+  - full Terraform apply (`common`, `stage`, `prod`, or `all`)
+  - `all` runs `infra/common` first, then `infra/env` for `stage` and `prod` workspaces
+- `.github/workflows/terraform-app-release.yml`
+  - app-only release and targets `module.app.helm_release.app`
 
-- `transport-stage`
-- `transport-prod`
+## State Migration Notes
 
-Then run `infra/env` with matching workspace + tfvars pair:
+If an older state still contains a root-level `helm_release.app`, remove it so only module state remains:
 
-- workspace `stage` + `environments/stage.tfvars`
-- workspace `prod` + `environments/prod.tfvars`
+```bash
+cd infra/env
+terraform state list | rg '^helm_release\.app$'
+terraform state rm helm_release.app
+```
 
-If Helm resources already exist and state is new, import with:
+If Helm release exists in cluster but not in state, import it:
 
 ```bash
 cd infra/env
@@ -79,5 +73,3 @@ terraform import -var-file=environments/stage.tfvars 'module.app.helm_release.ap
 terraform workspace select prod
 terraform import -var-file=environments/prod.tfvars 'module.app.helm_release.app' transport-prod/transport-optimizer
 ```
-
-Legacy single-root Terraform files have been removed from this repository.

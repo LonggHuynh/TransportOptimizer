@@ -37,7 +37,6 @@ services_secondary_cidrs = {
 
 # Frontend hosting
 frontend_bucket_name = "transport-frontend-pathoptimizer-486102"
-cdn_enabled          = true
 
 # Redis
 redis_mode                    = "cluster"

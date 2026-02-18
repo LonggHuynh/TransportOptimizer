@@ -1,0 +1,6 @@
+# Exclude local-only artifacts from HCP Terraform uploads.
+worker/.venv
+worker/.venv/**
+frontend/node_modules
+frontend/node_modules/**
+output/**

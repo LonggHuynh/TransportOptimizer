@@ -31,11 +31,7 @@ google_maps_tile_map_type = "roadmap"
 google_maps_tile_size     = 256
 cors_allowed_origins      = ["https://<frontend-domain>"]
 
-secret_manager_enabled        = false
-backend_secret_name           = "backend-secrets"
-backend_secret_provider_class = "backend-secrets"
-backend_secret_mount_path     = "/var/secrets"
-worker_result_ttl_seconds     = 300
+worker_result_ttl_seconds = 300
 
 ghcr_username          = ""
 ghcr_token             = ""
