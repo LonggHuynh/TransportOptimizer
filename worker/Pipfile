@@ -15,4 +15,4 @@ opentelemetry-sdk = "==1.25.0"
 opentelemetry-exporter-otlp-proto-http = "==1.25.0"
 
 [requires]
-python_version = "3.11"
+python_version = "3.12"

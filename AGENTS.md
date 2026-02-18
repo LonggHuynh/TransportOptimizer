@@ -13,7 +13,7 @@
 - Backend run locally: `dotnet run --project backend/api/api.csproj`
 - Backend build check: `dotnet build backend/backend.sln`
 - Worker setup/run: `cd worker && pipenv install && pipenv run python main.py`
-- Local Redis (for backend/worker integration): `docker compose up -d`
+- Local Redis (for backend/worker integration): `docker compose -f .devcontainer/docker-compose.yml up -d redis jaeger otel-collector`
 
 ## Coding Style & Naming Conventions
 - Use 4-space indentation across TypeScript, C#, and Python files.
