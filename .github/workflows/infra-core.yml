@@ -12,6 +12,14 @@ on:
           - prod
           - all
         required: true
+      tfc_organization:
+        description: "HCP Terraform/Terraform Enterprise organization"
+        required: false
+        default: LongHuynhh
+      tfc_hostname:
+        description: "HCP Terraform/Terraform Enterprise hostname"
+        required: false
+        default: app.terraform.io
 
 permissions:
   contents: read
@@ -28,15 +36,29 @@ jobs:
       target_environment: ${{ steps.resolve.outputs.target_environment }}
       deploy_common: ${{ steps.resolve.outputs.deploy_common }}
       env_matrix: ${{ steps.resolve.outputs.env_matrix }}
+      tfc_organization: ${{ steps.resolve.outputs.tfc_organization }}
+      tfc_hostname: ${{ steps.resolve.outputs.tfc_hostname }}
     steps:
       - name: Resolve target environment
         id: resolve
         shell: bash
         run: |
           target_environment="${{ inputs.environment }}"
+          tfc_organization="${{ inputs.tfc_organization }}"
+          tfc_hostname="${{ inputs.tfc_hostname }}"
 
           if [[ ! "${target_environment}" =~ ^(common|stage|prod|all)$ ]]; then
             echo "Invalid target environment: ${target_environment}"
+            exit 1
+          fi
+
+          if [[ -z "${tfc_organization}" || ! "${tfc_organization}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid tfc_organization value: ${tfc_organization}"
+            exit 1
+          fi
+
+          if [[ -z "${tfc_hostname}" || ! "${tfc_hostname}" =~ ^[A-Za-z0-9.-]+$ ]]; then
+            echo "Invalid tfc_hostname value: ${tfc_hostname}"
             exit 1
           fi
 
@@ -62,6 +84,8 @@ jobs:
           echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"
           echo "deploy_common=${deploy_common}" >> "${GITHUB_OUTPUT}"
           echo "env_matrix=${env_matrix}" >> "${GITHUB_OUTPUT}"
+          echo "tfc_organization=${tfc_organization}" >> "${GITHUB_OUTPUT}"
+          echo "tfc_hostname=${tfc_hostname}" >> "${GITHUB_OUTPUT}"
 
   deploy_common:
     name: Apply infra/common (transport-common)
@@ -72,7 +96,9 @@ jobs:
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
-      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+      TFC_ORGANIZATION: ${{ needs.resolve_target_environment.outputs.tfc_organization }}
+      TFC_HOSTNAME: ${{ needs.resolve_target_environment.outputs.tfc_hostname }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -80,17 +106,31 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Configure Terraform credentials
+        shell: bash
+        run: |
+          mkdir -p "${HOME}/.terraform.d"
+          cat > "${HOME}/.terraform.d/credentials.tfrc.json" <<EOF
+          {
+            "credentials": {
+              "${TFC_HOSTNAME}": {
+                "token": "${TF_API_TOKEN}"
+              }
+            }
+          }
+          EOF
+
       - name: Terraform init (common)
         shell: bash
-        run: terraform -chdir=infra/common init
+        run: terraform -chdir=infra/common init -input=false
 
       - name: Terraform plan (common)
         shell: bash
-        run: terraform -chdir=infra/common plan -out=tfplan
+        run: terraform -chdir=infra/common plan
 
       - name: Terraform apply (common)
         shell: bash
-        run: terraform -chdir=infra/common apply tfplan
+        run: terraform -chdir=infra/common apply -auto-approve
 
   deploy_env_workspaces:
     name: Apply infra/env (${{ matrix.environment }})
@@ -108,8 +148,11 @@ jobs:
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
-      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
       TARGET_ENV: ${{ matrix.environment }}
+      TF_WORKSPACE: ${{ matrix.environment }}
+      TFC_ORGANIZATION: ${{ needs.resolve_target_environment.outputs.tfc_organization }}
+      TFC_HOSTNAME: ${{ needs.resolve_target_environment.outputs.tfc_hostname }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -117,18 +160,38 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Configure Terraform credentials
+        shell: bash
+        run: |
+          mkdir -p "${HOME}/.terraform.d"
+          cat > "${HOME}/.terraform.d/credentials.tfrc.json" <<EOF
+          {
+            "credentials": {
+              "${TFC_HOSTNAME}": {
+                "token": "${TF_API_TOKEN}"
+              }
+            }
+          }
+          EOF
+
+      - name: Preselect Terraform workspace
+        shell: bash
+        run: |
+          mkdir -p infra/env/.terraform
+          printf '%s' "${TARGET_ENV}" > infra/env/.terraform/environment
+
       - name: Terraform init (env)
         shell: bash
-        run: terraform -chdir=infra/env init -reconfigure
+        run: terraform -chdir=infra/env init -reconfigure -input=false -backend-config="organization=${TFC_ORGANIZATION}" -backend-config="hostname=${TFC_HOSTNAME}"
 
-      - name: Select Terraform workspace
+      - name: Prepare Terraform variable file (env)
         shell: bash
-        run: terraform -chdir=infra/env workspace select "${TARGET_ENV}" || terraform -chdir=infra/env workspace new "${TARGET_ENV}"
+        run: cp "infra/env/environments/${TARGET_ENV}.tfvars" "infra/env/${TARGET_ENV}.auto.tfvars"
 
       - name: Terraform plan (env)
         shell: bash
-        run: terraform -chdir=infra/env plan -var-file="environments/${TARGET_ENV}.tfvars" -out=tfplan
+        run: terraform -chdir=infra/env plan
 
       - name: Terraform apply (env)
         shell: bash
-        run: terraform -chdir=infra/env apply tfplan
+        run: terraform -chdir=infra/env apply -auto-approve
