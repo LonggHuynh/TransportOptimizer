@@ -109,7 +109,7 @@ export GOOGLE_APPLICATION_CREDENTIALS_JSON_B64="$(base64 -w0 /absolute/path/to/g
 
 ```bash
 # Terminal 1: backend
-OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces dotnet run --project backend/api/api.csproj
+dotnet run --project backend/api/api.csproj
 
 # Terminal 2: worker
 cd worker
@@ -120,11 +120,16 @@ cd frontend
 npm run dev
 ```
 
-5. Access local services:
+5. Or start backend/worker from VS Code Run and Debug:
+   - Open `Run and Debug` (`Ctrl+Shift+D`).
+   - Select `Backend: Launch (api)` to run backend with debugger.
+   - Select `Worker: Run (pipenv)` to run worker from the debug panel.
+   - Run frontend separately with `cd frontend && npm run dev`.
+6. Access local services:
    - Frontend: `http://localhost:3000`
    - Backend Swagger: `http://localhost:5259/swagger`
    - Jaeger: `http://localhost:16686`
-6. Quick health checks:
+7. Quick health checks:
 
 ```bash
 curl http://localhost:5259/healthz
