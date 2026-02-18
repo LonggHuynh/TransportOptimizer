@@ -1,8 +1,8 @@
 # Terraform Diagram Inventory
 
-- Generated: `2026-02-17T23:04:03+00:00`
-- Root: `/workspaces/TransportOptimizer/infra`
-- Nodes: `28`
+- Generated: `2026-02-18T04:02:41+00:00`
+- Root: `/home/long-huynh/Workplace/TransportOptimizer/infra`
+- Nodes: `29`
 - Edges: `36`
 
 ## Category Counts
@@ -11,7 +11,7 @@
 | --- | ---: |
 | compute | 1 |
 | database-cache | 1 |
-| kubernetes-app | 1 |
+| kubernetes-app | 2 |
 | module | 1 |
 | networking | 13 |
 | platform | 1 |
@@ -48,6 +48,7 @@
 | `google_redis_cluster.redis` | resource | Memorystore Redis Cluster | database-cache | per-environment | `common/redis-cluster.tf:29` |
 | `google_service_account_iam_member.backend_workload_identity` | resource | Service Account IAM Binding | security-identity | per-environment | `common/workload-identity.tf:1` |
 | `google_service_account_iam_member.worker_workload_identity` | resource | Service Account IAM Binding | security-identity | per-environment | `common/workload-identity.tf:11` |
+| `helm_release.app` | resource | Helm Release | kubernetes-app | single-environment | `env/app-release.tf:1` |
 | `module.app` | module | Terraform Module (app) | module | single-environment | `env/main.tf:1` |
 | `helm_release.app` | resource | Helm Release | kubernetes-app | single-environment | `modules/app/main.tf:112` |
 

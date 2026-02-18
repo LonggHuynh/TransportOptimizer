@@ -1,7 +1,7 @@
 {
-  "generated_at_utc": "2026-02-17T23:04:03+00:00",
-  "root": "/workspaces/TransportOptimizer/infra",
-  "node_count": 28,
+  "generated_at_utc": "2026-02-18T04:02:41+00:00",
+  "root": "/home/long-huynh/Workplace/TransportOptimizer/infra",
+  "node_count": 29,
   "edge_count": 36,
   "nodes": [
     {
@@ -289,6 +289,17 @@
       "scope": "per-environment",
       "file": "common/workload-identity.tf",
       "line": 11
+    },
+    {
+      "kind": "resource",
+      "address": "helm_release.app",
+      "type": "helm_release",
+      "name": "app",
+      "category": "kubernetes-app",
+      "service": "Helm Release",
+      "scope": "single-environment",
+      "file": "env/app-release.tf",
+      "line": 1
     },
     {
       "kind": "module",
