@@ -1,4 +1,4 @@
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { QueryOptions, useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { apiInstance } from '../../api';
 import { Coordinate } from '../../models/coordinate';
@@ -27,26 +27,16 @@ const fetchRouteStatus = async (
     return response.data;
 };
 
-type RouteJobStatusQueryOptions = Omit<
-    UseQueryOptions<
-        RouteJobStatusResponse,
-        AxiosError,
-        RouteJobStatusResponse,
-        [string, string | null]
-    >,
-    'queryKey' | 'queryFn'
->;
-
 export const useRouteJobStatus = (
     jobId: string | null,
-    options: RouteJobStatusQueryOptions = {},
-) => {
-    return useQuery<
+    options: QueryOptions<
         RouteJobStatusResponse,
         AxiosError,
         RouteJobStatusResponse,
         [string, string | null]
-    >({
+    > = {},
+) => {
+    return useQuery({
         ...options,
         refetchOnWindowFocus: false,
         refetchInterval: (query) => {
@@ -58,6 +48,6 @@ export const useRouteJobStatus = (
         },
         queryKey: ['routeJobStatus', jobId],
         queryFn: () => fetchRouteStatus(jobId!),
-        enabled: jobId ? options.enabled : false,
+        enabled: Boolean(jobId),
     });
 };

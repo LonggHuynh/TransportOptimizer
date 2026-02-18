@@ -1,4 +1,6 @@
 resource "google_compute_network" "vpc" {
+  count = local.manage_foundation ? 1 : 0
+
   name                    = local.gke_vpc_name
   auto_create_subnetworks = false
   routing_mode            = "REGIONAL"
@@ -7,12 +9,12 @@ resource "google_compute_network" "vpc" {
 }
 
 resource "google_compute_subnetwork" "primary" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   name                     = local.subnet_name[each.key]
   ip_cidr_range            = local.subnet_cidr[each.key]
   region                   = var.region
-  network                  = google_compute_network.vpc.id
+  network                  = google_compute_network.vpc[0].id
   private_ip_google_access = true
 
   secondary_ip_range {
@@ -42,10 +44,12 @@ resource "google_compute_subnetwork" "primary" {
 }
 
 resource "google_compute_subnetwork" "gke" {
+  count = local.manage_foundation ? 1 : 0
+
   name                     = local.gke_subnet_name
   ip_cidr_range            = var.gke_subnet_cidr
   region                   = var.region
-  network                  = google_compute_network.vpc.id
+  network                  = google_compute_network.vpc[0].id
   private_ip_google_access = true
 
   secondary_ip_range {
@@ -60,16 +64,18 @@ resource "google_compute_subnetwork" "gke" {
 }
 
 resource "google_compute_router" "nat_router" {
+  count = local.manage_foundation ? 1 : 0
+
   name    = "${local.gke_name_prefix}-nat-router"
   region  = var.region
-  network = google_compute_network.vpc.id
+  network = google_compute_network.vpc[0].id
 }
 
 resource "google_compute_router_nat" "nat" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   name                               = "${local.name_prefix[each.key]}-nat"
-  router                             = google_compute_router.nat_router.name
+  router                             = google_compute_router.nat_router[0].name
   region                             = var.region
   nat_ip_allocate_option             = "AUTO_ONLY"
   source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
@@ -86,14 +92,16 @@ resource "google_compute_router_nat" "nat" {
 }
 
 resource "google_compute_router_nat" "gke" {
+  count = local.manage_foundation ? 1 : 0
+
   name                               = "${local.gke_name_prefix}-gke-nat"
-  router                             = google_compute_router.nat_router.name
+  router                             = google_compute_router.nat_router[0].name
   region                             = var.region
   nat_ip_allocate_option             = "AUTO_ONLY"
   source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
 
   subnetwork {
-    name                    = google_compute_subnetwork.gke.id
+    name                    = google_compute_subnetwork.gke[0].id
     source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
   }
 

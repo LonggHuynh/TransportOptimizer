@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import {
     Autocomplete,
@@ -6,13 +6,11 @@ import {
     Switch,
     TextField,
 } from '@mui/material';
+import Draggable from 'react-draggable';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import './RouteForm.scss';
 import { DEFAULT_STOP } from './constants';
-import {
-    DEMO_SCENARIOS,
-    parseDemoScenario,
-} from './demoScenarios';
+import { DEMO_SCENARIOS, parseDemoScenario } from './demoScenarios';
 import IntermediateStopInput from './IntermediateStopInput';
 import {
     IntermediateStopInputValue,
@@ -36,7 +34,7 @@ import { useIntermediateListStore } from '../../hooks/store/useIntermediateListS
 import { useLocationLabelsStore } from '../../hooks/store/useLocationLabelsStore';
 import { useStopWindowsStore } from '../../hooks/store/useStopWindowsStore';
 import { useRouteFormSubmission } from './hooks/useRouteFormSubmission';
-import { useDebouncedValue } from './hooks/useDebouncedValue';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { TRAVEL_MODES, TravelMode } from '../../models/routeOptions';
 import { Coordinate } from '../../models/coordinate';
 import { toCoordinateKey } from '../../utils/coordinates';
@@ -79,6 +77,7 @@ const RouteForm = () => {
         name: 'stops',
     });
     const [activeDemoFile, setActiveDemoFile] = useState<string | null>(null);
+    const plannerPanelRef = useRef<HTMLDivElement>(null);
 
     const sameDestination =
         useWatch({ control, name: 'sameDestination' }) ?? false;
@@ -97,9 +96,9 @@ const RouteForm = () => {
 
     const debouncedOrigin = useDebouncedValue(origin.value, 300);
     const debouncedDestination = useDebouncedValue(destination.value, 300);
-    const { suggestions: originSuggestions, loading: originLoading } =
+    const { data: originSuggestions = [], isLoading: originLoading } =
         useGeocodeSuggestions(debouncedOrigin, center);
-    const { suggestions: destinationSuggestions, loading: destinationLoading } =
+    const { data: destinationSuggestions = [], isLoading: destinationLoading } =
         useGeocodeSuggestions(debouncedDestination, center);
     const geocodeLookup = useGeocodeLookup();
 
@@ -219,7 +218,10 @@ const RouteForm = () => {
                 })),
             );
 
-            handleRememberLocation(parsed.origin.label, parsed.origin.coordinate);
+            handleRememberLocation(
+                parsed.origin.label,
+                parsed.origin.coordinate,
+            );
             handleRememberLocation(
                 parsed.destination.label,
                 parsed.destination.coordinate,
@@ -346,130 +348,73 @@ const RouteForm = () => {
     };
 
     return (
-        <div className="routePanel">
-            <form
-                className="routeForm"
-                onSubmit={handleSubmit(submitRouteRequest)}
+        <Draggable
+            nodeRef={plannerPanelRef}
+            handle=".panel-handle"
+            cancel="input,textarea,button,select,option,.MuiSwitch-root,.MuiAutocomplete-root,.MuiAutocomplete-popper,.MuiAutocomplete-option"
+            bounds="parent"
+        >
+            <div
+                ref={plannerPanelRef}
+                className="draggable-panel dragPanel dragPanel--planner routePanel"
             >
-                <div className="panel-handle">
-                    <span>Dispatch Planner</span>
-                    <span className="panel-handle__hint">Drag</span>
-                </div>
-                <h1 className="title">Route Planner</h1>
-                <p className="subtitle">
-                    Optimize technician job order with stop deadlines and map
-                    preview.
-                </p>
-                <div className="demoScenarioBar">
-                    <span className="demoScenarioBar__title">Examples</span>
-                    <div className="demoScenarioBar__actions">
-                        {DEMO_SCENARIOS.map((scenario) => (
-                            <button
-                                key={scenario.fileName}
-                                type="button"
-                                className="demoScenarioButton"
-                                onClick={() =>
-                                    void handleLoadDemoScenario(
-                                        scenario.fileName,
-                                    )
-                                }
-                                disabled={activeDemoFile !== null}
-                            >
-                                {activeDemoFile === scenario.fileName
-                                    ? 'Loading...'
-                                    : scenario.label}
-                            </button>
-                        ))}
+                <form
+                    className="routeForm"
+                    onSubmit={handleSubmit(submitRouteRequest)}
+                >
+                    <div className="panel-handle">
+                        <span>Dispatch Planner</span>
+                        <span className="panel-handle__hint">Drag</span>
                     </div>
-                </div>
+                    <h1 className="title">Route Planner</h1>
+                    <p className="subtitle">
+                        Optimize technician job order with stop deadlines and
+                        map preview.
+                    </p>
+                    <div className="demoScenarioBar">
+                        <span className="demoScenarioBar__title">Examples</span>
+                        <div className="demoScenarioBar__actions">
+                            {DEMO_SCENARIOS.map((scenario) => (
+                                <button
+                                    key={scenario.fileName}
+                                    type="button"
+                                    className="demoScenarioButton"
+                                    onClick={() =>
+                                        void handleLoadDemoScenario(
+                                            scenario.fileName,
+                                        )
+                                    }
+                                    disabled={activeDemoFile !== null}
+                                >
+                                    {activeDemoFile === scenario.fileName
+                                        ? 'Loading...'
+                                        : scenario.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
-                <div className="inputLine">
-                    <Autocomplete
-                        className="route-autocomplete"
-                        disablePortal
-                        disableClearable
-                        freeSolo
-                        options={originSuggestions}
-                        getOptionLabel={(option) =>
-                            typeof option === 'string' ? option : option.label
-                        }
-                        inputValue={origin.value}
-                        onInputChange={(_, nextValue) => {
-                            setValue(
-                                'origin',
-                                {
-                                    value: nextValue,
-                                    coordinate:
-                                        origin.value === nextValue
-                                            ? origin.coordinate
-                                            : null,
-                                },
-                                { shouldDirty: true },
-                            );
-                        }}
-                        onChange={(_, selected) => {
-                            if (selected && typeof selected !== 'string') {
-                                handleSelectOriginChange(selected);
-                            }
-                        }}
-                        loading={originLoading || suggestionLoading}
-                        renderOption={renderSuggestionOption}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                placeholder="Origin"
-                                variant="outlined"
-                                size="small"
-                                InputProps={{
-                                    ...params.InputProps,
-                                    endAdornment: (
-                                        <>
-                                            {originLoading || suggestionLoading ? (
-                                                <CircularProgress
-                                                    color="inherit"
-                                                    size={16}
-                                                />
-                                            ) : null}
-                                            {params.InputProps.endAdornment}
-                                        </>
-                                    ),
-                                }}
-                            />
-                        )}
-                    />
-                    {origin.coordinate ? (
-                        <button
-                            type="button"
-                            className="inputLocateButton"
-                            onClick={() => handleLocate(origin)}
-                        >
-                            <LocationOnIcon />
-                        </button>
-                    ) : null}
-                </div>
-
-                {!sameDestination && (
                     <div className="inputLine">
                         <Autocomplete
                             className="route-autocomplete"
                             disablePortal
                             disableClearable
                             freeSolo
-                            options={destinationSuggestions}
+                            options={originSuggestions}
                             getOptionLabel={(option) =>
                                 typeof option === 'string'
                                     ? option
                                     : option.label
                             }
-                            inputValue={destination.value}
+                            inputValue={origin.value}
                             onInputChange={(_, nextValue) => {
                                 setValue(
-                                    'destination',
+                                    'origin',
                                     {
                                         value: nextValue,
                                         coordinate:
-                                            destination.value === nextValue
-                                                ? destination.coordinate
+                                            origin.value === nextValue
+                                                ? origin.coordinate
                                                 : null,
                                     },
                                     { shouldDirty: true },
@@ -477,22 +422,23 @@ const RouteForm = () => {
                             }}
                             onChange={(_, selected) => {
                                 if (selected && typeof selected !== 'string') {
-                                    handleSelectDestinationChange(selected);
+                                    handleSelectOriginChange(selected);
                                 }
                             }}
-                            loading={destinationLoading || suggestionLoading}
+                            loading={originLoading || suggestionLoading}
                             renderOption={renderSuggestionOption}
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
-                                    placeholder="Destination"
+                                    placeholder="Origin"
                                     variant="outlined"
                                     size="small"
                                     InputProps={{
                                         ...params.InputProps,
                                         endAdornment: (
                                             <>
-                                                {destinationLoading || suggestionLoading ? (
+                                                {originLoading ||
+                                                suggestionLoading ? (
                                                     <CircularProgress
                                                         color="inherit"
                                                         size={16}
@@ -505,149 +451,246 @@ const RouteForm = () => {
                                 />
                             )}
                         />
-                        {destination.coordinate ? (
+                        {origin.coordinate ? (
                             <button
                                 type="button"
                                 className="inputLocateButton"
-                                onClick={() => handleLocate(destination)}
+                                onClick={() => handleLocate(origin)}
                             >
                                 <LocationOnIcon />
                             </button>
                         ) : null}
                     </div>
-                )}
 
-                <div className="toggleOrigin">
-                    <label>Return to origin</label>
-                    <div className="toggleSwitch">
-                        <Switch
-                            checked={sameDestination}
-                            onChange={() =>
-                                setValue('sameDestination', !sameDestination, {
-                                    shouldDirty: true,
-                                })
-                            }
-                            inputProps={{ 'aria-label': 'controlled' }}
-                        />
-                    </div>
-                </div>
-
-                <div className="travelOptions">
-                    <label
-                        className="travelOptionField"
-                        htmlFor="route-start-time"
-                    >
-                        <span className="travelOptionLabel">Depart at</span>
-                        <input
-                            id="route-start-time"
-                            className="travelOptionInput"
-                            type="time"
-                            value={departTimeLocal}
-                            onChange={(event) =>
-                                setValue(
-                                    'departTimeLocal',
-                                    event.target.value,
-                                    {
-                                        shouldDirty: true,
-                                    },
-                                )
-                            }
-                        />
-                    </label>
-                    <label
-                        className="travelOptionField"
-                        htmlFor="route-travel-mode"
-                    >
-                        <span className="travelOptionLabel">Travel mode</span>
-                        <select
-                            id="route-travel-mode"
-                            className="travelOptionInput travelOptionSelect"
-                            value={travelMode}
-                            onChange={(event) =>
-                                setValue(
-                                    'travelMode',
-                                    event.target.value as TravelMode,
-                                    {
-                                        shouldDirty: true,
-                                    },
-                                )
-                            }
-                        >
-                            {TRAVEL_MODES.map((mode) => (
-                                <option key={mode} value={mode}>
-                                    {mode.charAt(0).toUpperCase() +
-                                        mode.slice(1)}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                </div>
-
-                <div className="inputLine">
-                    <button
-                        type="button"
-                        onClick={handleAddStop}
-                        className="addButton"
-                    >
-                        Add job stop
-                    </button>
-                </div>
-
-                {stopFields.length === 0 ? (
-                    <p className="emptyHint">No intermediate job stops yet.</p>
-                ) : (
-                    <div className="intermediateList">
-                        {stopFields.map((field, index) => {
-                            const stop = stops[index] ?? DEFAULT_STOP;
-                            return (
-                                <IntermediateStopInput
-                                    key={field.id}
-                                    value={stop.value}
-                                    placeholder={`Stop`}
-                                    hasCoordinate={Boolean(stop.coordinate)}
-                                    deadlineTimeLocal={stop.deadlineTimeLocal}
-                                    serviceMinutes={stop.serviceMinutes}
-                                    onChange={(value) => {
-                                        updateStopAtIndex(index, (item) => ({
-                                            ...item,
-                                            value,
+                    {!sameDestination && (
+                        <div className="inputLine">
+                            <Autocomplete
+                                className="route-autocomplete"
+                                disablePortal
+                                disableClearable
+                                freeSolo
+                                options={destinationSuggestions}
+                                getOptionLabel={(option) =>
+                                    typeof option === 'string'
+                                        ? option
+                                        : option.label
+                                }
+                                inputValue={destination.value}
+                                onInputChange={(_, nextValue) => {
+                                    setValue(
+                                        'destination',
+                                        {
+                                            value: nextValue,
                                             coordinate:
-                                                item.value === value
-                                                    ? item.coordinate
+                                                destination.value === nextValue
+                                                    ? destination.coordinate
                                                     : null,
-                                        }));
-                                    }}
-                                    onChangeDeadlineTime={(value) => {
-                                        updateStopAtIndex(index, (item) => ({
-                                            ...item,
-                                            deadlineTimeLocal: value,
-                                        }));
-                                    }}
-                                    onChangeServiceMinutes={(value) => {
-                                        updateStopAtIndex(index, (item) => ({
-                                            ...item,
-                                            serviceMinutes: value,
-                                        }));
-                                    }}
-                                    onSelectSuggestion={(suggestion) =>
-                                        handleSelectIntermediateChange(
-                                            index,
-                                            suggestion,
-                                        )
+                                        },
+                                        { shouldDirty: true },
+                                    );
+                                }}
+                                onChange={(_, selected) => {
+                                    if (
+                                        selected &&
+                                        typeof selected !== 'string'
+                                    ) {
+                                        handleSelectDestinationChange(selected);
                                     }
-                                    onLocate={() => handleLocate(stop)}
-                                    onRemove={() => removeStop(index)}
-                                />
-                            );
-                        })}
-                    </div>
-                )}
+                                }}
+                                loading={
+                                    destinationLoading || suggestionLoading
+                                }
+                                renderOption={renderSuggestionOption}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        placeholder="Destination"
+                                        variant="outlined"
+                                        size="small"
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            endAdornment: (
+                                                <>
+                                                    {destinationLoading ||
+                                                    suggestionLoading ? (
+                                                        <CircularProgress
+                                                            color="inherit"
+                                                            size={16}
+                                                        />
+                                                    ) : null}
+                                                    {
+                                                        params.InputProps
+                                                            .endAdornment
+                                                    }
+                                                </>
+                                            ),
+                                        }}
+                                    />
+                                )}
+                            />
+                            {destination.coordinate ? (
+                                <button
+                                    type="button"
+                                    className="inputLocateButton"
+                                    onClick={() => handleLocate(destination)}
+                                >
+                                    <LocationOnIcon />
+                                </button>
+                            ) : null}
+                        </div>
+                    )}
 
-                <button className="calculateRouteButton" type="submit">
-                    Optimize Route
-                </button>
-            </form>
-        </div>
+                    <div className="toggleOrigin">
+                        <label>Return to origin</label>
+                        <div className="toggleSwitch">
+                            <Switch
+                                checked={sameDestination}
+                                onChange={() =>
+                                    setValue(
+                                        'sameDestination',
+                                        !sameDestination,
+                                        {
+                                            shouldDirty: true,
+                                        },
+                                    )
+                                }
+                                inputProps={{ 'aria-label': 'controlled' }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="travelOptions">
+                        <label
+                            className="travelOptionField"
+                            htmlFor="route-start-time"
+                        >
+                            <span className="travelOptionLabel">Depart at</span>
+                            <input
+                                id="route-start-time"
+                                className="travelOptionInput"
+                                type="time"
+                                value={departTimeLocal}
+                                onChange={(event) =>
+                                    setValue(
+                                        'departTimeLocal',
+                                        event.target.value,
+                                        {
+                                            shouldDirty: true,
+                                        },
+                                    )
+                                }
+                            />
+                        </label>
+                        <label
+                            className="travelOptionField"
+                            htmlFor="route-travel-mode"
+                        >
+                            <span className="travelOptionLabel">
+                                Travel mode
+                            </span>
+                            <select
+                                id="route-travel-mode"
+                                className="travelOptionInput travelOptionSelect"
+                                value={travelMode}
+                                onChange={(event) =>
+                                    setValue(
+                                        'travelMode',
+                                        event.target.value as TravelMode,
+                                        {
+                                            shouldDirty: true,
+                                        },
+                                    )
+                                }
+                            >
+                                {TRAVEL_MODES.map((mode) => (
+                                    <option key={mode} value={mode}>
+                                        {mode.charAt(0).toUpperCase() +
+                                            mode.slice(1)}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
+
+                    <div className="inputLine">
+                        <button
+                            type="button"
+                            onClick={handleAddStop}
+                            className="addButton"
+                        >
+                            Add job stop
+                        </button>
+                    </div>
+
+                    {stopFields.length === 0 ? (
+                        <p className="emptyHint">
+                            No intermediate job stops yet.
+                        </p>
+                    ) : (
+                        <div className="intermediateList">
+                            {stopFields.map((field, index) => {
+                                const stop = stops[index] ?? DEFAULT_STOP;
+                                return (
+                                    <IntermediateStopInput
+                                        key={field.id}
+                                        value={stop.value}
+                                        placeholder={`Stop`}
+                                        hasCoordinate={Boolean(stop.coordinate)}
+                                        deadlineTimeLocal={
+                                            stop.deadlineTimeLocal
+                                        }
+                                        serviceMinutes={stop.serviceMinutes}
+                                        onChange={(value) => {
+                                            updateStopAtIndex(
+                                                index,
+                                                (item) => ({
+                                                    ...item,
+                                                    value,
+                                                    coordinate:
+                                                        item.value === value
+                                                            ? item.coordinate
+                                                            : null,
+                                                }),
+                                            );
+                                        }}
+                                        onChangeDeadlineTime={(value) => {
+                                            updateStopAtIndex(
+                                                index,
+                                                (item) => ({
+                                                    ...item,
+                                                    deadlineTimeLocal: value,
+                                                }),
+                                            );
+                                        }}
+                                        onChangeServiceMinutes={(value) => {
+                                            updateStopAtIndex(
+                                                index,
+                                                (item) => ({
+                                                    ...item,
+                                                    serviceMinutes: value,
+                                                }),
+                                            );
+                                        }}
+                                        onSelectSuggestion={(suggestion) =>
+                                            handleSelectIntermediateChange(
+                                                index,
+                                                suggestion,
+                                            )
+                                        }
+                                        onLocate={() => handleLocate(stop)}
+                                        onRemove={() => removeStop(index)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    <button className="calculateRouteButton" type="submit">
+                        Optimize Route
+                    </button>
+                </form>
+            </div>
+        </Draggable>
     );
 };
 

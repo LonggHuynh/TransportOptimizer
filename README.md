@@ -1,24 +1,22 @@
-# TransportOptimizer: Efficient Trip Planning Application
+# PathPlanner: Efficient Trip Planning Application
 
-## Description
-
-TransportOptimizer assists users in efficiently planning their travel route by sequencing their desired destinations. Leveraging the modified Traveling Salesman Problem (TSP) algorithm, it lets users apply optional constraints, such as mandating the sequence of specific locations. The app uses Google Maps APIs for map rendering, geocoding/autocomplete, directions, and time-aware matrix optimization.
+PathPlanner assists users in efficiently planning their travel route by sequencing their desired destinations. Leveraging the modified Traveling Salesman Problem (TSP) algorithm, it lets users add the time plan. The app uses Google Maps APIs for map rendering, geocoding/autocomplete, directions, and time-aware matrix optimization.
 
 ## Tech stack
 
 - React/TypeScript
-- C#/.NET 8
+- C#/.NET
 - Docker
-- Kubernetes/EKS
+- Kubernetes/GKE
+- Python
 - Terraform
 - Github Actions
 
 ## Architecture
+TBD
 
-![Alt text](TransportEKSArchitecture.png "EKS Architecture")
 
 ## Variables
-
 ### Frontend Build Environment Variables
 
 | Variable Name                       | Description                                                                                                                                                                                           |
@@ -32,7 +30,6 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 | ----------------------------- | ---------------------------------------------------------------------------- |
 | `CorsSettings:AllowedOrigins` | Origins for CORS settings in the backend. No cors needed for the deployment. |
 | `GoogleMaps:ServiceAccountScopes:0` | OAuth scope item. Default is `https://www.googleapis.com/auth/cloud-platform`. |
-| `GoogleMaps:QuotaProject` | Optional billing/quota project ID sent as `X-Goog-User-Project`. |
 | `GoogleMaps:TilesApiUrl` | Tiles base URL (default: `https://tile.googleapis.com/v1`). |
 | `GoogleMaps:PlacesApiUrl` | Places base URL (default: `https://places.googleapis.com/v1`). |
 | `GoogleMaps:RoutesApiUrl` | Routes base URL (default: `https://routes.googleapis.com`). |
@@ -49,106 +46,67 @@ TransportOptimizer assists users in efficiently planning their travel route by s
 | `OTEL_SERVICE_NAME` | OpenTelemetry service name for worker traces (default: `transport-optimizer-worker`). |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP endpoint for worker trace export (for example `http://otel-collector:4318/v1/traces`). |
 
-### Local Trace Server (Collector + Jaeger)
-
-Start local dependencies:
-
-```bash
-docker compose up -d redis jaeger otel-collector
-```
-
-Use these env vars for local backend and worker:
-
-```bash
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces
-OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-```
-
-If backend/worker run inside Kubernetes, use:
-
-```bash
-OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces
-OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-```
-
-Jaeger UI:
-
-```bash
-http://localhost:16686
-```
-
-## Running the application
-
-### With locally .NET and Node.js (TBD)
-
-### Deploy locally with Docker compose
-
-Start local dependencies (Redis + observability stack):
-
-```bash
-docker compose up -d
-```
-
-To shutdown
-
-```bash
-docker compose down
-```
-
-### Deploy to K8s cluster
-
-For direct cluster access, connect to GKE with:
-
-```bash
-gcloud container clusters get-credentials transport --region europe-north1 --project pathoptimizer-486102
-```
-
-Images are published to GHCR from GitHub Actions (`frontend.yml`, `backend.yml`, `worker.yml`) using:
-
-- `sha-<commit>` immutable tags
-- `<branch>-latest` moving tags (`stage-latest`, `prod-latest`)
-
-Release behavior:
-
-1. Push to `stage` or `prod` with backend changes:
-   - builds backend image
-   - triggers Terraform app-scope apply for `helm_release.app["stage"|"prod"]`
-2. Push to `stage` or `prod` with worker changes:
-   - builds worker image
-   - triggers the same Terraform app-scope apply
-3. Push to `stage` or `prod` with frontend changes:
-   - builds frontend image
-   - triggers the same Terraform app-scope apply
-   - serves frontend from Kubernetes (Nginx) and routes via Gateway API
-4. Push to `stage` or `prod` with `infra/**` changes:
-   - triggers `.github/workflows/infra-core.yml`
-   - runs Terraform full apply
-5. For manual app promotions/rollbacks, trigger `.github/workflows/terraform-app-release.yml` and provide explicit tags.
-6. For manual full infra apply, trigger `.github/workflows/infra-core.yml`.
-
-Required repository secret:
-
-- `TF_API_TOKEN`: Terraform Cloud user/team token for workspace access.
-
-Manual Helm deploy is still possible for local experiments:
-
-```
-kubectl apply -f infra/k8s/namespaces.yaml
-helm upgrade --install transport-optimizer infra/app-chart --namespace transport-stage
-# or use --namespace transport-prod
-```
-
-## Google Service Account Setup
+## Deploy application
+### Google Service Account Setup
 
 1. In Google Cloud Console, open your project and enable: Places API (New), Routes API, and Map Tiles API.
 2. Create a service account:
 `IAM & Admin -> Service Accounts -> Create Service Account`.
 3. Grant required roles to that service account:
 `roles/serviceusage.serviceUsageConsumer` (or another role that includes `serviceusage.services.use`).
+Note: if you enable Redis IAM auth, also enable `redis.googleapis.com` (keep `serviceusage.googleapis.com` enabled) and grant `roles/redis.dbConnectionUser` to every service account that connects to Redis (backend and worker).
 4. Create and download a JSON key for the service account.
-5. Store the key securely on the backend host (for example `/secrets/google-maps-sa.json`).
+5. Store the key securely (for example `<path-to-secret.json>`).
 6. Configure backend env vars:
-`GOOGLE_APPLICATION_CREDENTIALS=/secrets/google-maps-sa.json`
-and optionally set app config
-`GoogleMaps:QuotaProject=<your-gcp-project-id>`.
+`GOOGLE_APPLICATION_CREDENTIALS=<path-to-secret.json>`
 7. Restart backend and verify `/api/tiles/{z}/{x}/{y}.png` and route/geocode flows.
+
+
+### Deploy locally with dev container
+
+1. Install prerequisites on your host:
+   - Docker
+   - VS Code + Dev Containers extension
+2. Set host environment variables before opening the container:
+   - Keep your JSON credentials at a secure path (for example `<path-to-secret.json>`).
+   - If you use GitHub Codespaces, set `GOOGLE_APPLICATION_CREDENTIALS_JSON_B64` in GitHub UI:
+     - Go to your repository -> `Settings` -> `Secrets and variables` -> `Codespaces`.
+     - Click `New repository secret`.
+     - Name: `GOOGLE_APPLICATION_CREDENTIALS_JSON_B64`.
+     - Value: paste the base64 of your secret file (generate locally with the command below).
+
+```bash
+base64 -w0 <path-to-secret.json>
+```
+
+3. Open the repo in Dev Container:
+   - VS Code Command Palette -> `Dev Containers: Reopen in Container`
+   - This starts `redis`, `jaeger`, and `otel-collector` from `.devcontainer/docker-compose.yml` and installs project dependencies via `.devcontainer/post-create.sh`.
+4. Start app processes in the dev container (3 terminals):
+
+```bash
+# Terminal 1: backend
+dotnet run --project backend/api/api.csproj
+
+# Terminal 2: worker
+cd worker
+pipenv run python main.py
+
+# Terminal 3: frontend
+cd frontend
+npm run dev
+```
+
+Or start backend/worker from VS Code Run and Debug:
+   - Open `Run and Debug` (`Ctrl+Shift+D`).
+   - Select `Backend: Launch (api)` to run backend with debugger.
+   - Select `Worker: Run (pipenv)` to run worker from the debug panel.
+   - Run frontend separately with `cd frontend && npm run dev`.
+6. Access local services
+   - Frontend: `http://localhost:3000`
+   - Backend Swagger: `http://localhost:5259/swagger`
+   - Jaeger: `http://localhost:16686`
+
+### Deploy to K8s cluster
+
+TBD

@@ -19,8 +19,7 @@ public sealed class GoogleMapsAuthHandler(
     {
         var googleOptions = _appOptions.GoogleMaps;
         var credential = _googleCredentialFactory.GetCredential(
-            googleOptions?.ServiceAccountScopes,
-            googleOptions?.QuotaProject
+            googleOptions?.ServiceAccountScopes
         );
 
         var token = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: cancellationToken);
@@ -30,12 +29,6 @@ public sealed class GoogleMapsAuthHandler(
         }
 
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var quotaProject = googleOptions?.QuotaProject?.Trim();
-        if (!string.IsNullOrWhiteSpace(quotaProject))
-        {
-            request.Headers.Remove("X-Goog-User-Project");
-            request.Headers.TryAddWithoutValidation("X-Goog-User-Project", quotaProject);
-        }
 
         return await base.SendAsync(request, cancellationToken);
     }

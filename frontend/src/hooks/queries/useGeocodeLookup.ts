@@ -33,10 +33,10 @@ const fetchGeocode = async ({
     const latitude = response.data.latitude;
     const longitude = response.data.longitude;
     if (
-        typeof latitude !== 'number'
-        || !Number.isFinite(latitude)
-        || typeof longitude !== 'number'
-        || !Number.isFinite(longitude)
+        typeof latitude !== 'number' ||
+        !Number.isFinite(latitude) ||
+        typeof longitude !== 'number' ||
+        !Number.isFinite(longitude)
     ) {
         return null;
     }
@@ -48,7 +48,11 @@ const fetchGeocode = async ({
 };
 
 export const useGeocodeLookup = (
-    options: UseMutationOptions<Coordinate | null, AxiosError, GeocodeLookupInput> = {},
+    options: UseMutationOptions<
+        Coordinate | null,
+        AxiosError,
+        GeocodeLookupInput
+    > = {},
 ) =>
     useMutation<Coordinate | null, AxiosError, GeocodeLookupInput>({
         ...options,

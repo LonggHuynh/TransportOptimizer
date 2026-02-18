@@ -1,29 +1,33 @@
-name: Infra Core Deployment
+name: Infra Deployment
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Target deployment environment"
+        description: "Target deployment environment/workspace scope"
         type: choice
         options:
+          - common
           - stage
           - prod
+          - all
         required: true
 
 permissions:
   contents: read
 
 concurrency:
-  group: infra-core-${{ github.event.inputs.environment }}
+  group: infra-deploy-${{ github.event.inputs.environment }}
   cancel-in-progress: false
 
 jobs:
-  resolve-target-environment:
-    name: Resolve target environment
+  resolve_target_environment:
+    name: Resolve deployment scope
     runs-on: ubuntu-latest
     outputs:
       target_environment: ${{ steps.resolve.outputs.target_environment }}
+      deploy_common: ${{ steps.resolve.outputs.deploy_common }}
+      env_matrix: ${{ steps.resolve.outputs.env_matrix }}
     steps:
       - name: Resolve target environment
         id: resolve
@@ -31,23 +35,44 @@ jobs:
         run: |
           target_environment="${{ inputs.environment }}"
 
-          if [[ ! "${target_environment}" =~ ^(stage|prod)$ ]]; then
+          if [[ ! "${target_environment}" =~ ^(common|stage|prod|all)$ ]]; then
             echo "Invalid target environment: ${target_environment}"
             exit 1
           fi
 
-          echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"
+          case "${target_environment}" in
+            common)
+              deploy_common=true
+              env_matrix='[]'
+              ;;
+            stage)
+              deploy_common=false
+              env_matrix='[{"environment":"stage"}]'
+              ;;
+            prod)
+              deploy_common=false
+              env_matrix='[{"environment":"prod"}]'
+              ;;
+            all)
+              deploy_common=true
+              env_matrix='[{"environment":"stage"},{"environment":"prod"}]'
+              ;;
+          esac
 
-  deploy-infra-core:
-    name: Run manual Terraform apply
-    needs: resolve-target-environment
+          echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"
+          echo "deploy_common=${deploy_common}" >> "${GITHUB_OUTPUT}"
+          echo "env_matrix=${env_matrix}" >> "${GITHUB_OUTPUT}"
+
+  deploy_common:
+    name: Apply infra/common (transport-common)
+    needs: resolve_target_environment
+    if: ${{ needs.resolve_target_environment.outputs.deploy_common == 'true' }}
     runs-on: ubuntu-latest
-    environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
+    environment: common
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
-      TARGET_ENV: ${{ needs.resolve-target-environment.outputs.target_environment }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -55,17 +80,55 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform init
-        run: terraform -chdir=infra init
+      - name: Terraform init (common)
+        shell: bash
+        run: terraform -chdir=infra/common init
 
-      - name: Terraform plan
-        run: |
-          # Keep app image tags deterministic during full infra applies.
-          export TF_VAR_backend_image_tag_by_env="{\"stage\":\"stage-latest\",\"prod\":\"prod-latest\"}"
-          export TF_VAR_worker_image_tag_by_env="{\"stage\":\"stage-latest\",\"prod\":\"prod-latest\"}"
-          export TF_VAR_image_pull_policy_by_env="{\"stage\":\"IfNotPresent\",\"prod\":\"IfNotPresent\"}"
+      - name: Terraform plan (common)
+        shell: bash
+        run: terraform -chdir=infra/common plan -out=tfplan
 
-          terraform -chdir=infra plan -out=tfplan
+      - name: Terraform apply (common)
+        shell: bash
+        run: terraform -chdir=infra/common apply tfplan
 
-      - name: Terraform apply
-        run: terraform -chdir=infra apply tfplan
+  deploy_env_workspaces:
+    name: Apply infra/env (${{ matrix.environment }})
+    needs:
+      - resolve_target_environment
+      - deploy_common
+    if: ${{ always() && needs.resolve_target_environment.outputs.env_matrix != '[]' && (needs.deploy_common.result == 'success' || needs.deploy_common.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    environment: ${{ matrix.environment }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include: ${{ fromJson(needs.resolve_target_environment.outputs.env_matrix) }}
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TARGET_ENV: ${{ matrix.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init (env)
+        shell: bash
+        run: terraform -chdir=infra/env init -reconfigure
+
+      - name: Select Terraform workspace
+        shell: bash
+        run: terraform -chdir=infra/env workspace select "${TARGET_ENV}" || terraform -chdir=infra/env workspace new "${TARGET_ENV}"
+
+      - name: Terraform plan (env)
+        shell: bash
+        run: terraform -chdir=infra/env plan -var-file="environments/${TARGET_ENV}.tfvars" -out=tfplan
+
+      - name: Terraform apply (env)
+        shell: bash
+        run: terraform -chdir=infra/env apply tfplan

@@ -114,11 +114,6 @@ variable "frontend_bucket_name" {
   }
 }
 
-variable "cdn_enabled" {
-  type        = bool
-  description = "Enable Cloud CDN for the frontend load balancer."
-  default     = true
-}
 
 variable "frontend_lb_name" {
   type        = string
@@ -245,18 +240,6 @@ variable "backend_health_path" {
   type        = string
   description = "Backend health check path."
   default     = "/healthz"
-}
-
-variable "worker_health_path" {
-  type        = string
-  description = "Worker health check path."
-  default     = "/healthz"
-}
-
-variable "worker_health_port" {
-  type        = number
-  description = "Worker health check port."
-  default     = 8081
 }
 
 variable "backend_path_prefix" {
@@ -391,43 +374,6 @@ variable "cors_allowed_origins" {
   type        = list(string)
   description = "Allowed CORS origins for the backend."
   default     = []
-}
-
-variable "google_maps_api_key" {
-  type        = string
-  description = "Google Maps API key for the backend."
-  default     = ""
-  sensitive   = true
-}
-
-variable "google_maps_api_key_secret" {
-  type        = string
-  description = "Optional Secret Manager reference for Google Maps API key when using external secret sync."
-  default     = ""
-}
-
-variable "secret_manager_enabled" {
-  type        = bool
-  description = "Enable Secret Manager sync via Secrets Store CSI Driver."
-  default     = false
-}
-
-variable "backend_secret_name" {
-  type        = string
-  description = "Kubernetes secret name created by Secret Manager sync."
-  default     = "backend-secrets"
-}
-
-variable "backend_secret_provider_class" {
-  type        = string
-  description = "SecretProviderClass name used by Secrets Store CSI Driver."
-  default     = "backend-secrets"
-}
-
-variable "backend_secret_mount_path" {
-  type        = string
-  description = "Mount path for the Secrets Store CSI volume."
-  default     = "/var/secrets"
 }
 
 variable "worker_result_ttl_seconds" {

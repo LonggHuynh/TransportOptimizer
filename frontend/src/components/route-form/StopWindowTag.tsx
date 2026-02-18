@@ -17,12 +17,19 @@ const formatWindowTime = (minutes: number) => {
 };
 
 const StopWindowTag = ({ stopWindow }: StopWindowTagProps) => {
-    const removeStopWindow = useStopWindowsStore((state) => state.removeStopWindow);
-    const intermediateList = useIntermediateListStore((state) => state.intermediateList);
+    const removeStopWindow = useStopWindowsStore(
+        (state) => state.removeStopWindow,
+    );
+    const intermediateList = useIntermediateListStore(
+        (state) => state.intermediateList,
+    );
 
     return (
         <div className="tagContainer">
-            <span>{intermediateList.at(stopWindow.stopIndex - 1) ?? `Stop ${stopWindow.stopIndex}`}</span>
+            <span>
+                {intermediateList.at(stopWindow.stopIndex - 1) ??
+                    `Stop ${stopWindow.stopIndex}`}
+            </span>
             <strong>
                 {formatWindowTime(stopWindow.windowStartMinutes)}
                 {' - '}

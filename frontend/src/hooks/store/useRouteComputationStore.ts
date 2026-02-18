@@ -34,15 +34,17 @@ const initialState = {
     lastRequest: null as RouteRequestSnapshot | null,
 };
 
-export const useRouteComputationStore = create<RouteComputationState>((set) => ({
-    ...initialState,
-    setComputedRouteResult: (payload) =>
-        set({
-            status: payload.status,
-            error: payload.error,
-            bestRoutes: payload.bestRoutes,
-            totalTime: payload.totalTime,
-        }),
-    setLastRequest: (payload) => set({ lastRequest: payload }),
-    resetComputedRouteResult: () => set(initialState),
-}));
+export const useRouteComputationStore = create<RouteComputationState>(
+    (set) => ({
+        ...initialState,
+        setComputedRouteResult: (payload) =>
+            set({
+                status: payload.status,
+                error: payload.error,
+                bestRoutes: payload.bestRoutes,
+                totalTime: payload.totalTime,
+            }),
+        setLastRequest: (payload) => set({ lastRequest: payload }),
+        resetComputedRouteResult: () => set(initialState),
+    }),
+);

@@ -1,0 +1,38 @@
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+    depends_on:
+      - redis
+      - jaeger
+      - otel-collector
+    ports:
+      - "3000:3000"
+      - "5259:5259"
+      - "7077:7077"
+    volumes:
+      - ..:/workspaces/TransportOptimizer:cached
+    working_dir: /workspaces/TransportOptimizer
+    command: sleep infinity
+
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ../infra/observability/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    depends_on:
+      - jaeger
+    expose:
+      - "4317"
+      - "4318"

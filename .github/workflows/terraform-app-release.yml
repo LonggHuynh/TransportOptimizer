@@ -120,22 +120,27 @@ jobs:
           fi
 
       - name: Terraform init
-        run: terraform -chdir=infra init
+        run: terraform -chdir=infra/env init
+
+      - name: Select Terraform workspace
+        shell: bash
+        run: terraform -chdir=infra/env workspace select "${TARGET_ENV}" || terraform -chdir=infra/env workspace new "${TARGET_ENV}"
 
       - name: Terraform apply app release
         run: |
+          export TF_VAR_environment="${TARGET_ENV}"
+          export TF_VAR_image_pull_policy="${PULL_POLICY}"
+
           if [[ -n "${BACKEND_TAG}" ]]; then
-            export TF_VAR_backend_image_tag_by_env="{\"${TARGET_ENV}\":\"${BACKEND_TAG}\"}"
+            export TF_VAR_backend_image_tag="${BACKEND_TAG}"
           fi
 
           if [[ -n "${WORKER_TAG}" ]]; then
-            export TF_VAR_worker_image_tag_by_env="{\"${TARGET_ENV}\":\"${WORKER_TAG}\"}"
+            export TF_VAR_worker_image_tag="${WORKER_TAG}"
           fi
 
           if [[ -n "${FRONTEND_TAG}" ]]; then
-            export TF_VAR_frontend_image_tag_by_env="{\"${TARGET_ENV}\":\"${FRONTEND_TAG}\"}"
+            export TF_VAR_frontend_image_tag="${FRONTEND_TAG}"
           fi
 
-          export TF_VAR_image_pull_policy_by_env="{\"${TARGET_ENV}\":\"${PULL_POLICY}\"}"
-
-          terraform -chdir=infra apply -auto-approve -target="helm_release.app[\"${TARGET_ENV}\"]"
+          terraform -chdir=infra/env apply -auto-approve -var-file="environments/${TARGET_ENV}.tfvars" -target="module.app.helm_release.app"

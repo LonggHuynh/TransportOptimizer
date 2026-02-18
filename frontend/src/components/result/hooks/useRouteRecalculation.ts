@@ -65,7 +65,9 @@ const remapStopWindows = (
         previousStopWindows.map((window) => [window.stopIndex, window]),
     );
     const usedOriginalIndices = new Set<number>();
-    const previousPlaceKeys = previousPlaces.map((place) => toCoordinateKey(place));
+    const previousPlaceKeys = previousPlaces.map((place) =>
+        toCoordinateKey(place),
+    );
     const nextPlaceKeys = nextPlaces.map((place) => toCoordinateKey(place));
 
     return nextPlaceKeys.slice(1, -1).flatMap((placeKey, intermediateIndex) => {
@@ -86,12 +88,14 @@ const remapStopWindows = (
             return [];
         }
 
-        return [{
-            stopIndex: intermediateIndex + 1,
-            windowStartMinutes: matchingWindow.windowStartMinutes,
-            windowEndMinutes: matchingWindow.windowEndMinutes,
-            serviceMinutes: matchingWindow.serviceMinutes,
-        }];
+        return [
+            {
+                stopIndex: intermediateIndex + 1,
+                windowStartMinutes: matchingWindow.windowStartMinutes,
+                windowEndMinutes: matchingWindow.windowEndMinutes,
+                serviceMinutes: matchingWindow.serviceMinutes,
+            },
+        ];
     });
 };
 
@@ -103,27 +107,31 @@ export const useRouteRecalculation = () => {
         (state) => state.setComputedRouteResult,
     );
 
-    const [recalculationJobId, setRecalculationJobId] = useState<string | null>(null);
-    const [recalculationPlaces, setRecalculationPlaces] = useState<Coordinate[]>([]);
+    const [recalculationJobId, setRecalculationJobId] = useState<string | null>(
+        null,
+    );
+    const [recalculationPlaces, setRecalculationPlaces] = useState<
+        Coordinate[]
+    >([]);
     const recalculationToastIdRef = useRef<Id | null>(null);
 
-    const resolveRecalculationToast = useCallback((
-        message: string,
-        tone: 'success' | 'error' = 'success',
-    ) => {
-        if (recalculationToastIdRef.current) {
-            notify.resolve(recalculationToastIdRef.current, message, tone);
-            recalculationToastIdRef.current = null;
-            return;
-        }
+    const resolveRecalculationToast = useCallback(
+        (message: string, tone: 'success' | 'error' = 'success') => {
+            if (recalculationToastIdRef.current) {
+                notify.resolve(recalculationToastIdRef.current, message, tone);
+                recalculationToastIdRef.current = null;
+                return;
+            }
 
-        if (tone === 'error') {
-            notify.error(message);
-            return;
-        }
+            if (tone === 'error') {
+                notify.error(message);
+                return;
+            }
 
-        notify.success(message);
-    }, []);
+            notify.success(message);
+        },
+        [],
+    );
 
     const enqueueRecalculationMutation = useRecalculateRoute({
         onSuccess: (response, payload) => {
@@ -132,23 +140,19 @@ export const useRouteRecalculation = () => {
             if (recalculationToastIdRef.current) {
                 notify.dismiss(recalculationToastIdRef.current);
             }
-            recalculationToastIdRef.current = notify.loading('Recalculating remaining route...');
+            recalculationToastIdRef.current = notify.loading(
+                'Recalculating remaining route...',
+            );
         },
         onError: () => {
-            resolveRecalculationToast('Failed to start recalculation.', 'error');
+            resolveRecalculationToast(
+                'Failed to start recalculation.',
+                'error',
+            );
         },
     });
 
-    const recalculationStatusQuery = useRouteJobStatus(recalculationJobId, {
-        refetchOnWindowFocus: false,
-        refetchInterval: (query) => {
-            const status = query.state.data?.status;
-            if (status === 'completed' || status === 'failed') {
-                return false;
-            }
-            return RECALCULATION_STATUS_POLL_INTERVAL_MS;
-        },
-    });
+    const recalculationStatusQuery = useRouteJobStatus(recalculationJobId);
 
     useEffect(() => {
         if (!recalculationJobId || !recalculationStatusQuery.data) {
@@ -161,7 +165,10 @@ export const useRouteRecalculation = () => {
             setComputedRouteResult({
                 status: statusResponse.status,
                 error: statusResponse.error,
-                bestRoutes: toBestRoutes(statusResponse.result, recalculationPlaces),
+                bestRoutes: toBestRoutes(
+                    statusResponse.result,
+                    recalculationPlaces,
+                ),
                 totalTime: statusResponse.result.totalTime ?? null,
             });
             resolveRecalculationToast('Route recalculated.');
@@ -176,7 +183,10 @@ export const useRouteRecalculation = () => {
                 bestRoutes: routes,
                 totalTime: estimatedTime,
             });
-            resolveRecalculationToast(statusResponse.error ?? 'Recalculation failed.', 'error');
+            resolveRecalculationToast(
+                statusResponse.error ?? 'Recalculation failed.',
+                'error',
+            );
             setRecalculationJobId(null);
             return;
         }
@@ -204,7 +214,9 @@ export const useRouteRecalculation = () => {
 
         setComputedRouteResult({
             status: 'failed',
-            error: recalculationStatusQuery.error.message || 'Failed to check recalculation status.',
+            error:
+                recalculationStatusQuery.error.message ||
+                'Failed to check recalculation status.',
             bestRoutes: routes,
             totalTime: estimatedTime,
         });
@@ -221,40 +233,48 @@ export const useRouteRecalculation = () => {
     ]);
 
     const recalculationStatus = recalculationStatusQuery.data?.status;
-    const isRecalculating = enqueueRecalculationMutation.isPending
-        || (Boolean(recalculationJobId)
-            && recalculationStatus !== 'completed'
-            && recalculationStatus !== 'failed');
+    const isRecalculating =
+        enqueueRecalculationMutation.isPending ||
+        (Boolean(recalculationJobId) &&
+            recalculationStatus !== 'completed' &&
+            recalculationStatus !== 'failed');
 
-    const handleDoneAndRecalculate = useCallback(async (completedLegIndex: number) => {
-        if (!lastRequest) {
-            notify.error('Route request context is missing. Calculate route again first.');
-            return;
-        }
+    const handleDoneAndRecalculate = useCallback(
+        async (completedLegIndex: number) => {
+            if (!lastRequest) {
+                notify.error(
+                    'Route request context is missing. Calculate route again first.',
+                );
+                return;
+            }
 
-        const remainingPlaces = buildRemainingPlaces(routes, completedLegIndex);
-        if (remainingPlaces.length < 2) {
-            notify.info('All route legs are complete. Nothing to recalculate.');
-            return;
-        }
+            const remainingPlaces = buildRemainingPlaces(
+                routes,
+                completedLegIndex,
+            );
+            if (remainingPlaces.length < 2) {
+                notify.info(
+                    'All route legs are complete. Nothing to recalculate.',
+                );
+                return;
+            }
 
-        const nextStopWindows = remapStopWindows(
-            remainingPlaces,
-            lastRequest.places,
-            lastRequest.stopWindows,
-        );
-
-        try {
-            await enqueueRecalculationMutation.mutateAsync({
+            const nextStopWindows = remapStopWindows(
+                remainingPlaces,
+                lastRequest.places,
+                lastRequest.stopWindows,
+            );
+            
+            // Error is handled by useMutation onFailure(), not passing the error upstream
+            enqueueRecalculationMutation.mutateAsync({
                 places: remainingPlaces,
                 stopWindows: nextStopWindows,
                 startTimeUtc: new Date().toISOString(),
                 travelMode: lastRequest.travelMode,
             });
-        } catch {
-            // Error toast is handled by the mutation hook.
-        }
-    }, [enqueueRecalculationMutation, lastRequest, routes]);
+        },
+        [enqueueRecalculationMutation, lastRequest, routes],
+    );
 
     return {
         isRecalculating,

@@ -1,5 +1,5 @@
 resource "google_service_account_iam_member" "backend_workload_identity" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   service_account_id = google_service_account.backend[each.key].name
   role               = "roles/iam.workloadIdentityUser"
@@ -9,7 +9,7 @@ resource "google_service_account_iam_member" "backend_workload_identity" {
 }
 
 resource "google_service_account_iam_member" "worker_workload_identity" {
-  for_each = toset(local.environments)
+  for_each = local.foundation_environments
 
   service_account_id = google_service_account.worker[each.key].name
   role               = "roles/iam.workloadIdentityUser"
