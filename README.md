@@ -97,9 +97,11 @@ http://localhost:16686
    - Docker
    - VS Code + Dev Containers extension
 2. Set host environment variables before opening the container:
+   - Place your JSON credentials at `.secrets/gcp-sa.json`.
+   - If you use GitHub Codespaces, set `GOOGLE_APPLICATION_CREDENTIALS_JSON_B64` to the base64 value of that JSON key:
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS_JSON_B64="$(base64 -w0 /absolute/path/to/gcp-sa.json)"
+export GOOGLE_APPLICATION_CREDENTIALS_JSON_B64="$(base64 -w0 .secrets/gcp-sa.json)"
 ```
 
 3. Open the repo in Dev Container:
@@ -113,29 +115,22 @@ dotnet run --project backend/api/api.csproj
 
 # Terminal 2: worker
 cd worker
-REDIS_URL=redis:6379 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces pipenv run python main.py
+pipenv run python main.py
 
 # Terminal 3: frontend
 cd frontend
 npm run dev
 ```
 
-5. Or start backend/worker from VS Code Run and Debug:
+Or start backend/worker from VS Code Run and Debug:
    - Open `Run and Debug` (`Ctrl+Shift+D`).
    - Select `Backend: Launch (api)` to run backend with debugger.
    - Select `Worker: Run (pipenv)` to run worker from the debug panel.
    - Run frontend separately with `cd frontend && npm run dev`.
-6. Access local services:
+6. Access local services
    - Frontend: `http://localhost:3000`
    - Backend Swagger: `http://localhost:5259/swagger`
    - Jaeger: `http://localhost:16686`
-7. Quick health checks:
-
-```bash
-curl http://localhost:5259/healthz
-curl http://localhost:8081/healthz
-```
-
 
 ### Deploy to K8s cluster
 
