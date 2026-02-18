@@ -31,13 +31,6 @@ If the shape library is unavailable, stop and fix setup before drawing.
 
 ## Step 2: Extract Terraform Resource Graph
 
-Run the bundled script before creating any nodes:
-
-```bash
-python .agents/drawio-gcp-terraform/scripts/extract_terraform_graph.py --root infra --format json --output /tmp/terraform-graph.json
-python .agents/drawio-gcp-terraform/scripts/extract_terraform_graph.py --root infra --format markdown --output /tmp/terraform-graph.md
-```
-
 Use the extracted graph as the source of truth.
 
 For this repository, also load:
