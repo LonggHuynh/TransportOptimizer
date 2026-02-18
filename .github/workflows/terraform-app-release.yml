@@ -91,7 +91,7 @@ jobs:
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
-      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
       TF_WORKSPACE: ${{ inputs.environment || github.event.inputs.environment }}
       TARGET_ENV: ${{ inputs.environment || github.event.inputs.environment }}
       BACKEND_TAG: ${{ inputs.backend_tag || github.event.inputs.backend_tag }}
@@ -158,7 +158,7 @@ jobs:
           {
             "credentials": {
               "${TFC_HOSTNAME}": {
-                "token": "${TF_TOKEN_app_terraform_io}"
+                "token": "${TF_API_TOKEN}"
               }
             }
           }
@@ -173,21 +173,27 @@ jobs:
       - name: Terraform init
         run: terraform -chdir=infra/env init -reconfigure -input=false -backend-config="organization=${TFC_ORGANIZATION}" -backend-config="hostname=${TFC_HOSTNAME}"
 
-      - name: Terraform apply app release
+      - name: Prepare Terraform variable file
+        shell: bash
         run: |
-          export TF_VAR_environment="${TARGET_ENV}"
-          export TF_VAR_image_pull_policy="${PULL_POLICY}"
+          auto_tfvars_path="infra/env/${TARGET_ENV}.auto.tfvars"
+          cp "infra/env/environments/${TARGET_ENV}.tfvars" "${auto_tfvars_path}"
 
-          if [[ -n "${BACKEND_TAG}" ]]; then
-            export TF_VAR_backend_image_tag="${BACKEND_TAG}"
-          fi
+          {
+            echo "image_pull_policy = \"${PULL_POLICY}\""
 
-          if [[ -n "${WORKER_TAG}" ]]; then
-            export TF_VAR_worker_image_tag="${WORKER_TAG}"
-          fi
+            if [[ -n "${BACKEND_TAG}" ]]; then
+              echo "backend_image_tag = \"${BACKEND_TAG}\""
+            fi
 
-          if [[ -n "${FRONTEND_TAG}" ]]; then
-            export TF_VAR_frontend_image_tag="${FRONTEND_TAG}"
-          fi
+            if [[ -n "${WORKER_TAG}" ]]; then
+              echo "worker_image_tag = \"${WORKER_TAG}\""
+            fi
 
-          terraform -chdir=infra/env apply -auto-approve -var-file="environments/${TARGET_ENV}.tfvars" -target="module.app.helm_release.app"
+            if [[ -n "${FRONTEND_TAG}" ]]; then
+              echo "frontend_image_tag = \"${FRONTEND_TAG}\""
+            fi
+          } >> "${auto_tfvars_path}"
+
+      - name: Terraform apply app release
+        run: terraform -chdir=infra/env apply -auto-approve -target="module.app.helm_release.app"

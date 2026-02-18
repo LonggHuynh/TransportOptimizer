@@ -10,6 +10,14 @@ on:
           - stage
           - prod
         required: true
+      tfc_organization:
+        description: "HCP Terraform/Terraform Enterprise organization"
+        required: false
+        default: LongHuynhh
+      tfc_hostname:
+        description: "HCP Terraform/Terraform Enterprise hostname"
+        required: false
+        default: app.terraform.io
   push:
     branches:
       - stage
@@ -89,5 +97,7 @@ jobs:
       environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
       worker_tag: ${{ format('sha-{0}', github.sha) }}
       pull_policy: IfNotPresent
+      tfc_organization: ${{ github.event.inputs.tfc_organization || 'LongHuynhh' }}
+      tfc_hostname: ${{ github.event.inputs.tfc_hostname || 'app.terraform.io' }}
     secrets:
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
