@@ -114,11 +114,6 @@ variable "frontend_bucket_name" {
   }
 }
 
-variable "cdn_enabled" {
-  type        = bool
-  description = "Enable Cloud CDN for the frontend load balancer."
-  default     = true
-}
 
 variable "frontend_lb_name" {
   type        = string

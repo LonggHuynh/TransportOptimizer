@@ -6,6 +6,7 @@ args = ["@playwright/mcp@latest"]
 command = "npx"
 args = ["-y", "@google-cloud/gcloud-mcp"]
 
+
 [mcp_servers.drawio]
 command = "npx"
-args = ["@drawio/mcp"]
+args = ["-y", "drawio-mcp-server"]

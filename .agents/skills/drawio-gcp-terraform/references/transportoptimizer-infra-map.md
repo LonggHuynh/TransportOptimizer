@@ -31,15 +31,6 @@ Use it as a high-confidence baseline when building diagrams.
 - `google_network_connectivity_service_connection_policy.redis`
 - `google_redis_cluster.redis` (per env)
 
-### Frontend Hosting + External HTTP LB
-
-- `google_storage_bucket.frontend` (per env)
-- `google_storage_bucket_iam_member.frontend_public_read`
-- `google_compute_backend_bucket.frontend` (per env)
-- `google_compute_url_map.frontend` (per env)
-- `google_compute_target_http_proxy.frontend` (per env)
-- `google_compute_global_address.frontend` (per env)
-- `google_compute_global_forwarding_rule.frontend` (per env)
 
 ### IAM / Workload Identity
 
@@ -66,21 +57,18 @@ Use it as a high-confidence baseline when building diagrams.
 
 ## Diagram Starter Flows
 
-### Flow A: Frontend Static Delivery
 
-`Users -> Global Forwarding Rule -> Target HTTP Proxy -> URL Map -> Backend Bucket -> GCS Bucket`
-
-### Flow B: App Traffic in GKE
+### App Traffic in GKE
 
 `Users -> Gateway -> HTTPRoute -> Backend Service (K8s)`
 `Users -> Gateway -> HTTPRoute -> Frontend Service (K8s)`
 
-### Flow C: Workload Identity + Redis Access
+### Workload Identity + Redis Access
 
 `KSA backend/worker -> Workload Identity Binding -> GSA backend/worker`
 `GSA backend/worker -> IAM roles -> Redis Cluster`
 
-### Flow D: Foundation Networking
+### Foundation Networking
 
 `VPC -> Subnets (env + gke + psc) -> Cloud Router -> NATs`
 
@@ -92,3 +80,4 @@ Do not add resources not present in Terraform, including:
 - Cloud Armor
 - HTTPS/TLS termination resources
 - Cloud CDN beyond backend bucket settings
+- IAM related
