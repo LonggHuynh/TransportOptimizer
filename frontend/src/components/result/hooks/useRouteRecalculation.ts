@@ -264,8 +264,9 @@ export const useRouteRecalculation = () => {
                 lastRequest.places,
                 lastRequest.stopWindows,
             );
-
-            await enqueueRecalculationMutation.mutateAsync({
+            
+            // Error is handled by useMutation onFailure(), not passing the error upstream
+            enqueueRecalculationMutation.mutateAsync({
                 places: remainingPlaces,
                 stopWindows: nextStopWindows,
                 startTimeUtc: new Date().toISOString(),
