@@ -17,7 +17,6 @@ TBD
 
 
 ## Variables
-
 ### Frontend Build Environment Variables
 
 | Variable Name                       | Description                                                                                                                                                                                           |
@@ -47,43 +46,15 @@ TBD
 | `OTEL_SERVICE_NAME` | OpenTelemetry service name for worker traces (default: `transport-optimizer-worker`). |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP endpoint for worker trace export (for example `http://otel-collector:4318/v1/traces`). |
 
-### Local Trace Server (Collector + Jaeger)
-
-Start local dependencies:
-
-```bash
-docker compose -f .devcontainer/docker-compose.yml up -d redis jaeger otel-collector
-```
-
-Use these env vars for local backend and worker:
-
-```bash
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces
-OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-```
-
-If backend/worker run inside Kubernetes, use:
-
-```bash
-OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces
-OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-```
-
-Jaeger UI:
-
-```bash
-http://localhost:16686
-```
-
 ## Deploy application
-
-## Google Service Account Setup
+### Google Service Account Setup
 
 1. In Google Cloud Console, open your project and enable: Places API (New), Routes API, and Map Tiles API.
 2. Create a service account:
 `IAM & Admin -> Service Accounts -> Create Service Account`.
 3. Grant required roles to that service account:
 `roles/serviceusage.serviceUsageConsumer` (or another role that includes `serviceusage.services.use`).
+Note: if you enable Redis IAM auth, also enable `redis.googleapis.com` (keep `serviceusage.googleapis.com` enabled) and grant `roles/redis.dbConnectionUser` to every service account that connects to Redis (backend and worker).
 4. Create and download a JSON key for the service account.
 5. Store the key securely (for example `<path-to-secret.json>`).
 6. Configure backend env vars:
