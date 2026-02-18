@@ -7,7 +7,6 @@ locals {
     "monitoring.googleapis.com",
     "logging.googleapis.com",
     "networkconnectivity.googleapis.com",
-    "secretmanager.googleapis.com",
     "redis.googleapis.com",
     "serviceusage.googleapis.com",
     "servicenetworking.googleapis.com",

@@ -16,22 +16,6 @@ resource "google_service_account" "worker" {
   depends_on = [google_project_service.required]
 }
 
-resource "google_project_iam_member" "backend_secret_access" {
-  for_each = local.foundation_environments
-
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${google_service_account.backend[each.key].email}"
-}
-
-resource "google_project_iam_member" "worker_secret_access" {
-  for_each = local.foundation_environments
-
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${google_service_account.worker[each.key].email}"
-}
-
 resource "google_project_iam_member" "backend_redis_access" {
   for_each = local.foundation_environments
 

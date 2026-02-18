@@ -93,20 +93,11 @@ locals {
   effective_image_pull_secret_name = var.image_pull_secret_name != "" ? var.image_pull_secret_name : (
     local.ghcr_credentials_provided ? "ghcr" : ""
   )
-  google_maps_api_key_provided = var.google_maps_api_key != ""
 
-  backend_secret_enabled = !var.secret_manager_enabled && local.google_maps_api_key_provided
-
-  helm_sensitive_values = concat(
-    local.google_maps_api_key_provided && !var.secret_manager_enabled ? [{
-      name  = "backend.secret.data.GoogleMaps__ApiKey"
-      value = var.google_maps_api_key
-    }] : [],
-    local.ghcr_credentials_provided ? [{
-      name  = "imagePullSecret.password"
-      value = var.ghcr_token
-    }] : []
-  )
+  helm_sensitive_values = local.ghcr_credentials_provided ? [{
+    name  = "imagePullSecret.password"
+    value = var.ghcr_token
+  }] : []
 }
 
 resource "helm_release" "app" {
@@ -165,13 +156,7 @@ resource "helm_release" "app" {
         data    = local.backend_config
       }
       secret = {
-        enabled      = local.backend_secret_enabled
-        existingName = var.secret_manager_enabled ? var.backend_secret_name : ""
-      }
-      secretsStore = {
-        enabled       = var.secret_manager_enabled
-        providerClass = var.backend_secret_provider_class
-        mountPath     = var.backend_secret_mount_path
+        enabled = false
       }
     }
     worker = {

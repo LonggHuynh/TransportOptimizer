@@ -376,43 +376,6 @@ variable "cors_allowed_origins" {
   default     = []
 }
 
-variable "google_maps_api_key" {
-  type        = string
-  description = "Google Maps API key for the backend."
-  default     = ""
-  sensitive   = true
-}
-
-variable "google_maps_api_key_secret" {
-  type        = string
-  description = "Optional Secret Manager reference for Google Maps API key when using external secret sync."
-  default     = ""
-}
-
-variable "secret_manager_enabled" {
-  type        = bool
-  description = "Enable Secret Manager sync via Secrets Store CSI Driver."
-  default     = false
-}
-
-variable "backend_secret_name" {
-  type        = string
-  description = "Kubernetes secret name created by Secret Manager sync."
-  default     = "backend-secrets"
-}
-
-variable "backend_secret_provider_class" {
-  type        = string
-  description = "SecretProviderClass name used by Secrets Store CSI Driver."
-  default     = "backend-secrets"
-}
-
-variable "backend_secret_mount_path" {
-  type        = string
-  description = "Mount path for the Secrets Store CSI volume."
-  default     = "/var/secrets"
-}
-
 variable "worker_result_ttl_seconds" {
   type        = number
   description = "Worker result TTL in seconds."

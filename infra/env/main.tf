@@ -35,12 +35,6 @@ module "app" {
   google_maps_tile_map_type = var.google_maps_tile_map_type
   google_maps_tile_size     = var.google_maps_tile_size
   cors_allowed_origins      = var.cors_allowed_origins
-  google_maps_api_key       = var.google_maps_api_key
-
-  secret_manager_enabled        = var.secret_manager_enabled
-  backend_secret_name           = var.backend_secret_name
-  backend_secret_provider_class = var.backend_secret_provider_class
-  backend_secret_mount_path     = var.backend_secret_mount_path
 
   worker_result_ttl_seconds = var.worker_result_ttl_seconds
 
