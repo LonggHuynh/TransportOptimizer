@@ -85,9 +85,9 @@ http://localhost:16686
 3. Grant required roles to that service account:
 `roles/serviceusage.serviceUsageConsumer` (or another role that includes `serviceusage.services.use`).
 4. Create and download a JSON key for the service account.
-5. Store the key securely on the backend host (for example `/secrets/google-maps-sa.json`).
+5. Store the key securely in the repo secrets folder (for example `.secrets/gcp-sa.json`).
 6. Configure backend env vars:
-`GOOGLE_APPLICATION_CREDENTIALS=/secrets/google-maps-sa.json`
+`GOOGLE_APPLICATION_CREDENTIALS=.secrets/gcp-sa.json`
 7. Restart backend and verify `/api/tiles/{z}/{x}/{y}.png` and route/geocode flows.
 
 
@@ -96,10 +96,9 @@ http://localhost:16686
 1. Install prerequisites on your host:
    - Docker
    - VS Code + Dev Containers extension
-2. Optional (for Google Maps calls from backend/worker), set host environment variables before opening the container:
+2. Set host environment variables before opening the container:
 
 ```bash
-export GOOGLE_MAPS_API_KEY="<your-api-key>"
 export GOOGLE_APPLICATION_CREDENTIALS_JSON_B64="$(base64 -w0 /absolute/path/to/gcp-sa.json)"
 ```
 
