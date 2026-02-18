@@ -85,9 +85,9 @@ http://localhost:16686
 3. Grant required roles to that service account:
 `roles/serviceusage.serviceUsageConsumer` (or another role that includes `serviceusage.services.use`).
 4. Create and download a JSON key for the service account.
-5. Store the key securely in the repo secrets folder (for example `.secrets/gcp-sa.json`).
+5. Store the key securely (for example `<path-to-secret.json>`).
 6. Configure backend env vars:
-`GOOGLE_APPLICATION_CREDENTIALS=.secrets/gcp-sa.json`
+`GOOGLE_APPLICATION_CREDENTIALS=<path-to-secret.json>`
 7. Restart backend and verify `/api/tiles/{z}/{x}/{y}.png` and route/geocode flows.
 
 
@@ -97,15 +97,15 @@ http://localhost:16686
    - Docker
    - VS Code + Dev Containers extension
 2. Set host environment variables before opening the container:
-   - Place your JSON credentials at `.secrets/gcp-sa.json`.
+   - Keep your JSON credentials at a secure path (for example `<path-to-secret.json>`).
    - If you use GitHub Codespaces, set `GOOGLE_APPLICATION_CREDENTIALS_JSON_B64` in GitHub UI:
      - Go to your repository -> `Settings` -> `Secrets and variables` -> `Codespaces`.
      - Click `New repository secret`.
      - Name: `GOOGLE_APPLICATION_CREDENTIALS_JSON_B64`.
-     - Value: paste the base64 of `.secrets/gcp-sa.json` (generate locally with the command below).
+     - Value: paste the base64 of your secret file (generate locally with the command below).
 
 ```bash
-base64 -w0 .secrets/gcp-sa.json
+base64 -w0 <path-to-secret.json>
 ```
 
 3. Open the repo in Dev Container:
