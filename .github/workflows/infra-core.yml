@@ -110,6 +110,7 @@ jobs:
       TF_INPUT: "false"
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
       TARGET_ENV: ${{ matrix.environment }}
+      TF_WORKSPACE: ${{ matrix.environment }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -117,9 +118,15 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Preselect Terraform workspace
+        shell: bash
+        run: |
+          mkdir -p infra/env/.terraform
+          printf '%s' "${TARGET_ENV}" > infra/env/.terraform/environment
+
       - name: Terraform init (env)
         shell: bash
-        run: terraform -chdir=infra/env init -reconfigure
+        run: terraform -chdir=infra/env init -reconfigure -input=false
 
       - name: Select Terraform workspace
         shell: bash
