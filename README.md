@@ -98,10 +98,14 @@ http://localhost:16686
    - VS Code + Dev Containers extension
 2. Set host environment variables before opening the container:
    - Place your JSON credentials at `.secrets/gcp-sa.json`.
-   - If you use GitHub Codespaces, set `GOOGLE_APPLICATION_CREDENTIALS_JSON_B64` in GitHub (Codespaces secret):
+   - If you use GitHub Codespaces, set `GOOGLE_APPLICATION_CREDENTIALS_JSON_B64` in GitHub UI:
+     - Go to your repository -> `Settings` -> `Secrets and variables` -> `Codespaces`.
+     - Click `New repository secret`.
+     - Name: `GOOGLE_APPLICATION_CREDENTIALS_JSON_B64`.
+     - Value: paste the base64 of `.secrets/gcp-sa.json` (generate locally with the command below).
 
 ```bash
-gh secret set GOOGLE_APPLICATION_CREDENTIALS_JSON_B64 --app codespaces --body "$(base64 -w0 .secrets/gcp-sa.json)"
+base64 -w0 .secrets/gcp-sa.json
 ```
 
 3. Open the repo in Dev Container:
