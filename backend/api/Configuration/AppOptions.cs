@@ -28,7 +28,7 @@ namespace api.Configuration
             }
 
             var configuredCredentialPath = NormalizePath(GoogleApplicationCredentials, environment.ContentRootPath);
-            if (!string.IsNullOrWhiteSpace(configuredCredentialPath))
+            if (!string.IsNullOrWhiteSpace(configuredCredentialPath) && File.Exists(configuredCredentialPath))
             {
                 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", configuredCredentialPath);
                 return;
