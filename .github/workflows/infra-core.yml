@@ -128,10 +128,6 @@ jobs:
         shell: bash
         run: terraform -chdir=infra/env init -reconfigure -input=false
 
-      - name: Select Terraform workspace
-        shell: bash
-        run: terraform -chdir=infra/env workspace select "${TARGET_ENV}" || terraform -chdir=infra/env workspace new "${TARGET_ENV}"
-
       - name: Terraform plan (env)
         shell: bash
         run: terraform -chdir=infra/env plan -var-file="environments/${TARGET_ENV}.tfvars" -out=tfplan
