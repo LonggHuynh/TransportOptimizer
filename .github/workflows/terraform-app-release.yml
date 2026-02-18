@@ -179,21 +179,30 @@ jobs:
           auto_tfvars_path="infra/env/${TARGET_ENV}.auto.tfvars"
           cp "infra/env/environments/${TARGET_ENV}.tfvars" "${auto_tfvars_path}"
 
-          {
-            echo "image_pull_policy = \"${PULL_POLICY}\""
+          upsert_tfvar() {
+            key="$1"
+            value="$2"
 
-            if [[ -n "${BACKEND_TAG}" ]]; then
-              echo "backend_image_tag = \"${BACKEND_TAG}\""
+            if grep -Eq "^${key}[[:space:]]*=" "${auto_tfvars_path}"; then
+              sed -E -i "s|^${key}[[:space:]]*=.*$|${key} = \"${value}\"|" "${auto_tfvars_path}"
+            else
+              echo "${key} = \"${value}\"" >> "${auto_tfvars_path}"
             fi
+          }
 
-            if [[ -n "${WORKER_TAG}" ]]; then
-              echo "worker_image_tag = \"${WORKER_TAG}\""
-            fi
+          upsert_tfvar "image_pull_policy" "${PULL_POLICY}"
 
-            if [[ -n "${FRONTEND_TAG}" ]]; then
-              echo "frontend_image_tag = \"${FRONTEND_TAG}\""
-            fi
-          } >> "${auto_tfvars_path}"
+          if [[ -n "${BACKEND_TAG}" ]]; then
+            upsert_tfvar "backend_image_tag" "${BACKEND_TAG}"
+          fi
+
+          if [[ -n "${WORKER_TAG}" ]]; then
+            upsert_tfvar "worker_image_tag" "${WORKER_TAG}"
+          fi
+
+          if [[ -n "${FRONTEND_TAG}" ]]; then
+            upsert_tfvar "frontend_image_tag" "${FRONTEND_TAG}"
+          fi
 
       - name: Terraform apply app release
         run: terraform -chdir=infra/env apply -auto-approve -target="module.app.helm_release.app"
