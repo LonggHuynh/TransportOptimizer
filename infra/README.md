@@ -48,7 +48,8 @@ terraform apply -var-file=environments/prod.tfvars
 ## CI/CD
 
 - `.github/workflows/infra-core.yml`
-  - full Terraform apply (`common`, `stage`, or `prod`)
+  - full Terraform apply (`common`, `stage`, `prod`, or `all`)
+  - `all` runs `infra/common` first, then `infra/env` for `stage` and `prod` workspaces
 - `.github/workflows/terraform-app-release.yml`
   - app-only release and targets `module.app.helm_release.app`
 
