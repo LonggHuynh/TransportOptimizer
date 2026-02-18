@@ -273,10 +273,12 @@ class DrawIoBuilder:
                 "modified": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
                 "agent": "codex-gpt5",
                 "version": "24.7.17",
+                "compressed": "false",
             },
         )
         self.diagram = ET.SubElement(self.mxfile, "diagram", attrib={"id": "transportoptimizer-gcp", "name": "Terraform Infra"})
-        self.model = ET.Element(
+        self.model = ET.SubElement(
+            self.diagram,
             "mxGraphModel",
             attrib={
                 "dx": "1800",
@@ -337,7 +339,6 @@ class DrawIoBuilder:
         ET.SubElement(edge, "mxGeometry", attrib={"relative": "1", "as": "geometry"})
 
     def to_xml(self) -> str:
-        self.diagram.text = ET.tostring(self.model, encoding="unicode")
         return ET.tostring(self.mxfile, encoding="unicode")
 
 
