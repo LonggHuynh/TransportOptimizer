@@ -1,7 +1,5 @@
 # TransportOptimizer: Efficient Trip Planning Application
 
-## Description
-
 TransportOptimizer assists users in efficiently planning their travel route by sequencing their desired destinations. Leveraging the modified Traveling Salesman Problem (TSP) algorithm, it lets users apply optional constraints, such as mandating the sequence of specific locations. The app uses Google Maps APIs for map rendering, geocoding/autocomplete, directions, and time-aware matrix optimization.
 
 ## Tech stack
@@ -120,7 +118,7 @@ Release behavior:
 
 1. Push to `stage` or `prod` with backend changes:
    - builds backend image
-   - triggers Terraform app-scope apply for `helm_release.app["stage"|"prod"]`
+   - triggers Terraform app-scope apply for `module.app.helm_release.app`
 2. Push to `stage` or `prod` with worker changes:
    - builds worker image
    - triggers the same Terraform app-scope apply
