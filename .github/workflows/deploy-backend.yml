@@ -21,68 +21,31 @@ on:
   push:
     branches:
       - stage
-      - prod
     paths:
       - "backend/**"
-      - ".github/workflows/**"
+      - ".github/workflows/deploy-backend.yml"
 
 permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: deploy-backend-${{ github.event.inputs.environment || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
-  resolve-target-environment:
-    name: Resolve target environment
-    runs-on: ubuntu-latest
-    outputs:
-      target_environment: ${{ steps.resolve.outputs.target_environment }}
-    steps:
-      - name: Resolve target environment
-        id: resolve
-        shell: bash
-        run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
-            target_environment="${GITHUB_REF_NAME}"
-          else
-            target_environment="${{ inputs.environment }}"
-          fi
-
-          if [[ ! "${target_environment}" =~ ^(stage|prod)$ ]]; then
-            echo "Invalid target environment: ${target_environment}"
-            exit 1
-          fi
-
-          echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"
-
-  unit-tests-backend:
-    name: Run backend unit tests
-    needs: resolve-target-environment
-    uses: ./.github/workflows/ci-service-unit-tests.yml
+  deploy-backend:
+    name: Deploy backend
+    uses: ./.github/workflows/deploy-service.yml
     with:
       service: backend
-
-  build-and-push-backend:
-    name: Build and Push Backend Docker Image to GHCR
-    needs:
-      - resolve-target-environment
-      - unit-tests-backend
-    uses: ./.github/workflows/deploy-container-build.yml
-    with:
       context: ./backend
       dockerfile: ./backend/Dockerfile
       image_suffix: backend
-      target_environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
-
-  deploy-backend:
-    name: Deploy backend to target environment
-    needs:
-      - resolve-target-environment
-      - build-and-push-backend
-    uses: ./.github/workflows/deploy-terraform-app-release.yml
-    with:
-      environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
-      backend_tag: ${{ format('sha-{0}', github.sha) }}
-      pull_policy: IfNotPresent
+      run_unit_tests: true
+      event_name: ${{ github.event_name }}
+      ref_name: ${{ github.ref_name }}
+      environment_input: ${{ github.event.inputs.environment || '' }}
       tfc_organization: ${{ github.event.inputs.tfc_organization || 'LongHuynhh' }}
       tfc_hostname: ${{ github.event.inputs.tfc_hostname || 'app.terraform.io' }}
     secrets:

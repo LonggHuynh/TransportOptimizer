@@ -1,0 +1,59 @@
+name: Deploy - Resolve Target Environment
+
+on:
+  workflow_call:
+    inputs:
+      event_name:
+        description: "GitHub event name from caller (push or workflow_dispatch)"
+        type: string
+        required: true
+      ref_name:
+        description: "GitHub ref name from caller"
+        type: string
+        required: true
+      environment_input:
+        description: "Manual environment input from caller (workflow_dispatch only)"
+        type: string
+        required: false
+        default: ""
+    outputs:
+      target_environment:
+        description: "Resolved deployment environment"
+        value: ${{ jobs.resolve.outputs.target_environment }}
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve target environment
+    runs-on: ubuntu-latest
+    outputs:
+      target_environment: ${{ steps.resolve.outputs.target_environment }}
+    steps:
+      - name: Resolve target environment
+        id: resolve
+        shell: bash
+        run: |
+          if [[ "${{ inputs.event_name }}" == "push" ]]; then
+            target_environment="${{ inputs.ref_name }}"
+          else
+            target_environment="${{ inputs.environment_input }}"
+          fi
+
+          if [[ ! "${target_environment}" =~ ^(stage|prod)$ ]]; then
+            echo "Invalid target environment: ${target_environment}"
+            exit 1
+          fi
+
+          if [[ "${{ inputs.event_name }}" == "push" && "${target_environment}" != "stage" ]]; then
+            echo "Push-based deployments are only allowed for stage."
+            exit 1
+          fi
+
+          if [[ "${{ inputs.event_name }}" == "workflow_dispatch" && "${{ inputs.ref_name }}" != "${target_environment}" ]]; then
+            echo "Manual deployments must run from the matching branch (${target_environment})."
+            exit 1
+          fi
+
+          echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"

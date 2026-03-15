@@ -1,0 +1,103 @@
+name: Deploy - Service
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: "Service identifier (backend, frontend, worker)"
+        type: string
+        required: true
+      context:
+        description: "Docker build context path"
+        type: string
+        required: true
+      dockerfile:
+        description: "Dockerfile path"
+        type: string
+        required: true
+      image_suffix:
+        description: "Image suffix appended to repository name"
+        type: string
+        required: true
+      run_unit_tests:
+        description: "Whether to run service unit tests before build"
+        type: boolean
+        required: false
+        default: false
+      event_name:
+        description: "GitHub event name from caller (push or workflow_dispatch)"
+        type: string
+        required: true
+      ref_name:
+        description: "GitHub ref name from caller"
+        type: string
+        required: true
+      environment_input:
+        description: "Manual environment input from caller (workflow_dispatch only)"
+        type: string
+        required: false
+        default: ""
+      tfc_organization:
+        description: "HCP Terraform/Terraform Enterprise organization"
+        type: string
+        required: false
+        default: LongHuynhh
+      tfc_hostname:
+        description: "HCP Terraform/Terraform Enterprise hostname"
+        type: string
+        required: false
+        default: app.terraform.io
+    secrets:
+      TF_API_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  resolve-target-environment:
+    name: Resolve target environment
+    uses: ./.github/workflows/deploy-resolve-target-environment.yml
+    with:
+      event_name: ${{ inputs.event_name }}
+      ref_name: ${{ inputs.ref_name }}
+      environment_input: ${{ inputs.environment_input }}
+
+  unit-tests:
+    name: Run unit tests
+    if: ${{ inputs.run_unit_tests }}
+    needs: resolve-target-environment
+    uses: ./.github/workflows/ci-service-unit-tests.yml
+    with:
+      service: ${{ inputs.service }}
+
+  build-and-push:
+    name: Build and push image
+    if: ${{ always() && needs.resolve-target-environment.result == 'success' && (needs.unit-tests.result == 'success' || needs.unit-tests.result == 'skipped') }}
+    needs:
+      - resolve-target-environment
+      - unit-tests
+    uses: ./.github/workflows/deploy-container-build.yml
+    with:
+      context: ${{ inputs.context }}
+      dockerfile: ${{ inputs.dockerfile }}
+      image_suffix: ${{ inputs.image_suffix }}
+      target_environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
+
+  deploy-service:
+    name: Deploy service
+    needs:
+      - resolve-target-environment
+      - build-and-push
+    uses: ./.github/workflows/deploy-terraform-app-release.yml
+    with:
+      environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
+      backend_tag: ${{ inputs.service == 'backend' && format('sha-{0}', github.sha) || '' }}
+      worker_tag: ${{ inputs.service == 'worker' && format('sha-{0}', github.sha) || '' }}
+      frontend_tag: ${{ inputs.service == 'frontend' && format('sha-{0}', github.sha) || '' }}
+      pull_policy: IfNotPresent
+      tfc_organization: ${{ inputs.tfc_organization }}
+      tfc_hostname: ${{ inputs.tfc_hostname }}
+    secrets:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}

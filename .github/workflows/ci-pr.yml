@@ -11,7 +11,8 @@ on:
       - "backend/**"
       - "frontend/**"
       - "worker/**"
-      - ".github/workflows/**"
+      - ".github/workflows/ci-pr.yml"
+      - ".github/workflows/ci-service-unit-tests.yml"
 
 permissions:
   contents: read
