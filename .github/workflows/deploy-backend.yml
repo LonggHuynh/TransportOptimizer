@@ -1,0 +1,52 @@
+name: Deploy - Backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target deployment environment"
+        type: choice
+        options:
+          - stage
+          - prod
+        required: true
+      tfc_organization:
+        description: "HCP Terraform/Terraform Enterprise organization"
+        required: false
+        default: LongHuynhh
+      tfc_hostname:
+        description: "HCP Terraform/Terraform Enterprise hostname"
+        required: false
+        default: app.terraform.io
+  push:
+    branches:
+      - stage
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-backend-${{ github.event.inputs.environment || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-backend:
+    name: Deploy backend
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      service: backend
+      context: ./backend
+      dockerfile: ./backend/Dockerfile
+      image_suffix: backend
+      run_unit_tests: true
+      event_name: ${{ github.event_name }}
+      ref_name: ${{ github.ref_name }}
+      environment_input: ${{ github.event.inputs.environment || '' }}
+      tfc_organization: ${{ github.event.inputs.tfc_organization || 'LongHuynhh' }}
+      tfc_hostname: ${{ github.event.inputs.tfc_hostname || 'app.terraform.io' }}
+    secrets:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}

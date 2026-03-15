@@ -1,0 +1,54 @@
+name: CI - Service Unit Tests
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: "Service test suite to run (backend or worker)"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend-unit-tests:
+    name: Backend Unit Tests
+    if: ${{ inputs.service == 'backend' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore backend dependencies
+        run: dotnet restore backend/api/api.csproj
+
+      - name: Run backend unit tests
+        run: dotnet test backend/api/api.csproj --configuration Release --no-restore
+
+  worker-unit-tests:
+    name: Worker Unit Tests
+    if: ${{ inputs.service == 'worker' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pipenv
+        run: python -m pip install --upgrade pip pipenv
+
+      - name: Install worker dependencies
+        run: cd worker && pipenv install --deploy
+
+      - name: Run worker unit tests
+        run: cd worker && pipenv run python -m unittest discover -s tests -t . -p 'test_*.py'
