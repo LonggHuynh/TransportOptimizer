@@ -5,7 +5,7 @@ resource "google_container_cluster" "primary" {
   location = var.region
 
   enable_autopilot    = true
-  deletion_protection = false
+  deletion_protection = true
   network             = google_compute_network.vpc[0].name
   subnetwork          = google_compute_subnetwork.gke[0].name
 

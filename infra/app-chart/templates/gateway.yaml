@@ -1,4 +1,7 @@
 {{- if and .Values.gateway.enabled .Values.backend.enabled .Values.frontend.enabled }}
+{{- if and .Values.gateway.tls.enabled (eq (len .Values.gateway.tls.certificateRefs) 0) (eq (len .Values.gateway.tls.options) 0) }}
+{{- fail "gateway.tls is enabled but no certificateRefs or tls.options were provided." }}
+{{- end }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -17,4 +20,35 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
+    {{- if .Values.gateway.tls.enabled }}
+    - name: https
+      protocol: HTTPS
+      port: 443
+      {{- if gt (len .Values.gateway.hostnames) 0 }}
+      hostname: {{ index .Values.gateway.hostnames 0 | quote }}
+      {{- end }}
+      tls:
+        mode: {{ default "Terminate" .Values.gateway.tls.mode | quote }}
+        {{- if gt (len .Values.gateway.tls.certificateRefs) 0 }}
+        certificateRefs:
+          {{- range .Values.gateway.tls.certificateRefs }}
+          - name: {{ .name | quote }}
+            {{- if ne .kind "" }}
+            kind: {{ .kind | quote }}
+            {{- end }}
+            {{- if ne .group "" }}
+            group: {{ .group | quote }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if gt (len .Values.gateway.tls.options) 0 }}
+        options:
+          {{- range $key, $value := .Values.gateway.tls.options }}
+          {{ $key }}: {{ $value | quote }}
+          {{- end }}
+        {{- end }}
+      allowedRoutes:
+        namespaces:
+          from: Same
+    {{- end }}
 {{- end }}

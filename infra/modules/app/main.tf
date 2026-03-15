@@ -62,6 +62,7 @@ locals {
 
   redis_app_host = var.redis_k8s_service_enabled ? var.redis_k8s_service_name : local.redis_host
   redis_endpoint = "${local.redis_app_host}:${local.redis_port}"
+  redis_scheme   = var.redis_use_tls ? "rediss" : "redis"
 
   aspnetcore_environment = var.environment == "stage" ? "Staging" : var.environment == "prod" ? "Production" : "Production"
 
@@ -79,14 +80,16 @@ locals {
       "ASPNETCORE_URLS"         = "http://0.0.0.0:${var.backend_container_port}"
       "Redis__Endpoint"         = local.redis_endpoint
       "Redis__IamAuthEnabled"   = tostring(var.redis_auth_mode == "AUTH_MODE_IAM_AUTH")
+      "Redis__UseTls"           = tostring(var.redis_use_tls)
     },
     local.cors_origin_entries
   )
 
   worker_config = {
     "RESULT_TTL_SECONDS"     = tostring(var.worker_result_ttl_seconds)
-    "REDIS_URL"              = local.redis_endpoint
+    "REDIS_URL"              = "${local.redis_scheme}://${local.redis_endpoint}"
     "REDIS_IAM_AUTH_ENABLED" = tostring(var.redis_auth_mode == "AUTH_MODE_IAM_AUTH")
+    "REDIS_USE_TLS"          = tostring(var.redis_use_tls)
   }
 
   ghcr_credentials_provided = var.ghcr_username != "" && var.ghcr_token != ""
@@ -116,6 +119,16 @@ resource "helm_release" "app" {
     precondition {
       condition     = local.redis_port > 0 && (var.redis_k8s_service_enabled || local.redis_host != "")
       error_message = "Missing Redis outputs for this environment in transport-common."
+    }
+    precondition {
+      condition = !var.gateway_enabled || !var.gateway_tls_enabled || (
+        length(var.gateway_tls_certificate_refs) > 0 || length(var.gateway_tls_options) > 0
+      )
+      error_message = "Gateway TLS is enabled but no certificate refs or TLS options were configured."
+    }
+    precondition {
+      condition     = !var.resource_quota_enabled || length(var.resource_quota_hard) > 0
+      error_message = "resource_quota_hard must be configured when resource_quota_enabled is true."
     }
   }
 
@@ -193,6 +206,14 @@ resource "helm_release" "app" {
       className         = var.gateway_class_name
       backendPathPrefix = var.backend_path_prefix
       hostnames         = var.gateway_hostnames
+      tls = {
+        enabled         = var.gateway_tls_enabled
+        mode            = "Terminate"
+        certificateRefs = var.gateway_tls_certificate_refs
+        options         = var.gateway_tls_options
+      }
+      httpRedirectToHttps    = var.gateway_http_redirect_to_https
+      httpRedirectStatusCode = var.gateway_http_redirect_status_code
       backendHealthCheckPolicy = {
         enabled     = true
         name        = "backend-healthz"
@@ -204,6 +225,10 @@ resource "helm_release" "app" {
       serviceName = var.redis_k8s_service_name
       host        = local.redis_host
       port        = local.redis_port
+    }
+    resourceQuota = {
+      enabled = var.resource_quota_enabled
+      hard    = var.resource_quota_hard
     }
   })]
 

@@ -312,7 +312,7 @@ variable "redis_auth_mode" {
 variable "redis_transit_encryption_mode" {
   type        = string
   description = "Redis Cluster transit encryption mode."
-  default     = "TRANSIT_ENCRYPTION_MODE_DISABLED"
+  default     = "TRANSIT_ENCRYPTION_MODE_SERVER_AUTHENTICATION"
 
   validation {
     condition = contains([

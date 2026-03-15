@@ -135,6 +135,45 @@ variable "gateway_hostnames" {
   default     = []
 }
 
+variable "gateway_tls_enabled" {
+  type        = bool
+  description = "Enable HTTPS listener on the Gateway."
+  default     = true
+}
+
+variable "gateway_tls_certificate_refs" {
+  type = list(object({
+    name  = string
+    kind  = string
+    group = string
+  }))
+  description = "TLS certificate references for the HTTPS listener."
+  default     = []
+}
+
+variable "gateway_tls_options" {
+  type        = map(string)
+  description = "Optional provider-specific TLS options for Gateway listener."
+  default     = {}
+}
+
+variable "gateway_http_redirect_to_https" {
+  type        = bool
+  description = "Redirect HTTP traffic to HTTPS."
+  default     = true
+}
+
+variable "gateway_http_redirect_status_code" {
+  type        = number
+  description = "HTTP status code used when redirecting HTTP to HTTPS."
+  default     = 301
+
+  validation {
+    condition     = contains([301, 302, 307, 308], var.gateway_http_redirect_status_code)
+    error_message = "gateway_http_redirect_status_code must be one of: 301, 302, 307, 308."
+  }
+}
+
 variable "redis_auth_mode" {
   type        = string
   description = "Redis auth mode to pass into app config."
@@ -151,6 +190,12 @@ variable "redis_k8s_service_name" {
   type        = string
   description = "Redis service alias name."
   default     = "redis"
+}
+
+variable "redis_use_tls" {
+  type        = bool
+  description = "Enable TLS for Redis client connections."
+  default     = true
 }
 
 variable "google_maps_api_url" {
@@ -175,12 +220,34 @@ variable "cors_allowed_origins" {
   type        = list(string)
   description = "Allowed CORS origins."
   default     = []
+
+  validation {
+    condition = alltrue([
+      for origin in var.cors_allowed_origins :
+      !contains(origin, "<") &&
+      !contains(origin, ">") &&
+      can(regex("^https?://[^/]+$", trimspace(origin)))
+    ])
+    error_message = "cors_allowed_origins must be valid http(s) origins (scheme + host only) and must not use placeholders."
+  }
 }
 
 variable "worker_result_ttl_seconds" {
   type        = number
   description = "Worker result TTL in seconds."
   default     = 300
+}
+
+variable "resource_quota_enabled" {
+  type        = bool
+  description = "Create a namespace ResourceQuota for environment isolation."
+  default     = true
+}
+
+variable "resource_quota_hard" {
+  type        = map(string)
+  description = "ResourceQuota hard limits for the namespace."
+  default     = {}
 }
 
 variable "ghcr_username" {
