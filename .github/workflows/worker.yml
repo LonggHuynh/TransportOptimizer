@@ -74,7 +74,7 @@ jobs:
         run: cd worker && pipenv install --deploy
 
       - name: Run worker unit tests
-        run: cd worker && pipenv run python -m unittest discover -p 'test_*.py'
+        run: cd worker && pipenv run python -m unittest discover -s tests -t . -p 'test_*.py'
 
   build-and-push-worker:
     name: Build and Push Worker Docker Image to GHCR

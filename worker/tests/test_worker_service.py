@@ -113,6 +113,33 @@ class WorkerServiceTests(unittest.TestCase):
         self.assertEqual(update["error"], "solver-error")
         sleep.assert_called_once_with(0.5)
 
+    def test_process_job_uses_injected_dependencies(self) -> None:
+        payload = RouteJobPayload(distanceMatrix=[[0]], stopWindows=[])
+        queue = FakeQueue(payload=payload)
+        solver = MagicMock(side_effect=ValueError("injected-error"))
+        sleep = MagicMock()
+        mark_span_error = MagicMock()
+
+        process_job(
+            queue,
+            "job-fail-injected",
+            result_ttl_seconds=111,
+            compute_route_fn=solver,
+            sleep_fn=sleep,
+            mark_span_error_fn=mark_span_error,
+        )
+
+        self.assertEqual(queue.acked, ["job-fail-injected"])
+        self.assertEqual(len(queue.update_calls), 1)
+        update = queue.update_calls[0]
+        self.assertEqual(update["status"], "failed")
+        self.assertEqual(update["error"], "injected-error")
+        solver.assert_called_once_with(payload.distance_matrix, payload.stop_windows)
+        sleep.assert_called_once_with(0.5)
+        mark_args = mark_span_error.call_args.args
+        self.assertEqual(mark_args[0], "injected-error")
+        self.assertIsInstance(mark_args[1], ValueError)
+
     def test_route_worker_process_job_delegates_to_process_job_with_ttl(self) -> None:
         queue = FakeQueue(payload=None)
         worker = RouteWorker(queue, poll_timeout=5, result_ttl_seconds=999)
@@ -121,6 +148,15 @@ class WorkerServiceTests(unittest.TestCase):
             worker._process_job("job-delegate")
 
         process_job_mock.assert_called_once_with(queue, "job-delegate", 999)
+
+    def test_route_worker_uses_injected_process_function(self) -> None:
+        queue = FakeQueue(payload=None)
+        process_job_fn = MagicMock()
+        worker = RouteWorker(queue, result_ttl_seconds=321, process_job_fn=process_job_fn)
+
+        worker._process_job("job-custom")
+
+        process_job_fn.assert_called_once_with(queue, "job-custom", 321)
 
 
 if __name__ == "__main__":
