@@ -2,6 +2,9 @@
 .idea
 .secrets
 .vars
+.agents/
+.codex/
+AGENTS.md
 .venv/
 __pycache__/
 .plans/
