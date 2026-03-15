@@ -1,4 +1,0 @@
-interface:
-  display_name: "Draw.io GCP Terraform"
-  short_description: "Generate Draw.io diagrams from GCP Terraform infra"
-  default_prompt: "Analyze Terraform and build a clean Draw.io GCP architecture diagram with official icons, strict no-invention policy, and labeled flows."
