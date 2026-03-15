@@ -17,6 +17,33 @@ def _build_dense_distance_matrix(node_count: int) -> list[list[int]]:
 
 
 class RouteSolverTests(unittest.TestCase):
+    def test_returns_empty_result_when_distance_matrix_is_empty(self) -> None:
+        result = compute_route([], [])
+
+        self.assertEqual(result.order, [])
+        self.assertEqual(result.total_time, 0)
+
+    def test_single_node_returns_zero_time_when_departure_is_feasible(self) -> None:
+        result = compute_route([[0]], [])
+
+        self.assertEqual(result.order, [0])
+        self.assertEqual(result.total_time, 0)
+
+    def test_single_node_returns_infeasible_when_time_window_is_impossible(self) -> None:
+        stop_windows = [
+            {
+                "stopIndex": 0,
+                "windowStartMinutes": 2,
+                "windowEndMinutes": 1,
+                "serviceMinutes": 0,
+            },
+        ]
+
+        result = compute_route([[0]], stop_windows)
+
+        self.assertEqual(result.order, [])
+        self.assertIsNone(result.total_time)
+
     def test_returns_direct_route_when_no_intermediate_stops(self) -> None:
         dist = [
             [0, 120],

@@ -54,9 +54,30 @@ jobs:
 
           echo "target_environment=${target_environment}" >> "${GITHUB_OUTPUT}"
 
+  unit-tests-backend:
+    name: Run backend unit tests
+    runs-on: ubuntu-latest
+    needs: resolve-target-environment
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore backend/api/api.csproj
+
+      - name: Run backend unit tests
+        run: dotnet test backend/api/api.csproj --configuration Release --no-restore
+
   build-and-push-backend:
     name: Build and Push Backend Docker Image to GHCR
-    needs: resolve-target-environment
+    needs:
+      - resolve-target-environment
+      - unit-tests-backend
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
