@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <PlatformTarget>x64</PlatformTarget>
+        <DefaultItemExcludes>$(DefaultItemExcludes);Tests/**/bin/**;Tests/**/obj/**</DefaultItemExcludes>
     </PropertyGroup>
 
     <ItemGroup>
