@@ -1,4 +1,4 @@
-name: Frontend Deployment
+name: Deploy - Frontend
 
 on:
   workflow_dispatch:
@@ -57,7 +57,7 @@ jobs:
   build-and-push-frontend:
     name: Build and Push Frontend Docker Image to GHCR
     needs: resolve-target-environment
-    uses: ./.github/workflows/container-build-push.yml
+    uses: ./.github/workflows/deploy-container-build.yml
     with:
       context: ./frontend
       dockerfile: ./frontend/Dockerfile
@@ -69,7 +69,7 @@ jobs:
     needs:
       - resolve-target-environment
       - build-and-push-frontend
-    uses: ./.github/workflows/terraform-app-release.yml
+    uses: ./.github/workflows/deploy-terraform-app-release.yml
     with:
       environment: ${{ needs.resolve-target-environment.outputs.target_environment }}
       frontend_tag: ${{ format('sha-{0}', github.sha) }}

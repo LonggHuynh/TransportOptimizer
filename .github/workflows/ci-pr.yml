@@ -1,4 +1,4 @@
-name: PR CI
+name: CI - PR
 
 on:
   pull_request:
@@ -24,7 +24,7 @@ jobs:
   backend-unit-tests:
     name: Backend Unit Tests
     if: ${{ !github.event.pull_request.draft }}
-    uses: ./.github/workflows/service-unit-tests.yml
+    uses: ./.github/workflows/ci-service-unit-tests.yml
     with:
       service: backend
 
@@ -52,6 +52,6 @@ jobs:
   worker-unit-tests:
     name: Worker Unit Tests
     if: ${{ !github.event.pull_request.draft }}
-    uses: ./.github/workflows/service-unit-tests.yml
+    uses: ./.github/workflows/ci-service-unit-tests.yml
     with:
       service: worker

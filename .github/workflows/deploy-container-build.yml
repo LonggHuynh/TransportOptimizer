@@ -1,4 +1,4 @@
-name: Container Build and Push
+name: Deploy - Container Build and Push
 
 on:
   workflow_call:

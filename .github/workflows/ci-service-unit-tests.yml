@@ -1,4 +1,4 @@
-name: Service Unit Tests
+name: CI - Service Unit Tests
 
 on:
   workflow_call:
