@@ -119,6 +119,13 @@ gateway:
   className: "gke-l7-global-external-managed"
   backendPathPrefix: "/api"
   hostnames: []
+  tls:
+    enabled: true
+    mode: "Terminate"
+    certificateRefs: []
+    options: {}
+  httpRedirectToHttps: true
+  httpRedirectStatusCode: 301
   backendHealthCheckPolicy:
     enabled: true
     name: "backend-healthz"
@@ -129,3 +136,8 @@ redis:
   serviceName: ""
   host: ""
   port: 6379
+
+resourceQuota:
+  enabled: false
+  name: "namespace-quota"
+  hard: {}

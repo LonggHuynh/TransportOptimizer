@@ -7,6 +7,7 @@ class Settings(BaseSettings):
 
     redis_url: str = "localhost:6379"
     redis_iam_auth_enabled: bool = False
+    redis_use_tls: bool = False
     result_ttl_seconds: int = 300
     celery_broker_url: str | None = None
     celery_result_backend: str | None = None

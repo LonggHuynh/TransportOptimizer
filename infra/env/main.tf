@@ -26,10 +26,16 @@ module "app" {
   gateway_enabled    = var.gateway_enabled
   gateway_class_name = var.gateway_class_name
   gateway_hostnames  = var.gateway_hostnames
+  gateway_tls_enabled            = var.gateway_tls_enabled
+  gateway_tls_certificate_refs   = var.gateway_tls_certificate_refs
+  gateway_tls_options            = var.gateway_tls_options
+  gateway_http_redirect_to_https = var.gateway_http_redirect_to_https
+  gateway_http_redirect_status_code = var.gateway_http_redirect_status_code
 
   redis_auth_mode           = var.redis_auth_mode
   redis_k8s_service_enabled = var.redis_k8s_service_enabled
   redis_k8s_service_name    = var.redis_k8s_service_name
+  redis_use_tls             = var.redis_use_tls
 
   google_maps_api_url       = var.google_maps_api_url
   google_maps_tile_map_type = var.google_maps_tile_map_type
@@ -37,6 +43,8 @@ module "app" {
   cors_allowed_origins      = var.cors_allowed_origins
 
   worker_result_ttl_seconds = var.worker_result_ttl_seconds
+  resource_quota_enabled    = var.resource_quota_enabled
+  resource_quota_hard       = var.resource_quota_hard
 
   ghcr_username          = var.ghcr_username
   ghcr_token             = var.ghcr_token

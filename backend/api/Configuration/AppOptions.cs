@@ -84,6 +84,7 @@ namespace api.Configuration
         public string? ConnectionString { get; set; }
         public string? Endpoint { get; set; }
         public bool IamAuthEnabled { get; set; }
+        public bool UseTls { get; set; }
         public TimeSpan IamRefreshInterval { get; set; } = TimeSpan.FromMinutes(45);
         public string[] IamScopes { get; set; } = ["https://www.googleapis.com/auth/cloud-platform"];
         public bool AbortOnConnectFail { get; set; }

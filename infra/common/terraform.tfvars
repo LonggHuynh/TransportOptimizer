@@ -44,6 +44,6 @@ redis_shard_count             = 1
 redis_replica_count           = 1
 redis_node_type               = "REDIS_SHARED_CORE_NANO"
 redis_auth_mode               = "AUTH_MODE_IAM_AUTH"
-redis_transit_encryption_mode = "TRANSIT_ENCRYPTION_MODE_DISABLED"
+redis_transit_encryption_mode = "TRANSIT_ENCRYPTION_MODE_SERVER_AUTHENTICATION"
 psc_subnet_cidr               = "10.60.0.0/24"
 redis_psc_connection_limit    = 10

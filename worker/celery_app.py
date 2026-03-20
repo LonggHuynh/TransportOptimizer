@@ -10,33 +10,33 @@ from redis_client import normalize_redis_url
 from telemetry import configure_logging, configure_observability
 
 
-def _normalize_broker_url(raw_url: str) -> str:
+def _normalize_broker_url(raw_url: str, use_tls: bool) -> str:
     if "://" not in raw_url:
-        return normalize_redis_url(raw_url)
+        return normalize_redis_url(raw_url, use_tls=use_tls)
     parsed = urlparse(raw_url)
     if parsed.scheme in ("redis", "rediss"):
-        return normalize_redis_url(raw_url)
+        return normalize_redis_url(raw_url, use_tls=use_tls)
     return raw_url
 
 
 def _resolve_broker_url(override: str | None, fallback: str, settings: Settings) -> str:
     if override:
-        return _normalize_broker_url(override)
+        return _normalize_broker_url(override, settings.redis_use_tls)
     if settings.redis_iam_auth_enabled:
         raise RuntimeError(
             "Celery broker cannot use IAM auth tokens. Set CELERY_BROKER_URL to a non-IAM "
             "broker or disable REDIS_IAM_AUTH_ENABLED."
         )
-    return _normalize_broker_url(fallback)
+    return _normalize_broker_url(fallback, settings.redis_use_tls)
 
 
 settings = Settings()
 configure_logging()
 broker_url = _resolve_broker_url(settings.celery_broker_url, settings.redis_url, settings)
 backend_url = (
-    _normalize_broker_url(settings.celery_result_backend)
+    _normalize_broker_url(settings.celery_result_backend, settings.redis_use_tls)
     if settings.celery_result_backend
-    else (None if settings.redis_iam_auth_enabled else _normalize_broker_url(settings.redis_url))
+    else (None if settings.redis_iam_auth_enabled else _normalize_broker_url(settings.redis_url, settings.redis_use_tls))
 )
 
 app = Celery("route_worker", broker=broker_url, backend=backend_url)

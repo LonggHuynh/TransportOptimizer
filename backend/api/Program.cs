@@ -118,17 +118,34 @@ builder.Services.AddHttpClient<IGoogleRoutesClient, GoogleRoutesClient>(client =
 .AddHttpMessageHandler<GoogleMapsAuthHandler>()
 .AddHttpMessageHandler<GoogleMapsErrorHandler>();
 
-var allowedOrigins = appOptions.CorsSettings.AllowedOrigins ?? [];
-builder.Services.AddCors(options =>
+var allowedOrigins = (appOptions.CorsSettings.AllowedOrigins ?? [])
+    .Select(origin => origin?.Trim())
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .Select(origin => origin!)
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+var invalidOrigins = allowedOrigins.Where(IsInvalidCorsOrigin).ToArray();
+if (invalidOrigins.Length > 0)
 {
-    options.AddPolicy("CorsPolicy", builder =>
+    throw new InvalidOperationException(
+        $"Invalid CorsSettings.AllowedOrigins value(s): {string.Join(", ", invalidOrigins)}"
+    );
+}
+
+var corsEnabled = allowedOrigins.Length > 0;
+if (corsEnabled)
+{
+    builder.Services.AddCors(options =>
     {
-        builder.WithOrigins(allowedOrigins)
-                   .AllowAnyMethod()
-                   .AllowAnyHeader()
-                   .AllowCredentials();
+        options.AddPolicy("CorsPolicy", builder =>
+        {
+            builder.WithOrigins(allowedOrigins)
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        });
     });
-});
+}
 
 var app = builder.Build();
 
@@ -145,9 +162,35 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-app.UseCors("CorsPolicy");
+if (corsEnabled)
+{
+    app.UseCors("CorsPolicy");
+}
 
 app.MapControllers();
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
 
 app.Run();
+
+static bool IsInvalidCorsOrigin(string origin)
+{
+    if (origin.Contains('<') || origin.Contains('>'))
+    {
+        return true;
+    }
+
+    if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+    {
+        return true;
+    }
+
+    if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+    {
+        return true;
+    }
+
+    var normalizedOrigin = origin.EndsWith('/') ? origin[..^1] : origin;
+    var authorityOnly = uri.GetLeftPart(UriPartial.Authority);
+    return !string.Equals(authorityOnly, normalizedOrigin, StringComparison.OrdinalIgnoreCase);
+}

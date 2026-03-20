@@ -1,3 +1,4 @@
+using System.Net;
 using System.Threading;
 using api.Configuration;
 using StackExchange.Redis;
@@ -65,23 +66,35 @@ public sealed class RedisConnectionFactory : IConnectionMultiplexerFactory, IAsy
     {
         var endpoint = _options.GetEndpoint();
 
-        if (!_options.IamAuthEnabled)
-        {
-            return await ConnectionMultiplexer.ConnectAsync(endpoint);
-        }
-
-        var token = await GetAccessTokenAsync();
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            throw new InvalidOperationException("Failed to obtain IAM access token for Redis.");
-        }
-
         var config = ConfigurationOptions.Parse(endpoint);
-        config.Password = token;
         config.AbortOnConnectFail = _options.AbortOnConnectFail;
+        if (_options.UseTls)
+        {
+            config.Ssl = true;
+            config.SslHost = ResolveSslHost(config.EndPoints.FirstOrDefault());
+        }
+
+        if (_options.IamAuthEnabled)
+        {
+            var token = await GetAccessTokenAsync();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                throw new InvalidOperationException("Failed to obtain IAM access token for Redis.");
+            }
+
+            config.Password = token;
+        }
 
         return await ConnectionMultiplexer.ConnectAsync(config);
     }
+
+    private static string? ResolveSslHost(EndPoint? endpoint)
+        => endpoint switch
+        {
+            DnsEndPoint dns => dns.Host,
+            IPEndPoint ip => ip.Address.ToString(),
+            _ => endpoint?.ToString()
+        };
 
     private async Task<string> GetAccessTokenAsync()
     {

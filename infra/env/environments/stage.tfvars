@@ -21,17 +21,38 @@ backend_path_prefix    = "/api"
 gateway_enabled    = true
 gateway_class_name = "gke-l7-global-external-managed"
 gateway_hostnames  = []
+# Create this secret in transport-stage (or replace with gateway_tls_options cert map settings).
+gateway_tls_enabled = true
+gateway_tls_certificate_refs = [
+  {
+    name  = "gateway-tls"
+    kind  = "Secret"
+    group = ""
+  }
+]
+gateway_tls_options              = {}
+gateway_http_redirect_to_https   = true
+gateway_http_redirect_status_code = 301
 
 redis_auth_mode           = "AUTH_MODE_IAM_AUTH"
 redis_k8s_service_enabled = true
 redis_k8s_service_name    = "redis"
+redis_use_tls             = true
 
 google_maps_api_url       = "https://maps.googleapis.com/maps/api"
 google_maps_tile_map_type = "roadmap"
 google_maps_tile_size     = 256
-cors_allowed_origins      = ["https://<frontend-domain>"]
+cors_allowed_origins      = []
 
 worker_result_ttl_seconds = 300
+resource_quota_enabled    = true
+resource_quota_hard = {
+  "requests.cpu"    = "2"
+  "requests.memory" = "4Gi"
+  "limits.cpu"      = "4"
+  "limits.memory"   = "8Gi"
+  "pods"            = "20"
+}
 
 ghcr_username          = ""
 ghcr_token             = ""
