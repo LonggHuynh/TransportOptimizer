@@ -22,9 +22,16 @@ gateway_enabled    = true
 gateway_class_name = "gke-l7-global-external-managed"
 gateway_hostnames  = []
 
-redis_auth_mode           = "AUTH_MODE_IAM_AUTH"
-redis_k8s_service_enabled = true
-redis_k8s_service_name    = "redis"
+redis_auth_mode             = "AUTH_MODE_IAM_AUTH"
+redis_k8s_service_enabled   = false
+redis_k8s_service_name      = "redis"
+redis_operator_enabled      = true
+redis_operator_managed      = true
+redis_cluster_size          = 3
+redis_cluster_replicas      = 1
+redis_persistence_enabled   = true
+redis_storage_size          = "1Gi"
+redis_storage_class_name    = ""
 
 google_maps_api_url       = "https://maps.googleapis.com/maps/api"
 google_maps_tile_map_type = "roadmap"

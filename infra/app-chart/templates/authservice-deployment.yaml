@@ -1,0 +1,66 @@
+{{- if .Values.authService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "transport.authservice.fullname" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: auth-service
+spec:
+  replicas: {{ .Values.authService.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "transport.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: auth-service
+  template:
+    metadata:
+      labels:
+        {{- include "transport.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: auth-service
+    spec:
+      serviceAccountName: {{ include "transport.authservice.serviceAccountName" . }}
+      {{- $pullSecrets := list -}}
+      {{- if .Values.imagePullSecrets }}
+      {{- range .Values.imagePullSecrets }}
+      {{- $pullSecrets = append $pullSecrets (dict "name" .) -}}
+      {{- end }}
+      {{- end }}
+      {{- if and .Values.imagePullSecret.create .Values.imagePullSecret.name }}
+      {{- $pullSecrets = append $pullSecrets (dict "name" .Values.imagePullSecret.name) -}}
+      {{- end }}
+      {{- if gt (len $pullSecrets) 0 }}
+      imagePullSecrets:
+        {{- toYaml $pullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: auth-service
+          image: "{{ .Values.authService.image.repository }}{{- if .Values.authService.image.tag }}:{{ .Values.authService.image.tag }}{{- end }}"
+          imagePullPolicy: {{ .Values.authService.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.authService.service.containerPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.authService.health.path | quote }}
+              port: http
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.authService.health.path | quote }}
+              port: http
+          {{- $hasConfig := or .Values.authService.config.enabled .Values.authService.config.existingName }}
+          {{- $hasSecret := or .Values.authService.secret.enabled .Values.authService.secret.existingName }}
+          {{- if or $hasConfig $hasSecret }}
+          envFrom:
+            {{- if $hasConfig }}
+            - configMapRef:
+                name: {{ include "transport.authservice.configMapName" . }}
+            {{- end }}
+            {{- if $hasSecret }}
+            - secretRef:
+                name: {{ include "transport.authservice.secretName" . }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.authService.resources | nindent 12 }}
+{{- end }}

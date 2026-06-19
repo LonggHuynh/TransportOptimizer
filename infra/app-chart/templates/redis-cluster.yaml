@@ -1,0 +1,32 @@
+{{- if and .Values.redis.enabled .Values.redis.operatorManaged }}
+apiVersion: redis.redis.opstreelabs.in/v1beta2
+kind: RedisCluster
+metadata:
+  name: {{ include "transport.redis.serviceName" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  clusterSize: {{ .Values.redis.clusterSize }}
+  clusterReplicas: {{ .Values.redis.replicas }}
+  persistenceEnabled: {{ .Values.redis.persistenceEnabled }}
+  kubernetesConfig:
+    image: "{{ .Values.redis.image }}:{{ .Values.redis.imageTag }}"
+    imagePullPolicy: {{ .Values.redis.imagePullPolicy }}
+    resources:
+      {{- toYaml .Values.redis.resources | nindent 6 }}
+    serviceType: ClusterIP
+  redisExporter:
+    enabled: {{ .Values.redis.exporterEnabled }}
+    image: "{{ .Values.redis.exporterImage }}:{{ .Values.redis.exporterImageTag }}"
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.redis.storageSize }}
+        {{- if .Values.redis.storageClassName }}
+        storageClassName: {{ .Values.redis.storageClassName | quote }}
+        {{- end }}
+{{- end }}

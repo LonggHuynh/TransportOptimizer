@@ -61,6 +61,8 @@ locals {
   )
 
   redis_app_host = var.redis_k8s_service_enabled ? var.redis_k8s_service_name : local.redis_host
+  redis_operator_enabled = var.redis_operator_enabled
+  redis_operator_managed = var.redis_operator_managed
   redis_endpoint = "${local.redis_app_host}:${local.redis_port}"
 
   aspnetcore_environment = var.environment == "stage" ? "Staging" : var.environment == "prod" ? "Production" : "Production"
@@ -83,6 +85,13 @@ locals {
     local.cors_origin_entries
   )
 
+  auth_service_config = {
+    "OIDC_ISSUER"        = var.auth_service_oidc_issuer
+    "OIDC_AUDIENCE"      = var.auth_service_oidc_audience
+    "OIDC_JWKS_URI"      = var.auth_service_oidc_jwks_uri
+    "TOKEN_LEEWAY_SECONDS" = tostring(var.auth_service_token_leeway_seconds)
+  }
+
   worker_config = {
     "RESULT_TTL_SECONDS"     = tostring(var.worker_result_ttl_seconds)
     "REDIS_URL"              = local.redis_endpoint
@@ -98,6 +107,20 @@ locals {
     name  = "imagePullSecret.password"
     value = var.ghcr_token
   }] : []
+}
+
+
+resource "helm_release" "redis_operator" {
+  count = local.redis_operator_enabled ? 1 : 0
+
+  name       = "redis-operator"
+  repository = "https://ot-container-kit.github.io/charts"
+  chart      = "redis-operator"
+  namespace  = "redis-operator-system"
+  create_namespace = true
+  timeout    = 180
+
+  depends_on = [data.google_container_cluster.gke]
 }
 
 resource "helm_release" "app" {
@@ -118,6 +141,8 @@ resource "helm_release" "app" {
       error_message = "Missing Redis outputs for this environment in transport-common."
     }
   }
+
+  depends_on = [helm_release.redis_operator]
 
   values = [yamlencode({
     commonLabels = {
@@ -180,6 +205,31 @@ resource "helm_release" "app" {
         enabled = false
       }
     }
+    authService = {
+      enabled = true
+      image = {
+        repository = var.auth_service_image
+        tag        = var.auth_service_image_tag
+        pullPolicy = var.image_pull_policy
+      }
+      service = {
+        port          = var.auth_service_service_port
+        containerPort = var.auth_service_container_port
+      }
+      health = {
+        path = var.auth_service_health_path
+      }
+      serviceAccount = {
+        create = false
+      }
+      config = {
+        enabled = true
+        data    = local.auth_service_config
+      }
+      secret = {
+        enabled = false
+      }
+    }
     frontend = {
       enabled = true
       image = {
@@ -200,10 +250,21 @@ resource "helm_release" "app" {
       }
     }
     redis = {
-      enabled     = var.redis_k8s_service_enabled
-      serviceName = var.redis_k8s_service_name
-      host        = local.redis_host
-      port        = local.redis_port
+      enabled            = var.redis_k8s_service_enabled || local.redis_operator_managed
+      serviceName        = var.redis_k8s_service_name
+      host               = local.redis_host
+      port               = local.redis_port
+      operatorManaged    = local.redis_operator_managed
+      clusterSize        = var.redis_cluster_size
+      replicas           = var.redis_cluster_replicas
+      persistenceEnabled = var.redis_persistence_enabled
+      storageSize        = var.redis_storage_size
+      storageClassName   = var.redis_storage_class_name
+      image              = var.redis_image
+      imageTag           = var.redis_image_tag
+    }
+    redisOperator = {
+      enabled = local.redis_operator_enabled
     }
   })]
 

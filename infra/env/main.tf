@@ -30,6 +30,25 @@ module "app" {
   redis_auth_mode           = var.redis_auth_mode
   redis_k8s_service_enabled = var.redis_k8s_service_enabled
   redis_k8s_service_name    = var.redis_k8s_service_name
+  redis_operator_enabled  = var.redis_operator_enabled
+  redis_operator_managed  = var.redis_operator_managed
+  redis_cluster_size      = var.redis_cluster_size
+  redis_cluster_replicas  = var.redis_cluster_replicas
+  redis_persistence_enabled = var.redis_persistence_enabled
+  redis_storage_size      = var.redis_storage_size
+  redis_storage_class_name = var.redis_storage_class_name
+  redis_image              = var.redis_image
+  redis_image_tag          = var.redis_image_tag
+  auth_service_image              = var.auth_service_image
+  auth_service_image_tag          = var.auth_service_image_tag
+  auth_service_container_port     = var.auth_service_container_port
+  auth_service_service_port       = var.auth_service_service_port
+  auth_service_health_path        = var.auth_service_health_path
+  auth_service_oidc_issuer        = var.auth_service_oidc_issuer
+  auth_service_oidc_audience      = var.auth_service_oidc_audience
+  auth_service_oidc_jwks_uri      = var.auth_service_oidc_jwks_uri
+  auth_service_token_leeway_seconds = var.auth_service_token_leeway_seconds
+
 
   google_maps_api_url       = var.google_maps_api_url
   google_maps_tile_map_type = var.google_maps_tile_map_type

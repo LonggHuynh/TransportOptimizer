@@ -109,3 +109,35 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s-secret" (include "transport.worker.fullname" .) -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "transport.authservice.fullname" -}}
+{{- printf "%s-auth-service" (include "transport.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "transport.authservice.serviceAccountName" -}}
+{{- if .Values.authService.serviceAccount.name -}}
+{{- .Values.authService.serviceAccount.name -}}
+{{- else -}}
+{{- include "transport.authservice.fullname" . -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "transport.authservice.configMapName" -}}
+{{- if .Values.authService.config.existingName -}}
+{{- .Values.authService.config.existingName -}}
+{{- else if .Values.authService.config.name -}}
+{{- .Values.authService.config.name -}}
+{{- else -}}
+{{- printf "%s-config" (include "transport.authservice.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "transport.authservice.secretName" -}}
+{{- if .Values.authService.secret.existingName -}}
+{{- .Values.authService.secret.existingName -}}
+{{- else if .Values.authService.secret.name -}}
+{{- .Values.authService.secret.name -}}
+{{- else -}}
+{{- printf "%s-secret" (include "transport.authservice.fullname" .) -}}
+{{- end -}}
+{{- end -}}

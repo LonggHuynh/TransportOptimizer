@@ -1,0 +1,19 @@
+{{- if .Values.authService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "transport.authservice.fullname" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: auth-service
+spec:
+  type: {{ .Values.authService.service.type }}
+  selector:
+    {{- include "transport.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: auth-service
+  ports:
+    - name: http
+      port: {{ .Values.authService.service.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

@@ -1,6 +1,11 @@
 apiVersion: v2
 name: transport-optimizer
-description: Transport Optimizer frontend, backend, and worker
+description: Transport Optimizer frontend, backend, worker, matrix-service, and auth-service
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "1.0.0"
+dependencies:
+  - name: redis-operator
+    version: 0.24.0
+    repository: https://ot-container-kit.github.io/helm-charts
+    condition: redisOperator.enabled

@@ -1,0 +1,13 @@
+{{- if and .Values.authService.enabled .Values.authService.config.enabled (not .Values.authService.config.existingName) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "transport.authservice.configMapName" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: auth-service
+data:
+{{- range $key, $value := .Values.authService.config.data }}
+  {{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}

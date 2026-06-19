@@ -207,3 +207,111 @@ variable "image_pull_secret_name" {
   description = "Image pull secret name."
   default     = ""
 }
+
+variable "redis_operator_enabled" {
+  type        = bool
+  description = "Install the OT Container Kit Redis Operator in the cluster."
+  default     = false
+}
+
+variable "redis_operator_managed" {
+  type        = bool
+  description = "Manage Redis via the Redis Operator CRD instead of an external Memorystore endpoint."
+  default     = false
+}
+
+variable "redis_cluster_size" {
+  type        = number
+  description = "Number of master nodes in the operator-managed Redis cluster."
+  default     = 3
+}
+
+variable "redis_cluster_replicas" {
+  type        = number
+  description = "Replicas per master shard in the operator-managed Redis cluster."
+  default     = 1
+}
+
+variable "redis_persistence_enabled" {
+  type        = bool
+  description = "Enable PVC persistence for the operator-managed Redis cluster."
+  default     = true
+}
+
+variable "redis_storage_size" {
+  type        = string
+  description = "PVC size per Redis node for the operator-managed cluster."
+  default     = "1Gi"
+}
+
+variable "redis_storage_class_name" {
+  type        = string
+  description = "StorageClass for operator-managed Redis PVCs. Leave empty to use the cluster default."
+  default     = ""
+}
+
+variable "redis_image" {
+  type        = string
+  description = "Redis container image for the operator-managed cluster."
+  default     = "quay.io/opstree/redis"
+}
+
+variable "redis_image_tag" {
+  type        = string
+  description = "Redis container image tag for the operator-managed cluster."
+  default     = "v7.0.15"
+}
+
+variable "auth_service_image" {
+  type        = string
+  description = "Auth service image repository."
+  default     = "ghcr.io/longhuynh5713/pathplanner-auth-service"
+}
+
+variable "auth_service_image_tag" {
+  type        = string
+  description = "Auth service image tag."
+  default     = "latest"
+}
+
+variable "auth_service_container_port" {
+  type        = number
+  description = "Auth service container port."
+  default     = 8083
+}
+
+variable "auth_service_service_port" {
+  type        = number
+  description = "Auth service service port."
+  default     = 80
+}
+
+variable "auth_service_health_path" {
+  type        = string
+  description = "Auth service health path."
+  default     = "/healthz"
+}
+
+variable "auth_service_oidc_issuer" {
+  type        = string
+  description = "OIDC issuer URL for token validation."
+  default     = ""
+}
+
+variable "auth_service_oidc_audience" {
+  type        = string
+  description = "Expected OIDC token audience (client ID)."
+  default     = ""
+}
+
+variable "auth_service_oidc_jwks_uri" {
+  type        = string
+  description = "Override JWKS URI. If empty, discovered from issuer metadata."
+  default     = ""
+}
+
+variable "auth_service_token_leeway_seconds" {
+  type        = number
+  description = "Leeway in seconds for token exp/nbf validation."
+  default     = 30
+}

@@ -129,3 +129,67 @@ redis:
   serviceName: ""
   host: ""
   port: 6379
+  operatorManaged: false
+  clusterSize: 3
+  replicas: 1
+  persistenceEnabled: true
+  storageSize: "1Gi"
+  storageClassName: ""
+  exporterEnabled: true
+  exporterImage: "quay.io/opstree/redis-exporter"
+  exporterImageTag: "v1.44.0"
+  image: "quay.io/opstree/redis"
+  imageTag: "v7.0.15"
+  imagePullPolicy: "IfNotPresent"
+  config: {}
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+
+redisOperator:
+  enabled: false
+
+authService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: "ghcr.io/longhuynh5713/pathplanner-auth-service"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    containerPort: 8083
+  health:
+    path: "/healthz"
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+  config:
+    enabled: true
+    name: ""
+    existingName: ""
+    data: {}
+  secret:
+    enabled: false
+    name: ""
+    existingName: ""
+    data: {}
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
