@@ -10,6 +10,7 @@ namespace api.Configuration
 
         public GoogleMapsOptions GoogleMaps { get; set; } = new();
         public CorsSettingsOptions CorsSettings { get; set; } = new();
+        public LocalDistanceMatrixOptions LocalDistanceMatrix { get; set; } = new();
         public RedisOptions Redis { get; set; } = new();
         public CeleryOptions Celery { get; set; } = new();
         public OpenTelemetryOptions OpenTelemetry { get; set; } = new();
@@ -72,6 +73,14 @@ namespace api.Configuration
         public string TileMapType { get; set; } = "roadmap";
         public string TileLanguage { get; set; } = "en-US";
         public string TileRegion { get; set; } = "US";
+    }
+
+    public class LocalDistanceMatrixOptions
+    {
+        public double DrivingSpeedKmh { get; set; } = 40.0;
+        public double WalkingSpeedKmh { get; set; } = 5.0;
+        public double BicyclingSpeedKmh { get; set; } = 15.0;
+        public double TransitSpeedKmh { get; set; } = 25.0;
     }
 
     public class CorsSettingsOptions

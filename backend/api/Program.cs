@@ -77,7 +77,8 @@ builder.Services
 
 
 builder.Services.AddScoped<IRouteService, RouteService>();
-builder.Services.AddScoped<IDistanceService, DistanceService>();
+builder.Services.AddScoped<IDistanceService, LocalDistanceService>();
+builder.Services.AddSingleton<ICoordinateValidator, CoordinateValidator>();
 builder.Services.AddScoped<IGeocodeService, GeocodeService>();
 builder.Services.AddScoped<IDirectionsService, DirectionsService>();
 builder.Services.AddScoped<ITileService, TileService>();
