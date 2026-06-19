@@ -1,0 +1,33 @@
+{{- if and .Values.matrixService.enabled .Values.matrixService.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "transport.matrixservice.fullname" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: matrix-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "transport.matrixservice.fullname" . }}
+  minReplicas: {{ .Values.matrixService.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.matrixService.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.matrixService.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.matrixService.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.matrixService.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.matrixService.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

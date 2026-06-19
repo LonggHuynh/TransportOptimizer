@@ -95,6 +95,47 @@ worker:
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
 
+
+matrixService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: "ghcr.io/longhuynh5713/pathplanner-matrix-service"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    containerPort: 8082
+  health:
+    path: "/healthz"
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+  config:
+    enabled: true
+    name: ""
+    existingName: ""
+    data: {}
+  secret:
+    enabled: false
+    name: ""
+    existingName: ""
+    data: {}
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
 frontend:
   enabled: true
   replicaCount: 2

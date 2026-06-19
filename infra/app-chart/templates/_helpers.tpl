@@ -109,3 +109,35 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s-secret" (include "transport.worker.fullname" .) -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "transport.matrixservice.fullname" -}}
+{{- printf "%s-matrix-service" (include "transport.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "transport.matrixservice.serviceAccountName" -}}
+{{- if .Values.matrixService.serviceAccount.name -}}
+{{- .Values.matrixService.serviceAccount.name -}}
+{{- else -}}
+{{- include "transport.matrixservice.fullname" . -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "transport.matrixservice.configMapName" -}}
+{{- if .Values.matrixService.config.existingName -}}
+{{- .Values.matrixService.config.existingName -}}
+{{- else if .Values.matrixService.config.name -}}
+{{- .Values.matrixService.config.name -}}
+{{- else -}}
+{{- printf "%s-config" (include "transport.matrixservice.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "transport.matrixservice.secretName" -}}
+{{- if .Values.matrixService.secret.existingName -}}
+{{- .Values.matrixService.secret.existingName -}}
+{{- else if .Values.matrixService.secret.name -}}
+{{- .Values.matrixService.secret.name -}}
+{{- else -}}
+{{- printf "%s-secret" (include "transport.matrixservice.fullname" .) -}}
+{{- end -}}
+{{- end -}}

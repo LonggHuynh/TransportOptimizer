@@ -83,6 +83,13 @@ locals {
     local.cors_origin_entries
   )
 
+  matrix_service_config = {
+    "DRIVING_SPEED_KMH"   = tostring(var.matrix_service_driving_speed_kmh)
+    "WALKING_SPEED_KMH"   = tostring(var.matrix_service_walking_speed_kmh)
+    "BICYCLING_SPEED_KMH" = tostring(var.matrix_service_bicycling_speed_kmh)
+    "TRANSIT_SPEED_KMH"   = tostring(var.matrix_service_transit_speed_kmh)
+  }
+
   worker_config = {
     "RESULT_TTL_SECONDS"     = tostring(var.worker_result_ttl_seconds)
     "REDIS_URL"              = local.redis_endpoint
@@ -175,6 +182,31 @@ resource "helm_release" "app" {
       config = {
         enabled = true
         data    = local.worker_config
+      }
+      secret = {
+        enabled = false
+      }
+    }
+    matrixService = {
+      enabled = true
+      image = {
+        repository = var.matrix_service_image
+        tag        = var.matrix_service_image_tag
+        pullPolicy = var.image_pull_policy
+      }
+      service = {
+        port          = var.matrix_service_service_port
+        containerPort = var.matrix_service_container_port
+      }
+      health = {
+        path = var.matrix_service_health_path
+      }
+      serviceAccount = {
+        create = false
+      }
+      config = {
+        enabled = true
+        data    = local.matrix_service_config
       }
       secret = {
         enabled = false

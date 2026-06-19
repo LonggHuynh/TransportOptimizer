@@ -207,3 +207,57 @@ variable "image_pull_secret_name" {
   description = "Image pull secret name."
   default     = ""
 }
+
+variable "matrix_service_image" {
+  type        = string
+  description = "Matrix service image repository."
+  default     = "ghcr.io/longhuynh5713/pathplanner-matrix-service"
+}
+
+variable "matrix_service_image_tag" {
+  type        = string
+  description = "Matrix service image tag."
+  default     = "latest"
+}
+
+variable "matrix_service_container_port" {
+  type        = number
+  description = "Matrix service container port."
+  default     = 8082
+}
+
+variable "matrix_service_service_port" {
+  type        = number
+  description = "Matrix service service port."
+  default     = 80
+}
+
+variable "matrix_service_health_path" {
+  type        = string
+  description = "Matrix service health path."
+  default     = "/healthz"
+}
+
+variable "matrix_service_driving_speed_kmh" {
+  type        = number
+  description = "Matrix service default driving speed (km/h)."
+  default     = 40.0
+}
+
+variable "matrix_service_walking_speed_kmh" {
+  type        = number
+  description = "Matrix service walking speed (km/h)."
+  default     = 5.0
+}
+
+variable "matrix_service_bicycling_speed_kmh" {
+  type        = number
+  description = "Matrix service bicycling speed (km/h)."
+  default     = 15.0
+}
+
+variable "matrix_service_transit_speed_kmh" {
+  type        = number
+  description = "Matrix service transit speed (km/h)."
+  default     = 25.0
+}

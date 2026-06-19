@@ -1,0 +1,13 @@
+{{- if and .Values.matrixService.enabled .Values.matrixService.config.enabled (not .Values.matrixService.config.existingName) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "transport.matrixservice.configMapName" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: matrix-service
+data:
+{{- range $key, $value := .Values.matrixService.config.data }}
+  {{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}

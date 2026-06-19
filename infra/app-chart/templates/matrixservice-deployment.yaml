@@ -1,0 +1,69 @@
+{{- if .Values.matrixService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "transport.matrixservice.fullname" . }}
+  labels:
+    {{- include "transport.labels" . | nindent 4 }}
+    app.kubernetes.io/component: matrix-service
+spec:
+  replicas: {{ .Values.matrixService.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "transport.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: matrix-service
+  template:
+    metadata:
+      labels:
+        {{- include "transport.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: matrix-service
+    spec:
+      serviceAccountName: {{ include "transport.matrixservice.serviceAccountName" . }}
+      {{- $pullSecrets := list -}}
+      {{- if .Values.imagePullSecrets }}
+      {{- range .Values.imagePullSecrets }}
+      {{- $pullSecrets = append $pullSecrets (dict "name" .) -}}
+      {{- end }}
+      {{- end }}
+      {{- if and .Values.imagePullSecret.create .Values.imagePullSecret.name }}
+      {{- $pullSecrets = append $pullSecrets (dict "name" .Values.imagePullSecret.name) -}}
+      {{- end }}
+      {{- if gt (len $pullSecrets) 0 }}
+      imagePullSecrets:
+        {{- toYaml $pullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: matrix-service
+          image: "{{ .Values.matrixService.image.repository }}{{- if .Values.matrixService.image.tag }}:{{ .Values.matrixService.image.tag }}{{- end }}"
+          imagePullPolicy: {{ .Values.matrixService.image.pullPolicy }}
+          env:
+            - name: PORT
+              value: {{ .Values.matrixService.service.containerPort | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.matrixService.service.containerPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.matrixService.health.path | quote }}
+              port: http
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.matrixService.health.path | quote }}
+              port: http
+          {{- $hasConfig := or .Values.matrixService.config.enabled .Values.matrixService.config.existingName }}
+          {{- $hasSecret := or .Values.matrixService.secret.enabled .Values.matrixService.secret.existingName }}
+          {{- if or $hasConfig $hasSecret }}
+          envFrom:
+            {{- if $hasConfig }}
+            - configMapRef:
+                name: {{ include "transport.matrixservice.configMapName" . }}
+            {{- end }}
+            {{- if $hasSecret }}
+            - secretRef:
+                name: {{ include "transport.matrixservice.secretName" . }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.matrixService.resources | nindent 12 }}
+{{- end }}
